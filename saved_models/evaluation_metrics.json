@@ -1,0 +1,38 @@
+{
+  "Random Guess": {
+    "NDCG@5": 0.458,
+    "NDCG@10": 0.4652,
+    "Precision@5": 0.4729,
+    "Precision@10": 0.4719,
+    "HitRate@5": 0.9375,
+    "HitRate@10": 1.0,
+    "AUC": 0.5
+  },
+  "Ridge Classifier": {
+    "NDCG@5": 0.5302,
+    "NDCG@10": 0.5278,
+    "Precision@5": 0.5208,
+    "Precision@10": 0.5156,
+    "HitRate@5": 0.9375,
+    "HitRate@10": 0.9792,
+    "AUC": 0.5502
+  },
+  "Random Forest": {
+    "NDCG@5": 0.8464,
+    "NDCG@10": 0.7976,
+    "Precision@5": 0.8333,
+    "Precision@10": 0.7531,
+    "HitRate@5": 1.0,
+    "HitRate@10": 1.0,
+    "AUC": 0.8303
+  },
+  "LightGBM (Ours)": {
+    "NDCG@5": 0.4523,
+    "NDCG@10": 0.4579,
+    "Precision@5": 0.4542,
+    "Precision@10": 0.4583,
+    "HitRate@5": 0.8646,
+    "HitRate@10": 0.9583,
+    "AUC": 0.5209
+  }
+}
