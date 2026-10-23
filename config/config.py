@@ -186,17 +186,13 @@ def is_main_board_stock(code: str) -> bool:
 # 也是 A 股量化研究的标准基准池。
 POOL_SCOPE = "csi300"
 
-from config.stock_pool import CORE_STOCK_POOL_500 as _POOL_500  # noqa: E402
-
-# 全市场核心池（保留作为兜底与对照，不参与主建模）
-CORE_STOCK_POOL = _POOL_500
-
-# 沪深300 池由 data/csi300_pool.py 构建并缓存到 data/cache/csi300_pool.csv
+# 沪深300 池由 data/csi300_pool.py 构建并缓存到 data/cache/csi300_pool.csv。
+# 池缺失或损坏时返回空列表，避免静默扩展到其他股票。
 _CSI300_CACHE = None
 
 
 def _load_csi300_pool() -> list:
-    """加载沪深300 股票池；缓存缺失时回退到核心池并告警。"""
+    """加载沪深300 股票池；缓存缺失或不完整时拒绝扩大研究范围。"""
     global _CSI300_CACHE
     if _CSI300_CACHE is not None:
         return _CSI300_CACHE
@@ -207,6 +203,9 @@ def _load_csi300_pool() -> list:
         try:
             df = pd.read_csv(path, dtype={'code': str})
             df['code'] = df['code'].str.zfill(6)
+            df = df.drop_duplicates('code').reset_index(drop=True)
+            if not 250 <= len(df) <= 310:
+                raise ValueError(f'沪深300 成分股缓存数量异常：{len(df)} 只')
             _CSI300_CACHE = [
                 {
                     'code': r['code'],
@@ -220,10 +219,9 @@ def _load_csi300_pool() -> list:
         except Exception:
             pass
 
-    print('[Config] 未找到沪深300 缓存，回退到核心池。'
+    print('[Config] 未找到有效的沪深300 成分股缓存，当前研究池为空。'
           '请运行 python -m data.csi300_pool 重新构建')
-    _CSI300_CACHE = list(_POOL_500)
-    return _CSI300_CACHE
+    return []
 
 
 def get_pool(scope: str = None) -> list:
@@ -233,3 +231,7 @@ def get_pool(scope: str = None) -> list:
         return _load_csi300_pool()
     pool = _load_csi300_pool()
     return [s for s in pool if s.get('board', get_stock_board(s['code'])) == scope]
+
+
+# 兼容仍导入 CORE_STOCK_POOL 的旧模块；此变量也严格指向当前 CSI300 缓存。
+CORE_STOCK_POOL = _load_csi300_pool()

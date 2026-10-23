@@ -4,11 +4,11 @@
     <div class="card filter-panel">
       <div class="filter-header">
         <div>
-          <h2>A 股全板块股票池与推荐状态管理</h2>
+          <h2>沪深300成分股池与推荐状态管理</h2>
           <p class="sub-text">展示 LightGBM 对未来 5 个交易日跑赢候选池平均收益的概率估计与排序，支持标记重点跟踪标的</p>
         </div>
         <div class="stats-badge-box">
-          <span class="badge badge-blue">全板块资产池: {{ totalCount }} 只</span>
+          <span class="badge badge-blue">沪深300研究池: {{ totalCount }} 只</span>
           <span class="badge badge-gold">重点关注: {{ favoriteCount }} 只</span>
         </div>
       </div>
@@ -96,7 +96,21 @@
               <th>跑赢候选池均值概率</th>
               <th>是否涨停</th>
               <th>最新收盘价</th>
-              <th>当日涨幅</th>
+              <th>
+                <div class="sortable-header">
+                  <span>当日涨幅</span>
+                  <button
+                    type="button"
+                    class="sort-button"
+                    :class="{ active: changeSortOrder !== null }"
+                    :aria-label="changeSortLabel"
+                    :title="changeSortLabel"
+                    @click="toggleChangeSort"
+                  >
+                    {{ changeSortOrder === 'desc' ? '↓' : changeSortOrder === 'asc' ? '↑' : '↕' }}
+                  </button>
+                </div>
+              </th>
               <th>14日RSI</th>
               <th>MACD</th>
               <th style="text-align: center; min-width: 180px;">操作联动</th>
@@ -106,7 +120,7 @@
             <tr v-if="loading">
               <td colspan="13" style="text-align: center; padding: 40px;">
                 <div class="spinner" style="margin: 0 auto 10px auto;"></div>
-                正在检索 A 股全板块股票资产池...
+                正在检索沪深300成分股...
               </td>
             </tr>
             <tr v-else-if="stocksList.length === 0">
@@ -114,7 +128,7 @@
                 ⚠️ 未找到匹配的股票标的，请调整搜索、板块或行业筛选条件
               </td>
             </tr>
-            <tr v-for="item in stocksList" :key="item.code">
+            <tr v-for="item in displayStocks" :key="item.code">
               <!-- 星标切换 -->
               <td style="text-align: center;">
                 <button 
@@ -161,7 +175,7 @@
                 <span v-else style="color: #64748b;">否</span>
               </td>
               <td>¥{{ item.price ?? '--' }}</td>
-              <td :class="(item.change_pct ?? 0) >= 0 ? 'text-pos' : 'text-neg'">
+              <td :class="(item.change_pct ?? 0) > 0 ? 'stock-change-up' : (item.change_pct ?? 0) < 0 ? 'stock-change-down' : 'text-muted'">
                 {{ (item.change_pct ?? 0) >= 0 ? '+' : '' }}{{ item.change_pct ?? 0 }}%
               </td>
               <td>{{ item.rsi14 ?? 50.0 }}</td>
@@ -186,7 +200,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { api } from '../api'
 
 defineEmits(['viewKline', 'explain'])
@@ -198,6 +212,7 @@ const selectedRating = ref('全部')
 const onlyFavorite = ref(false)
 
 const stocksList = ref([])
+const changeSortOrder = ref(null)
 const totalCount = ref(0)
 const favoriteCount = ref(0)
 const loading = ref(false)
@@ -210,6 +225,28 @@ const industryList = [
   '交通运输', '石油石化', '建筑装饰', '建筑材料', '商贸零售', '房地产', '传媒',
   '煤炭', '农林牧渔', '钢铁', '环保', '美容护理'
 ]
+
+const changeSortLabel = computed(() => {
+  if (changeSortOrder.value === 'desc') return '当前按当日涨幅降序排列，点击切换为升序'
+  if (changeSortOrder.value === 'asc') return '当前按当日涨幅升序排列，点击切换为降序'
+  return '点击按当日涨幅降序排列'
+})
+
+const displayStocks = computed(() => {
+  if (!changeSortOrder.value) return stocksList.value
+  const direction = changeSortOrder.value === 'desc' ? -1 : 1
+  return [...stocksList.value].sort((a, b) => {
+    const changeA = Number(a.change_pct ?? 0)
+    const changeB = Number(b.change_pct ?? 0)
+    const safeA = Number.isFinite(changeA) ? changeA : 0
+    const safeB = Number.isFinite(changeB) ? changeB : 0
+    return (safeA - safeB) * direction || String(a.code).localeCompare(String(b.code))
+  })
+})
+
+const toggleChangeSort = () => {
+  changeSortOrder.value = changeSortOrder.value === 'desc' ? 'asc' : 'desc'
+}
 
 const handleSelectBoard = (b) => {
   selectedBoard.value = b
@@ -290,6 +327,47 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.sortable-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sort-button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sort-button:hover,
+.sort-button.active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.sort-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.stock-change-up {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.stock-change-down {
+  color: #16a34a;
+  font-weight: 600;
+}
+
 .stock-manage-container {
   display: flex;
   flex-direction: column;

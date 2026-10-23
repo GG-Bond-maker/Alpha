@@ -30,7 +30,7 @@ def get_factor_diagnosis() -> Dict[str, Any]:
     return service_instance.get_factor_diagnosis()
 
 
-@router.get("/backtest/comparison", summary="全市场排序与行业中性两种回测口径对比")
+@router.get("/backtest/comparison", summary="沪深300池内排序与行业中性两种回测口径对比")
 def get_backtest_comparison() -> Dict[str, Any]:
     return service_instance.get_backtest_comparison()
 

@@ -17,7 +17,7 @@
     <template v-else>
       <div class="card notice-card">
         <span class="source-tag" :class="isNeutral ? 'is-real' : 'is-synthetic'">
-          {{ isNeutral ? '行业中性选股' : '全市场排序' }}
+          {{ isNeutral ? '行业中性选股' : '沪深300池内排序' }}
         </span>
         <span class="notice-text">
           <template v-if="isNeutral">
@@ -26,7 +26,7 @@
             单一行业暴露受控。行业样本不足 {{ params.min_stocks_per_sector }} 只时并入剩余池补位。
           </template>
           <template v-else>
-            全市场按模型打分直接取 Top-K，不做行业约束。
+            在沪深300研究池内按模型打分直接取 Top-K，不做行业约束。
           </template>
         </span>
       </div>
@@ -157,7 +157,7 @@
         </div>
         <div class="footnote">
           行业中性通过限制单一行业暴露来压低回撤，代价是可能牺牲部分超额收益；
-          全市场排序在单边行情中收益更高，但行业集中会放大回撤。二者应按风险偏好选择。
+          研究池直接排序在单边行情中收益更高，但行业集中会放大回撤；行业中性会限制行业暴露。
         </div>
       </div>
 
@@ -210,7 +210,7 @@ const comparisonRows = computed(() => {
   // 显式映射为模板使用的 s / e 字段：
   // 直接展开原始对象会让模板里的 row.s 为 undefined，访问属性时整页崩溃。
   return [
-    { key: 'global', label: '全市场排序', src: comparison.value.global },
+    { key: 'global', label: '沪深300池内排序', src: comparison.value.global },
     { key: 'neutral', label: '行业中性', src: comparison.value.neutral },
   ]
     .filter((r) => r.src && r.src.strategy && r.src.excess)

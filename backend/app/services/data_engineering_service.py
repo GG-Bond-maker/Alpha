@@ -26,7 +26,7 @@ from config.config import (
     FEATURE_COLS, SELECTED_FACTORS_PATH, get_model_features,
     _load_selected_factors,
     RATING_TOP_A_RATIO, RATING_TOP_B_RATIO,
-    CORE_STOCK_POOL, get_pool,
+    get_pool,
     is_main_board_stock,
     get_stock_board
 )
@@ -205,7 +205,7 @@ class DataEngineeringService:
                 "last_cache_update": cache_mtime_str,
                 "latest_trade_date": latest_trade_date or "2026-10-13",
                 "core_stocks_count": len(get_pool()),
-                "market_scope_compliance": "100% 覆盖中国 A 股全板块 (主板/创业板/科创板/北交所 500 支)",
+                "market_scope_compliance": f"当前研究范围：沪深300成分股（{len(get_pool())} 只）",
                 "realtime_recommendations_updated": rec_mtime_str,
                 "recommendation_records": rec_count,
                 "feature_count": feature_count,
@@ -250,12 +250,12 @@ class DataEngineeringService:
     def _run_data_update_worker(self, force_refresh: bool, sync_recommendations: bool):
         try:
             self.add_log("INFO", f"▶ 启动股票数据更新管道 (force_refresh={force_refresh}, sync_rec={sync_recommendations})...")
-            self.task_state["current_step"] = "正在筛选中国 A 股全板块标的池"
+            self.task_state["current_step"] = "正在筛选沪深300成分股"
             self.task_state["progress"] = 5
 
             stock_list = get_pool()
             total_stocks = len(stock_list)
-            self.add_log("INFO", f"全板块核心资产池载入完成，共计 {total_stocks} 只标的。")
+            self.add_log("INFO", f"沪深300研究池载入完成，共计 {total_stocks} 只标的。")
 
             # 1. 逐只标的刷新历史行情与技术特征
             success_count = 0
@@ -278,7 +278,7 @@ class DataEngineeringService:
                     self.add_log("WARNING", f"标的 {code} 处理警告: {ex}")
 
             self.task_state["progress"] = 70
-            self.add_log("SUCCESS", f"全市场主板标的数据更新完毕！成功处理 {success_count}/{total_stocks} 只标的。")
+            self.add_log("SUCCESS", f"沪深300成分股行情更新完毕！成功处理 {success_count}/{total_stocks} 只标的。")
 
             # 2. 如果需要同步刷新推荐预测
             if sync_recommendations:
@@ -438,7 +438,7 @@ class DataEngineeringService:
 
             # 7. 重新打分并刷新推荐
             self.task_state["progress"] = 93
-            self.task_state["current_step"] = "正在刷新全市场推荐打分"
+            self.task_state["current_step"] = "正在刷新沪深300研究池推荐打分"
             df_res = self._refresh_recommendations(model)
             if not df_res.empty:
                 self.add_log("SUCCESS", f"推荐结果已刷新 ({len(df_res)} 只标的)。")

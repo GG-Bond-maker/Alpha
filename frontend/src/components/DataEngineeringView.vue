@@ -130,8 +130,8 @@
             <label class="checkbox-option">
               <input type="checkbox" v-model="dataUpdateForm.force_refresh" />
               <div>
-                <strong>强制重新从网络拉取全量数据</strong>
-                <p class="desc">忽略本地历史缓存，通过 AkShare 重新同步最新 3 年日线行情与分红前复权因子</p>
+                <strong>强制重新拉取沪深300行情数据</strong>
+                <p class="desc">忽略本地历史缓存，为沪深300当前成分股重新同步日线行情与前复权因子</p>
               </div>
             </label>
 
@@ -139,7 +139,7 @@
               <input type="checkbox" v-model="dataUpdateForm.sync_recommendations" />
               <div>
                 <strong>数据更新后自动运行预测并导出 Excel</strong>
-                <p class="desc">自动为 500 只全板块核心标的打分排序，刷新 Web 推荐列表并生成带有日期戳的 Excel 报表</p>
+                <p class="desc">自动为沪深300当前成分股打分排序，刷新推荐列表并生成带日期的 Excel 报表</p>
               </div>
             </label>
           </div>

@@ -5,7 +5,7 @@
       <div class="header-main">
         <h2 class="view-title">股票行情走势与技术指标分析</h2>
         <p class="view-desc">
-          覆盖 A 股全市场多层次标的，集成日 K 线系统、MA5/10/20/30 多周期均线、极值支撑阻力参考线及成交量能联动分析
+          覆盖沪深300成分股，集成日 K 线系统、MA5/10/20/30 多周期均线、极值支撑阻力参考线及成交量能联动分析
         </p>
       </div>
       <div class="header-tags-group">
@@ -22,7 +22,7 @@
         <label class="search-label">所属板块</label>
         <div class="select-wrapper">
           <select v-model="selectedBoardFilter" class="stock-select range-select" @change="handleBoardFilterChange">
-            <option value="全部">全部板块 (全A股)</option>
+            <option value="全部">全部板块（沪深300）</option>
             <option value="主板">主板 (沪深)</option>
             <option value="创业板">创业板</option>
             <option value="科创板">科创板</option>
@@ -53,8 +53,8 @@
         </button>
       </div>
 
-      <!-- 选中股票的简要行情状态卡片 (支持10~15年完整周期统计) -->
-      <div v-if="klineData" class="stock-info-strip">
+      <!-- 选中股票的简要行情状态卡片只显示真实行情 -->
+      <div v-if="klineData && !klineData.is_synthetic" class="stock-info-strip">
         <span class="tag-badge">{{ currentStockBoard }}</span>
         <span class="stock-name-strong">{{ klineData.stock_name }} ({{ selectedStockCode }})</span>
         <span class="stat-item">最新价: <strong>¥{{ klineData.latest_close }}</strong></span>
@@ -69,28 +69,40 @@
       </div>
     </div>
 
-    <!-- 图表 1: 股票 K 线图 -->
-    <div class="chart-card">
-      <div class="chart-title-bar">
-        <h3>日 K 线与移动均线系统</h3>
-        <span class="badge-sub">前复权日 K 线、MA5/10/20/30 多周期均线与极值参考线</span>
-      </div>
-      
-      <div v-if="loading" class="chart-loading">
+    <div v-if="loading" class="card chart-feedback">
+      <div class="loading-state">
         <div class="spinner"></div>
-        <p>正在拉取行情数据与技术指标...</p>
+        正在拉取行情数据与技术指标...
       </div>
-      <div ref="klineChartRef" class="echarts-container" style="height: 520px;"></div>
+    </div>
+    <div v-else-if="klineData?.is_synthetic" class="card chart-feedback data-warning">
+      <strong>当前没有可用的真实行情</strong>
+      <p>行情接口返回了模拟占位数据。为避免误读，系统已隐藏这组模拟报价、K 线和成交量，请更新行情后重试。</p>
+    </div>
+    <div v-else-if="requestError" class="card chart-feedback data-warning">
+      <strong>行情加载失败</strong>
+      <p>{{ requestError }}</p>
     </div>
 
-    <!-- 图表 2: 股票走势图 (成交量与均量线) -->
-    <div class="chart-card">
-      <div class="chart-title-bar">
-        <h3>成交量走势 (Volume)</h3>
-        <span class="badge-sub">成交量能量柱状图与量价动能联动</span>
+    <template v-else-if="klineData">
+      <!-- 图表 1: 股票 K 线图 -->
+      <div class="chart-card">
+        <div class="chart-title-bar">
+          <h3>日 K 线与移动均线系统</h3>
+          <span class="badge-sub">前复权日 K 线、MA5/10/20/30 多周期均线与极值参考线</span>
+        </div>
+        <div ref="klineChartRef" class="echarts-container" style="height: 520px;"></div>
       </div>
-      <div ref="trendChartRef" class="echarts-container" style="height: 260px;"></div>
-    </div>
+
+      <!-- 图表 2: 股票走势图 (成交量与均量线) -->
+      <div class="chart-card">
+        <div class="chart-title-bar">
+          <h3>成交量走势 (Volume)</h3>
+          <span class="badge-sub">成交量能量柱状图与量价动能联动</span>
+        </div>
+        <div ref="trendChartRef" class="echarts-container" style="height: 260px;"></div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -107,6 +119,7 @@ const selectedBoardFilter = ref('全部')
 const selectedStockCode = ref('600030.SH')
 const loading = ref(false)
 const klineData = ref(null)
+const requestError = ref('')
 
 const filteredStockPool = computed(() => {
   if (selectedBoardFilter.value === '全部') {
@@ -137,14 +150,14 @@ const handleBoardFilterChange = () => {
   }
 }
 
-// 历史数据周期选择器 (默认 15 年超级大周期，约 3800 根日K线)
+// 历史数据周期选择器；实际起止时间由本地可用的真实历史行情决定。
 const selectedTimeRange = ref(3800)
 const timeRangeOptions = [
-  { label: '全部 15 年大周期 (~3800K线)', value: 3800 },
-  { label: '近 10 年大跨度 (~2420K线)', value: 2420 },
-  { label: '近 5 年大跨度 (~1210K线)', value: 1210 },
-  { label: '近 3 年行情 (~726K线)', value: 726 },
-  { label: '近 1 年短周期 (~242K线)', value: 242 }
+  { label: '全部可用历史 (最多 3800 根)', value: 3800 },
+  { label: '近 10 年 (最多 2420 根)', value: 2420 },
+  { label: '近 5 年 (最多 1210 根)', value: 1210 },
+  { label: '近 3 年 (最多 726 根)', value: 726 },
+  { label: '近 1 年 (最多 242 根)', value: 242 }
 ]
 
 const klineChartRef = ref(null)
@@ -157,7 +170,7 @@ const handleResize = () => {
   if (trendChart) trendChart.resize()
 }
 
-// 加载可选全板块股票池
+// 加载可选沪深300成分股
 const loadStockPool = async () => {
   try {
     const res = await api.getStockPool()
@@ -184,7 +197,7 @@ const loadStockPool = async () => {
       selectedStockCode.value = stockPool.value[0].full_code
     }
   } catch (err) {
-    console.error('加载全板块股票池失败:', err)
+    console.error('加载沪深300成分股失败:', err)
   }
 }
 
@@ -192,17 +205,33 @@ const loadStockPool = async () => {
 const handleSearch = async () => {
   if (!selectedStockCode.value) return
   loading.value = true
+  requestError.value = ''
+  klineData.value = null
+  if (klineChart) {
+    klineChart.dispose()
+    klineChart = null
+  }
+  if (trendChart) {
+    trendChart.dispose()
+    trendChart = null
+  }
   const pureCode = selectedStockCode.value.split('.')[0]
   
   try {
     const res = await api.getStockKline(pureCode, selectedTimeRange.value)
     klineData.value = res.data
+    if (res.data?.is_synthetic) return
+
+    // 图表容器位于 v-else-if="loading" 之后；先结束加载态，等待容器挂载再初始化 ECharts。
+    loading.value = false
     await nextTick()
     renderKlineChart(res.data)
     renderTrendChart(res.data)
     handleResize()
   } catch (err) {
     console.error('加载K线数据失败:', err)
+    klineData.value = null
+    requestError.value = '无法获取该标的的真实日线数据，请检查本地行情缓存或数据源后重试。'
   } finally {
     loading.value = false
   }
@@ -251,7 +280,7 @@ const renderKlineChart = (data) => {
   }
 
   const { dates, kline_values, ma5, ma10, ma20, ma30, highest, lowest, highest_date, lowest_date } = data
-  const zoomStart = (dates.length > 2000) ? 70 : ((dates.length > 1000) ? 50 : 0)
+  const zoomStart = 0
 
   const option = {
     animation: true,
@@ -466,7 +495,7 @@ const renderTrendChart = (data) => {
 
   const { dates, volumes, kline_values } = data
   const barColors = kline_values.map(k => k[1] >= k[0] ? '#e84118' : '#009432')
-  const zoomStart = (dates.length > 2000) ? 70 : ((dates.length > 1000) ? 50 : 0)
+  const zoomStart = 0
 
   const option = {
     animation: true,
@@ -753,6 +782,37 @@ defineExpose({ selectedStockCode, handleSearch, loadStockByCode, handleResize })
   height: 300px;
   color: #64748b;
   gap: 12px;
+}
+
+.chart-feedback {
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  color: #64748b;
+  text-align: center;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.data-warning {
+  flex-direction: column;
+  gap: 8px;
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.data-warning p {
+  max-width: 680px;
+  margin: 0;
+  line-height: 1.6;
 }
 
 .spinner {

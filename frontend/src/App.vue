@@ -322,7 +322,7 @@ const navGroups = [
 const TAB_META = {
   home: { title: '全景概览', desc: '推荐系统运行状态、核心指标与最新截面摘要' },
   recommend: { title: 'Top-K 选股推荐', desc: '按截面排序输出候选标的，支持板块与行业筛选' },
-  global: { title: '全局特征归因', desc: '基于 TreeSHAP 的全市场特征重要性排序' },
+  global: { title: '全局特征归因', desc: '基于 TreeSHAP 的沪深300研究池特征重要性排序' },
   kline: { title: '行情走势', desc: '日 K 线、均线系统与成交量联动分析' },
   manage: { title: '股票池管理', desc: '标的全景检索、评级分布与重点关注管理' },
   factors: { title: '因子有效性检验', desc: 'IC / ICIR / t 值与分层收益单调性检验' },

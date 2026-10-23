@@ -45,7 +45,7 @@ def _load_cached_pool():
 def fetch_csi300_constituents(force: bool = False) -> pd.DataFrame:
     """获取沪深300 成分股名单。"""
     cached = None if force else _load_cached_pool()
-    if cached is not None and len(cached) >= 250:
+    if cached is not None and 250 <= len(cached) <= 310:
         return cached
 
     import akshare as ak
@@ -78,6 +78,9 @@ def fetch_csi300_constituents(force: bool = False) -> pd.DataFrame:
     df['code'] = df['code'].astype(str).str.zfill(6)
     df['name'] = df.get('name', df['code']).astype(str)
     df = df[['code', 'name']].drop_duplicates(subset='code').reset_index(drop=True)
+    if not 250 <= len(df) <= 310:
+        print(f"[CSI300] 成分股数量异常：{len(df)} 只，拒绝写入研究池")
+        return cached if cached is not None and 250 <= len(cached) <= 310 else None
     df['board'] = df['code'].apply(get_stock_board)
     return df
 
@@ -137,9 +140,23 @@ def build_csi300_pool(force: bool = False) -> list:
     """
     cons = fetch_csi300_constituents(force=force)
     if cons is None or len(cons) == 0:
-        print("[CSI300] 无法获取成分股，回退到 config 内的 CORE_STOCK_POOL")
-        from config.config import CORE_STOCK_POOL
-        return list(CORE_STOCK_POOL)
+        print("[CSI300] 无法获取最新成分股，尝试沿用本地沪深300快照")
+        try:
+            cached = pd.read_csv(POOL_CACHE, dtype={'code': str})
+            cached['code'] = cached['code'].str.zfill(6)
+            cached = cached.drop_duplicates('code').reset_index(drop=True)
+            if 250 <= len(cached) <= 310:
+                print(f"[CSI300] 使用本地快照 {len(cached)} 只，不扩大到其他股票池")
+                return [{
+                    'code': row['code'],
+                    'name': row.get('name', row['code']),
+                    'industry': row.get('industry') or '未分类',
+                    'board': row.get('board') or get_stock_board(row['code']),
+                } for _, row in cached.iterrows()]
+        except Exception:
+            pass
+        print("[CSI300] 无有效本地快照，返回空股票池；请恢复网络后重试")
+        return []
 
     industry_map = fetch_industry_map(force=force)
 

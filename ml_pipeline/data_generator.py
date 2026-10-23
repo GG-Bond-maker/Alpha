@@ -21,7 +21,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from config.config import CORE_STOCK_POOL, get_stock_board
+from config.config import get_pool, get_stock_board
 
 def get_market_suffix(code: str) -> str:
     clean = str(code).zfill(6)
@@ -79,10 +79,11 @@ def generate_simulated_dataset(
     date_range = pd.date_range(start=start_date, end=end_date, freq=freq).strftime("%Y-%m-%d").tolist()
     
     rows = []
+    stock_pool = get_pool()
     
     # 为每只股票赋予基础风格底色（如茅台高ROE低负债，宁德高成长高波动，银行低PE低波动）
     base_profiles = {}
-    for item in CORE_STOCK_POOL:
+    for item in stock_pool:
         ind = item["industry"]
         if ind == "食品饮料":
             base_profiles[item["code"]] = {"roe": 22.0, "pe": 28.0, "pb": 6.5, "margin": 60.0, "vol": 20.0, "growth": 15.0}
@@ -99,7 +100,7 @@ def generate_simulated_dataset(
         # 模拟全市场宏观周期冲击
         market_sentiment = np.random.normal(0, 1.0)
         
-        for stock in CORE_STOCK_POOL:
+        for stock in stock_pool:
             clean_code = str(stock["code"]).zfill(6)
             full_code = f"{clean_code}.{get_market_suffix(clean_code)}"
             name = stock["name"]

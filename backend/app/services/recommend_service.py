@@ -35,24 +35,69 @@ class RecommendationService:
         self.backtest_cmp_path = os.path.join(SAVED_MODELS_DIR, "backtest_comparison.json")
         self.walk_forward_path = os.path.join(SAVED_MODELS_DIR, "walk_forward.json")
         self.attribution_path = os.path.join(SAVED_MODELS_DIR, "attribution.json")
+        self._asset_signatures = {}
+        self._model_file_signature = None
+        self._model_loaded_signature = None
+        self.model_bundle = None
         self._load()
 
     # ------------------------------------------------------------------
     # 资源加载
     # ------------------------------------------------------------------
     def _load(self):
-        self.data_df = self._read_csv(self.realtime_path)
-        self.explainer = self._read_pickle(self.explainer_path)
-        self.model_bundle = self._read_pickle(self.model_path)
-        self.global_importance = self._read_json(self.importance_path, [])
-        self.shap_summary = self._read_json(self.shap_summary_path, {})
-        self.metrics = self._read_json(self.metrics_path, {})
-        self.backtest = self._read_json(self.backtest_path, {})
-        self.report = self._read_json(self.report_path, {})
-        self.factor_diagnosis = self._read_json(self.factor_path, {})
-        self.backtest_cmp = self._read_json(self.backtest_cmp_path, {})
-        self.walk_forward = self._read_json(self.walk_forward_path, {})
-        self.attribution = self._read_json(self.attribution_path, {})
+        # API 查询会频繁调用 reload。按文件签名刷新缓存，避免每次请求都重读模型和结果文件。
+        self._load_asset_if_changed("data_df", self.realtime_path, self._read_csv, pd.DataFrame)
+        self._load_asset_if_changed("explainer", self.explainer_path, self._read_pickle, lambda: None)
+        self._load_asset_if_changed("global_importance", self.importance_path,
+                                    lambda path: self._read_json(path, []), list)
+        self._load_asset_if_changed("shap_summary", self.shap_summary_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("metrics", self.metrics_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("backtest", self.backtest_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("report", self.report_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("factor_diagnosis", self.factor_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("backtest_cmp", self.backtest_cmp_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("walk_forward", self.walk_forward_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("attribution", self.attribution_path,
+                                    lambda path: self._read_json(path, {}), dict)
+
+        # 首页、评测和推荐接口不需要模型对象。模型包含训练面板数据，体积很大，延迟到局部解释时加载。
+        signature = self._file_signature(self.model_path)
+        if signature != self._model_file_signature:
+            self._model_file_signature = signature
+            self._model_loaded_signature = None
+            self.model_bundle = None
+
+    @staticmethod
+    def _file_signature(path: str):
+        try:
+            stat = os.stat(path)
+            return stat.st_mtime_ns, stat.st_size
+        except OSError:
+            return None
+
+    def _load_asset_if_changed(self, attribute, path, loader, default_factory):
+        signature = self._file_signature(path)
+        if path in self._asset_signatures and self._asset_signatures[path] == signature:
+            return
+        value = loader(path) if signature is not None else default_factory()
+        setattr(self, attribute, value)
+        self._asset_signatures[path] = signature
+
+    def _get_model_bundle(self):
+        self._load()
+        if self._model_file_signature is None:
+            return None
+        if self._model_loaded_signature != self._model_file_signature:
+            self.model_bundle = self._read_pickle(self.model_path)
+            self._model_loaded_signature = self._model_file_signature
+        return self.model_bundle
 
     @staticmethod
     def _read_csv(path: str):
@@ -217,17 +262,18 @@ class RecommendationService:
         from ml_pipeline.train_explainer import explain_stock as build_explanation
 
         clean = str(stock_code).zfill(6)
+        model_bundle = self._get_model_bundle()
 
-        if self.explainer is None or self.model_bundle is None:
+        if self.explainer is None or model_bundle is None:
             return None
 
-        model = self.model_bundle.get("model") if isinstance(self.model_bundle, dict) else None
+        model = model_bundle.get("model") if isinstance(model_bundle, dict) else None
         if model is None:
             return None
 
         if self.data_df.empty or "代码" not in self.data_df.columns:
             return None
-        feature_cols = self.model_bundle.get("feature_cols") or []
+        feature_cols = model_bundle.get("feature_cols") or []
         if not feature_cols:
             return None
         recs = self.data_df[self.data_df["代码"].astype(str).str.zfill(6) == clean].copy()

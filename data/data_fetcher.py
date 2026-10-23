@@ -18,7 +18,8 @@ import akshare as ak
 
 from config.config import (
     CACHE_DIR,
-    CORE_STOCK_POOL, get_pool,
+    FACTOR_DIR,
+    get_pool,
     is_main_board_stock,
     get_stock_board,
     is_valid_a_stock,
@@ -65,6 +66,56 @@ def _clean_price_rows(df: pd.DataFrame) -> tuple:
         "remaining": int(len(cleaned)),
     }
     return cleaned, report
+
+
+def _load_recent_factor_price_cache(code: str, cache_file: str,
+                                    use_cache: bool = True) -> pd.DataFrame:
+    """读取因子流水线保存的真实 OHLCV，作为主行情接口不可用时的本地数据源。"""
+    path = os.path.join(FACTOR_DIR, f"price_{code}.csv")
+    if not os.path.exists(path):
+        return None
+
+    try:
+        # 只用近期更新、且最后交易日不陈旧的因子行情缓存。
+        if (datetime.datetime.now().timestamp() - os.path.getmtime(path)) > 7 * 86400:
+            return None
+        df = pd.read_csv(path)
+        required = {'date', 'open', 'high', 'low', 'close', 'volume'}
+        if not required.issubset(df.columns):
+            return None
+
+        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        for column in required - {'date'}:
+            df[column] = pd.to_numeric(df[column], errors='coerce')
+        df = (df.dropna(subset=list(required))
+                .sort_values('date')
+                .drop_duplicates('date', keep='last')
+                .reset_index(drop=True))
+        if df.empty or (datetime.date.today() - df['date'].iloc[-1].date()).days > 7:
+            return None
+
+        if 'pct_chg' not in df.columns:
+            df['pct_chg'] = df['close'].pct_change() * 100.0
+        else:
+            df['pct_chg'] = pd.to_numeric(df['pct_chg'], errors='coerce')
+
+        df, report = _clean_price_rows(df)
+        if len(df) < MIN_VALID_ROWS:
+            return None
+        if report.get('removed', 0):
+            print(f"[DataFetcher] {code} 因子行情缓存剔除 {report['removed']} 行异常价格")
+
+        df = calculate_technical_indicators(df)
+        if use_cache:
+            try:
+                df.to_csv(cache_file, index=False, encoding='utf-8-sig')
+            except OSError:
+                pass
+        print(f"[DataFetcher] {code} 使用真实因子行情缓存，共 {len(df)} 个交易日")
+        return df.set_index('date')
+    except Exception as exc:
+        print(f"[DataFetcher] 读取 {code} 因子行情缓存失败: {exc}")
+        return None
 
 
 def get_stock_data(code: str, use_cache: bool = True, force_refresh: bool = False) -> pd.DataFrame:
@@ -114,6 +165,12 @@ def get_stock_data(code: str, use_cache: bool = True, force_refresh: bool = Fals
                     return recalc.set_index('date')
         except Exception as e:
             print(f"[DataFetcher] 读取 {clean_code} 缓存失败，转为网络拉取: {e}")
+
+    # 1.5 复用近期的真实因子 OHLCV，避免主行情源失效时落到模拟曲线。
+    if cached_df is None and not force_refresh:
+        factor_cached = _load_recent_factor_price_cache(clean_code, cache_file, use_cache)
+        if factor_cached is not None:
+            return factor_cached
 
     # 2. 从数据源拉取前复权日线（约 15 年）
     try:
@@ -172,32 +229,26 @@ def get_stock_data(code: str, use_cache: bool = True, force_refresh: bool = Fals
 
 def get_stock_list(filter_st: bool = True, main_board_only: bool = False,
                    board: str = None, limit: int = None) -> pd.DataFrame:
-    """获取股票列表，支持板块筛选。
-
-    网络不可用时回退到本地核心股票池，保证离线可演示。
-    """
+    """获取沪深300研究池股票列表，支持板块筛选。"""
     cache_list_file = os.path.join(CACHE_DIR, "stock_market_list.csv")
+    pool = get_pool()
+    pool_map = {s['code']: s for s in pool}
+    pool_codes = set(pool_map)
+    if not pool_codes:
+        return pd.DataFrame(columns=['code', 'name', 'price', 'change_pct', 'board'])
     df = None
 
     if os.path.exists(cache_list_file):
         try:
-            df = pd.read_csv(cache_list_file)
+            df = pd.read_csv(cache_list_file, dtype={'code': str})
             df['code'] = df['code'].apply(lambda x: str(x).zfill(6))
+            df = df[df['code'].isin(pool_codes)].copy()
         except Exception:
             df = None
 
-    if (df is None or len(df) == 0) and limit is not None and limit <= len(get_pool()):
-        df = pd.DataFrame([{
-            'code': s['code'],
-            'name': s['name'],
-            'price': 0.0,
-            'change_pct': 0.0,
-            'board': s.get('board', get_stock_board(s['code'])),
-        } for s in get_pool()[:limit]])
-
-    if df is None or len(df) == 0:
+    if df is None or df.empty:
         try:
-            print("[DataFetcher] 拉取全市场行情列表...")
+            print("[DataFetcher] 拉取沪深300研究池行情列表...")
             raw_df = ak.stock_zh_a_spot_em()
             if raw_df is not None and len(raw_df) > 0:
                 df = raw_df.rename(columns={
@@ -205,21 +256,38 @@ def get_stock_list(filter_st: bool = True, main_board_only: bool = False,
                     '最新价': 'price', '涨跌幅': 'change_pct',
                 })[['code', 'name', 'price', 'change_pct']]
                 df['code'] = df['code'].apply(lambda x: str(x).zfill(6))
+                df = df[df['code'].isin(pool_codes)].copy()
+                df['board'] = df['code'].map({
+                    code: stock.get('board', get_stock_board(code))
+                    for code, stock in pool_map.items()
+                })
                 df.to_csv(cache_list_file, index=False, encoding='utf-8-sig')
         except Exception as e:
-            print(f"[DataFetcher] 行情列表获取失败，启用本地核心池: {e}")
+            print(f"[DataFetcher] 行情列表获取失败，使用沪深300成分股名单: {e}")
 
-    if df is None or len(df) == 0:
+    if df is None or df.empty:
         df = pd.DataFrame([{
             'code': s['code'],
             'name': s['name'],
             'price': 0.0,
             'change_pct': 0.0,
             'board': s.get('board', get_stock_board(s['code'])),
-        } for s in get_pool()])
+        } for s in pool])
+
+    # 即便旧行情缓存存在，也只保留当前研究池内的股票。
+    if 'code' in df.columns:
+        df['code'] = df['code'].astype(str).str.zfill(6)
+        df = df[df['code'].isin(pool_codes)].copy()
+        try:
+            df.to_csv(cache_list_file, index=False, encoding='utf-8-sig')
+        except OSError:
+            pass
 
     if 'board' not in df.columns and 'code' in df.columns:
-        df['board'] = df['code'].apply(get_stock_board)
+        df['board'] = df['code'].map({
+            code: stock.get('board', get_stock_board(code))
+            for code, stock in pool_map.items()
+        })
 
     if filter_st and 'name' in df.columns:
         df = df[~df['name'].str.contains('ST|退', na=False)]
