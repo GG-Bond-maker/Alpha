@@ -1,309 +1,315 @@
 # -*- coding: utf-8 -*-
-"""模型训练与 Optuna 贝叶斯超参数优化模块
-融合 AShare-AI-Stock-Picker 贝叶斯超参调优、单股建模，与 Alpha 市场联合模型及 TreeSHAP 归因
+"""LightGBM 训练与 Optuna 超参数寻优
+
+修复的泄漏点
+------------
+早期版本有两处前视泄漏：
+  1. 在全部数据上 ffill().bfill() —— bfill 把未来值回填到过去；
+  2. Optuna 调参后又在全量 X,y 上 refit —— 验证集信息进入最终模型。
+
+本版本：
+  - 特征清洗在 dataset.build_panel 内完成，只用 ffill；
+  - 调参用训练集内部的 TimeSeriesSplit；
+  - 特征筛选与调参都只使用训练数据；最终模型只用训练集拟合，
+    验证集与测试集仅用于报告结果。
 """
 
 import os
-import glob
-import logging
 import warnings
+
 import joblib
-import optuna
 import numpy as np
+import optuna
 import pandas as pd
 import lightgbm as lgb
 from sklearn.metrics import roc_auc_score, accuracy_score
 from sklearn.model_selection import TimeSeriesSplit
 
-from config.config import MODEL_DIR, SAVED_MODELS_DIR, FEATURE_COLS, CORE_STOCK_POOL, RATING_BINS, RATING_LABELS
-from data.data_fetcher import get_stock_data
+from config.config import FEATURE_COLS, get_model_features, MODEL_DIR, SAVED_MODELS_DIR
+from ml_pipeline.dataset import build_factor_panel, time_split
+from config.config import TARGET_DAYS
+from ml_pipeline.factor_diagnosis import diagnose_all, factors_for_model
 
 warnings.filterwarnings("ignore")
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+DEFAULT_PARAMS = {
+    'n_estimators': 200,
+    'learning_rate': 0.05,
+    'max_depth': 5,
+    'num_leaves': 31,
+    'subsample': 0.85,
+    'colsample_bytree': 0.85,
+    'reg_alpha': 0.1,
+    'reg_lambda': 0.1,
+    'random_state': 42,
+    'verbose': -1,
+}
 
 
-def optimize_hyperparameters(X: pd.DataFrame, y: pd.Series, n_trials: int = 25) -> dict:
-    """
-    使用 Optuna 进行贝叶斯超参数自动寻优
-    采用 TimeSeriesSplit 时间序列交叉验证，严防未来信息泄露
-    
-    Args:
-        X (pd.DataFrame): 特征矩阵
-        y (pd.Series): 二分类目标标签 (0 或 1)
-        n_trials (int): Optuna 试验轮数
-        
-    Returns:
-        dict: 最佳超参数配置字典
-    """
-    logging.getLogger('optuna').setLevel(logging.ERROR)
-    optuna.logging.set_verbosity(optuna.logging.WARNING)
+def _date_grouped_splits(train: pd.DataFrame, n_splits: int = 3,
+                         embargo_days: int = TARGET_DAYS):
+    """只按完整交易日切折，并清除验证起点前尚未成熟的标签。"""
+    dates = np.sort(train['date'].unique())
+    if len(dates) < n_splits + embargo_days + 2:
+        return []
+    splitter = TimeSeriesSplit(n_splits=n_splits)
+    splits = []
+    for fold_train_idx, fold_val_idx in splitter.split(dates):
+        val_start = int(fold_val_idx[0])
+        usable_train_end = max(0, val_start - embargo_days)
+        train_dates = dates[fold_train_idx[fold_train_idx < usable_train_end]]
+        val_dates = dates[fold_val_idx]
+        if train_dates.size == 0 or val_dates.size == 0:
+            continue
+        tr_idx = np.flatnonzero(train['date'].isin(train_dates).to_numpy())
+        va_idx = np.flatnonzero(train['date'].isin(val_dates).to_numpy())
+        if tr_idx.size and va_idx.size:
+            splits.append((tr_idx, va_idx))
+    return splits
 
-    # 兜底默认参数（当数据量较小或快速运行）
-    default_params = {
-        'n_estimators': 150,
-        'learning_rate': 0.05,
-        'max_depth': 5,
-        'subsample': 0.85,
-        'colsample_bytree': 0.85,
-        'reg_alpha': 0.1,
-        'reg_lambda': 0.1,
-        'random_state': 42,
-        'verbose': -1
-    }
 
-    if len(X) < 100 or y.nunique() < 2:
-        return default_params
+def _section_auc(y_true: pd.Series, probability: np.ndarray,
+                 dates: pd.Series) -> float | None:
+    """每个截面分别计算 AUC，再对日期等权平均。"""
+    frame = pd.DataFrame({
+        'date': dates.to_numpy(), 'target': y_true.to_numpy(), 'prob': probability,
+    })
+    scores = []
+    for _, group in frame.groupby('date'):
+        if len(group) >= 8 and group['target'].nunique() == 2:
+            scores.append(roc_auc_score(group['target'], group['prob']))
+    return float(np.mean(scores)) if scores else None
+
+
+def optimize_hyperparameters(train: pd.DataFrame, feature_cols: list,
+                              n_trials: int = 25,
+                              candidate_factors: list = None) -> dict:
+    """Optuna 寻优；折内按日期分组、隔离标签并在折内重新筛选因子。"""
+    y = train['target_up']
+    if len(train) < 200 or y.nunique() < 2 or n_trials <= 1:
+        return dict(DEFAULT_PARAMS)
+
+    dates = np.sort(train['date'].unique())
+    n_splits = min(3, max(2, len(dates) // 250))
+    folds = _date_grouped_splits(train, n_splits=n_splits)
+    if not folds:
+        return dict(DEFAULT_PARAMS)
+
+    fold_data = []
+    for tr_idx, va_idx in folds:
+        fold_train = train.iloc[tr_idx]
+        fold_val = train.iloc[va_idx]
+        if candidate_factors:
+            fold_report = diagnose_all(fold_train, candidate_factors)
+            fold_factors, _ = factors_for_model(fold_report)
+            fold_features = [f + '_neu' for f in fold_factors]
+        else:
+            fold_features = feature_cols
+        fold_features = [f for f in fold_features
+                         if f in fold_train.columns and f in fold_val.columns]
+        if fold_features:
+            fold_data.append((fold_train, fold_val, fold_features))
+    if not fold_data:
+        return dict(DEFAULT_PARAMS)
 
     def objective(trial):
         params = {
-            'n_estimators': trial.suggest_int('n_estimators', 80, 300),
+            'n_estimators': trial.suggest_int('n_estimators', 100, 400),
             'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.2, log=True),
-            'max_depth': trial.suggest_int('max_depth', 3, 7),
+            'max_depth': trial.suggest_int('max_depth', 3, 8),
+            'num_leaves': trial.suggest_int('num_leaves', 8, 63),
             'subsample': trial.suggest_float('subsample', 0.6, 1.0),
             'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
             'reg_alpha': trial.suggest_float('reg_alpha', 1e-4, 5.0, log=True),
             'reg_lambda': trial.suggest_float('reg_lambda', 1e-4, 5.0, log=True),
             'random_state': 42,
-            'verbose': -1
+            'verbose': -1,
         }
 
-        n_splits = min(3, max(2, len(X) // 80))
-        tscv = TimeSeriesSplit(n_splits=n_splits)
         scores = []
-
-        for train_idx, val_idx in tscv.split(X):
-            X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-            y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
-
-            if y_val.nunique() < 2 or y_train.nunique() < 2:
+        for fold_train, fold_val, fold_features in fold_data:
+            X_tr, X_va = fold_train[fold_features], fold_val[fold_features]
+            y_tr, y_va = fold_train['target_up'], fold_val['target_up']
+            if y_tr.nunique() < 2 or y_va.nunique() < 2:
                 continue
-
             model = lgb.LGBMClassifier(**params)
-            model.fit(
-                X_train, y_train,
-                eval_set=[(X_val, y_val)],
-                callbacks=[lgb.early_stopping(stopping_rounds=15, verbose=False)]
-            )
-
-            y_pred = model.predict_proba(X_val)[:, 1]
+            model.fit(X_tr, y_tr)
             try:
-                score = roc_auc_score(y_val, y_pred)
-                scores.append(score)
-            except Exception:
+                prob = model.predict_proba(X_va)[:, 1]
+                score = _section_auc(y_va, prob, fold_val['date'])
+                if score is not None:
+                    scores.append(score)
+            except ValueError:
                 pass
 
-        return np.mean(scores) if scores else 0.5
+        return float(np.mean(scores)) if scores else 0.5
 
     try:
         study = optuna.create_study(direction='maximize')
         study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
-        best = study.best_params
+        best = dict(study.best_params)
         best['random_state'] = 42
         best['verbose'] = -1
+        print(f"[Optuna] 最优验证 AUC: {study.best_value:.4f}（{n_trials} 轮）")
         return best
     except Exception as e:
-        print(f"[Optuna] 优化过程发生异常: {e}，使用默认参数")
-        return default_params
+        print(f"[Optuna] 寻优异常，回退默认参数: {e}")
+        return dict(DEFAULT_PARAMS)
 
 
-def train_and_save_model(code: str, force_retrain: bool = False, n_trials: int = 15) -> lgb.Booster:
-    """
-    单股 LightGBM 模型训练与保存 (参考 AShare-AI-Stock-Picker)
-    
-    Args:
-        code (str): 6位股票代码
-        force_retrain (bool): 是否强制重训
-        n_trials (int): Optuna 轮数
-        
+def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
+                       force_retrain: bool = False, codes: list = None,
+                       candidate_factors: list = None) -> dict:
+    """训练市场通用模型并返回模型、切分数据与指标。
+
     Returns:
-        lgb.Booster: 训练好的模型实例
+        dict，含 model / panel / train / val / test / metrics / params
     """
-    clean_code = str(code).zfill(6)
-    model_path = os.path.join(MODEL_DIR, f'{clean_code}_model.txt')
+    model_file = os.path.join(SAVED_MODELS_DIR, "lgbm_market_classifier.pkl")
 
-    # 1. 优先加载本地已有模型缓存
-    if not force_retrain and os.path.exists(model_path):
+    if not force_retrain and os.path.exists(model_file):
         try:
-            return lgb.Booster(model_file=model_path)
-        except Exception as e:
-            print(f"[ModelTrainer] 加载股票 {clean_code} 缓存模型失败: {e}，准备重新训练")
-
-    # 2. 获取股票真实历史数据与技术指标
-    df = get_stock_data(clean_code)
-    if df is None or len(df) < 100:
-        return None
-
-    try:
-        # 清洗数据与对齐目标
-        valid_df = df.dropna(subset=['pct_chg_5d']).copy()
-        if len(valid_df) < 60:
-            return None
-
-        X = valid_df[FEATURE_COLS].replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(0)
-        y = (valid_df['pct_chg_5d'] > 0).astype(int)
-
-        if y.nunique() < 2:
-            return None
-
-        # 时序切分
-        split_idx = int(len(X) * 0.8)
-        X_train, X_valid = X.iloc[:split_idx], X.iloc[split_idx:]
-        y_train, y_valid = y.iloc[:split_idx], y.iloc[split_idx:]
-
-        # Optuna 超参数优化
-        best_params = optimize_hyperparameters(X_train, y_train, n_trials=n_trials)
-
-        # 全量数据拟合
-        model = lgb.LGBMClassifier(**best_params)
-        model.fit(X, y, callbacks=[])
-
-        # 持久化存储模型
-        os.makedirs(MODEL_DIR, exist_ok=True)
-        model.booster_.save_model(model_path)
-        return model.booster_
-
-    except Exception as e:
-        print(f"[ModelTrainer] 训练股票 {clean_code} 模型发生异常: {e}")
-        return None
-
-
-def train_market_joint_model(
-    sample_codes: list = None,
-    force_retrain: bool = False,
-    n_trials: int = 20
-) -> tuple:
-    """
-    训练全市场通用选股大模型（整合代表性标的多期真实技术指标样本）
-    同时产出通用分类模型与用于全栈系统的评测和 SHAP 归因模型
-    
-    Args:
-        sample_codes (list): 样本股票代码列表（默认采用核心蓝筹股池）
-        force_retrain (bool): 是否强制重训
-        n_trials (int): Optuna 轮数
-        
-    Returns:
-        tuple: (lgb.LGBMClassifier, pd.DataFrame 验证测试集)
-    """
-    market_model_file = os.path.join(SAVED_MODELS_DIR, "lgbm_market_classifier.pkl")
-    
-    if not force_retrain and os.path.exists(market_model_file):
-        try:
-            saved = joblib.load(market_model_file)
-            return saved['model'], saved.get('test_df', None)
+            saved = joblib.load(model_file)
+            if saved.get('feature_cols') == get_model_features():
+                print("[Train] 复用已保存模型（特征集一致）")
+                return saved
+            print("[Train] 特征集已变更，强制重训")
         except Exception:
             pass
 
-    if sample_codes is None:
-        sample_codes = [s['code'] for s in CORE_STOCK_POOL]
+    if panel is None:
+        panel = build_factor_panel(codes)
 
-    print(f"[ModelTrainer] 开始训练市场通用选股模型，采集 {len(sample_codes)} 只核心标的历史样本...")
-    all_dfs = []
-    for code in sample_codes:
-        df = get_stock_data(code)
-        if df is not None and len(df) > 80:
-            df_sample = df.dropna(subset=['pct_chg_5d']).copy()
-            df_sample['stock_code'] = str(code).zfill(6)
-            all_dfs.append(df_sample)
+    train, val, test = time_split(panel)
 
-    if not all_dfs:
-        raise RuntimeError("未能获取到足够的股票历史数据，请检查网络或数据源！")
+    feature_cols = get_model_features()
+    missing = [col for col in feature_cols if col not in panel.columns]
+    if missing:
+        raise ValueError(f"面板缺少模型特征: {missing}")
+    X_tr, y_tr = train[feature_cols], train['target_up']
+    X_va, y_va = val[get_model_features()], val['target_up']
 
-    joint_df = pd.concat(all_dfs).reset_index()
-    joint_df = joint_df.sort_values('date').reset_index(drop=True)
+    print(f"[Train] 训练集 {len(train)} 行 / 验证集 {len(val)} 行 / 测试集 {len(test)} 行")
+    print(f"[Train] 正样本占比 — 训练 {y_tr.mean():.3f} / 验证 {y_va.mean():.3f}")
 
-    X = joint_df[FEATURE_COLS].replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(0)
-    y = (joint_df['pct_chg_5d'] > 0).astype(int)
+    params = optimize_hyperparameters(
+        train, feature_cols, n_trials=n_trials,
+        candidate_factors=candidate_factors,
+    )
+    print(f"[Train] 采用超参: {params}")
 
-    # 时序划分：前 80% 训练与调优，后 20% 测试
-    split_idx = int(len(joint_df) * 0.8)
-    X_train, X_test = X.iloc[:split_idx], X.iloc[split_idx:]
-    y_train, y_test = y.iloc[:split_idx], y.iloc[split_idx:]
-    test_df = joint_df.iloc[split_idx:].copy()
+    # 早停的风险：A 股技术指标对截面超额收益的信号极弱（实测 IC 普遍 < 0.05），
+    # 验证集 AUC 在首轮之后往往不再提升，early_stopping 会在第 1 轮就终止，
+    # 使模型退化为单棵树、所有标的预测值完全相同。因此这里改用固定轮数训练，
+    # 轮数由 Optuna 在训练集内部交叉验证中选定，不依赖单次验证集的噪声。
+    model = lgb.LGBMClassifier(**params)
+    evals_result = {}
+    model.fit(
+        X_tr,
+        y_tr,
+        eval_set=[(X_tr, y_tr), (X_va, y_va)],
+        eval_names=['train', 'validation'],
+        eval_metric='binary_logloss',
+        callbacks=[lgb.record_evaluation(evals_result)],
+    )
 
-    # Optuna 超参调优
-    print(f"[ModelTrainer] 运行 Optuna 贝叶斯超参数调优 ({n_trials} 轮)...")
-    best_params = optimize_hyperparameters(X_train, y_train, n_trials=n_trials)
-    print(f"[ModelTrainer] 最佳超参搜索完毕: {best_params}")
+    # 记录每轮训练/验证对数损失供可视化和论文分析；不据此对测试集调参。
+    train_loss = evals_result.get('train', {}).get('binary_logloss', [])
+    validation_loss = evals_result.get('validation', {}).get('binary_logloss', [])
+    loss_history = {
+        'metric': 'binary_logloss',
+        'iterations': list(range(1, min(len(train_loss), len(validation_loss)) + 1)),
+        'train': [float(v) for v in train_loss],
+        'validation': [float(v) for v in validation_loss],
+    }
 
-    # 训练模型
-    model = lgb.LGBMClassifier(**best_params)
-    model.fit(X_train, y_train)
+    # 指标只在验证集与测试集上计算，训练集仅作参考
+    metrics = {}
+    for name, split in (('train', train), ('val', val), ('test', test)):
+        y_true = split['target_up']
+        prob = model.predict_proba(split[get_model_features()])[:, 1]
+        metrics[name] = {
+            'auc': round(float(roc_auc_score(y_true, prob)), 4) if y_true.nunique() > 1 else None,
+            'section_auc': (round(_section_auc(y_true, prob, split['date']), 4)
+                            if _section_auc(y_true, prob, split['date']) is not None else None),
+            'accuracy': round(float(accuracy_score(y_true, (prob >= 0.5).astype(int))), 4),
+            'n_rows': int(len(split)),
+            'n_dates': int(split['date'].nunique()),
+            'pos_rate': round(float(y_true.mean()), 4),
+        }
 
-    # 在测试集上评估
-    test_preds = model.predict_proba(X_test)[:, 1]
-    test_df['predicted_prob'] = test_preds
-    auc_score = roc_auc_score(y_test, test_preds)
-    acc_score = accuracy_score(y_test, (test_preds >= 0.5).astype(int))
-    print(f"[ModelTrainer] 市场通用模型测试集指标: AUC={auc_score:.4f}, Accuracy={acc_score:.4f}")
+    print(f"[Train] 验证 AUC={metrics['val']['auc']}  测试 AUC={metrics['test']['auc']}")
 
-    # 保存模型
-    os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
-    joblib.dump({
+    result = {
         'model': model,
-        'best_params': best_params,
-        'metrics': {'auc': auc_score, 'accuracy': acc_score},
-        'test_df': test_df
-    }, market_model_file)
+        'panel': panel,
+        'train': train,
+        'val': val,
+        'test': test,
+        'metrics': metrics,
+        'params': params,
+        'loss_history': loss_history,
+        'feature_cols': get_model_features(),
+        'label_mode': 'excess',
+        'label_definition': 'probability of exceeding the same-date candidate-universe mean over the next five sessions',
+    }
 
-    return model, test_df
+    os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
+    joblib.dump(result, model_file)
+    print(f"[Train] 模型已保存: {model_file}")
+    return result
 
 
-def predict_stock_signal(code: str, booster_or_model=None) -> dict:
-    """
-    对指定股票预测未来 5 日上涨概率并输出推荐评级（A/B/C）与涨停预警
-    
-    Args:
-        code (str): 股票代码
-        booster_or_model: 预载的模型（单股 booster 或通用分类器）
-        
-    Returns:
-        dict: 选股预测明细
+def predict_signal(code: str, model, df: pd.DataFrame = None, panel: pd.DataFrame = None) -> dict:
+    """对单只股票的最新截面做预测。
+
+    模型训练用的是「行业中性化 + 标准化」后的因子列，因此推理端必须
+    从完整横截面取值。LightGBM 原生处理缺失值，单股缺失因子不填成零。
     """
     clean_code = str(code).zfill(6)
-    df = get_stock_data(clean_code)
-    if df is None or len(df) == 0:
+
+    # 中性化与标准化必须依赖完整日期截面；单只股票独立处理会令特征失真。
+    if panel is None or panel.empty:
         return None
-
-    # 获取最新一根 K 线的特征向量
-    X = df[FEATURE_COLS].replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(0)
-    if len(X) == 0:
+    missing = [c for c in get_model_features() if c not in panel.columns]
+    if missing:
         return None
+    sub = panel[panel['stock_code'].astype(str).str.zfill(6) == clean_code]
+    if sub.empty:
+        return None
+    latest_row = sub.sort_values('date').iloc[-1]
+    X = latest_row[get_model_features()].to_frame().T.astype(float)
+    if np.isinf(X.to_numpy(dtype=float)).any():
+        return None
+    prob = float(model.predict_proba(X)[0, 1])
 
-    latest_row = X.iloc[[-1]]
-    latest_feature_vals = latest_row.values.astype(np.float32)
-
-    # 预测概率
-    prob = 0.5
-    if booster_or_model is not None:
-        try:
-            if hasattr(booster_or_model, 'predict_proba'):
-                prob = float(booster_or_model.predict_proba(latest_row)[0, 1])
-            elif hasattr(booster_or_model, 'predict'):
-                raw_pred = booster_or_model.predict(latest_feature_vals)[0]
-                prob = float(raw_pred) if 0.0 <= raw_pred <= 1.0 else 1.0 / (1.0 + np.exp(-raw_pred))
-        except Exception as e:
-            print(f"[Predict] 预测计算异常: {e}")
-
-    # 计算推荐评级
-    rating = 'C'
     if prob >= 0.75:
         rating = 'A'
     elif prob >= 0.60:
         rating = 'B'
+    else:
+        rating = 'C'
 
-    # 是否涨停判断 (当日涨幅 >= 9.9%)
-    latest_pct = float(df['pct_chg'].iloc[-1]) if 'pct_chg' in df.columns else 0.0
-    is_limit_up = "是" if latest_pct >= 9.9 else "否"
-
-    latest_close = float(df['close'].iloc[-1]) if 'close' in df.columns else 0.0
-    latest_date = df.index[-1].strftime('%Y-%m-%d') if hasattr(df.index[-1], 'strftime') else str(df.index[-1])
+    latest_pct = float(latest_row.get('pct_chg', 0.0))
+    latest_close = float(latest_row.get('close', 0.0))
+    latest_date = latest_row['date']
+    latest_date = latest_date.strftime('%Y-%m-%d') if hasattr(latest_date, 'strftime') else str(latest_date)
 
     return {
         'code': clean_code,
         'probability': round(prob, 4),
         'rating': rating,
-        'is_limit_up': is_limit_up,
-        'close': latest_close,
+        'is_limit_up': '是' if latest_pct >= 9.9 else '否',
+        'close': round(latest_close, 2),
         'pct_chg': round(latest_pct, 2),
         'update_date': latest_date,
-        'features': {col: round(float(latest_row[col].iloc[0]), 4) for col in FEATURE_COLS}
+        'features': {
+            c: (round(float(X.iloc[0][c]), 4) if pd.notna(X.iloc[0][c]) else None)
+            for c in get_model_features()
+        },
+        'raw_features': {
+            c: (round(float(latest_row[c]), 4) if pd.notna(latest_row.get(c)) else None)
+            for c in FEATURE_COLS if c in latest_row.index
+        },
     }

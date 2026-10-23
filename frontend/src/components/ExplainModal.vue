@@ -37,8 +37,8 @@
         <!-- 预测得分分解汇总 -->
         <div class="score-summary">
           <div class="score-pill">
-            <span class="label">截面基准期望分 (Base Value):</span>
-            <strong class="value">{{ data.base_value }}</strong>
+            <span class="label">基准输出值 (Base Value):</span>
+            <strong class="value">{{ data.base_value }} (log-odds)</strong>
           </div>
           <div class="score-pill plus">
             <span class="label">正向特征总贡献:</span>
@@ -49,15 +49,15 @@
             <strong class="value">{{ totalNegativeShap }}</strong>
           </div>
           <div class="score-pill total">
-            <span class="label">最终推荐预测得分:</span>
-            <strong class="value">{{ data.predicted_score }}</strong>
+            <span class="label">模型输出 (log-odds):</span>
+            <strong class="value">{{ data.predicted_margin }}</strong>
           </div>
         </div>
 
         <!-- ECharts 瀑布图容器 -->
         <div class="chart-wrapper">
-          <h3 class="section-title">SHAP 瀑布归因图 (Waterfall Plot)</h3>
-          <p class="section-desc">直观展示各量化因子如何将股票得分从基准值推升/拉低至最终推荐值：</p>
+          <h3 class="section-title">SHAP 瀑布归因图 (log-odds 空间)</h3>
+          <p class="section-desc">图中基准值、SHAP 贡献与最终模型输出均为 log-odds；概率估计为 {{ (data.predicted_score * 100).toFixed(1) }}%。</p>
           <div ref="waterfallChartRef" class="echart-box"></div>
         </div>
 
@@ -151,7 +151,7 @@ const initWaterfallChart = () => {
 
   // 准备瀑布图数据
   const sorted = [...data.value.features].sort((a, b) => b.shap_value - a.shap_value)
-  const categories = ['基准期望分', ...sorted.map(f => f.name_cn), '最终得分']
+  const categories = ['基准 log-odds', ...sorted.map(f => f.name_cn), '模型输出']
   
   // 瀑布图辅助柱与实际柱
   const baseVal = data.value.base_value
@@ -177,8 +177,8 @@ const initWaterfallChart = () => {
 
   // 最终总分
   placeholderData.push(0)
-  posData.push(data.value.predicted_score >= 0 ? data.value.predicted_score : '-')
-  negData.push(data.value.predicted_score < 0 ? -data.value.predicted_score : '-')
+  posData.push(data.value.predicted_margin >= 0 ? data.value.predicted_margin : '-')
+  negData.push(data.value.predicted_margin < 0 ? -data.value.predicted_margin : '-')
 
   const option = {
     tooltip: {
@@ -197,7 +197,7 @@ const initWaterfallChart = () => {
     },
     yAxis: {
       type: 'value',
-      name: '得分 / 贡献分'
+      name: '模型输出 (log-odds)'
     },
     series: [
       {

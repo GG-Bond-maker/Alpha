@@ -1,455 +1,358 @@
 <template>
-  <div class="home-dashboard">
-    <!-- 顶部欢迎与系统状态横幅 -->
-    <div class="welcome-banner">
-      <div class="banner-content">
-        <div class="banner-badge">LightGBM 股票智能推荐系统 v2.0</div>
-        <h2 class="banner-title">A 股全板块智能选股与推荐决策平台</h2>
-        <p class="banner-desc">
-          全面覆盖中国 A 股全部板块（主板 / 创业板 / 科创板 / 北交所），基于 LightGBM 机器学习模型与 Optuna 贝叶斯超参数优化，结合经典技术指标体系，提供高置信度多头排序推荐与 XAI 可解释性分析。
-        </p>
-      </div>
-      <div class="banner-date">
-        <span class="label">当前分析截面</span>
-        <strong class="date-val">{{ stats.update_date || '最新交易日' }}</strong>
+  <div>
+    <div v-if="loading" class="card">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        正在加载系统概览...
       </div>
     </div>
 
-    <!-- 4 个核心指标统计卡片 -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon" style="background: #eff6ff; color: #2563eb;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"></rect><line x1="2" y1="20" x2="22" y2="20"></line></svg>
+    <template v-else>
+      <!-- 核心指标 -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">股票池规模</div>
+          <div class="stat-value">{{ overview.pool_size || 0 }}</div>
+          <div class="stat-hint">只核心标的</div>
         </div>
-        <div>
-          <div class="stat-label">核心预测模型</div>
-          <div class="stat-val">LightGBM</div>
-          <div class="stat-sub">Optuna 贝叶斯寻优</div>
+        <div class="stat-card">
+          <div class="stat-label">面板样本量</div>
+          <div class="stat-value">{{ formatInt(panel.rows) }}</div>
+          <div class="stat-hint">
+            {{ panel.stocks }} 只 × {{ panel.dates }} 个截面
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">测试集 AUC</div>
+          <div class="stat-value" :class="aucClass(model.test_auc)">
+            {{ model.test_auc != null ? model.test_auc.toFixed(4) : '—' }}
+          </div>
+          <div class="stat-hint">样本外，未参与调参</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">回测超额年化</div>
+          <div class="stat-value" :class="signClass(bt.excess_annual)">
+            {{ pct(bt.excess_annual) }}
+          </div>
+          <div class="stat-hint">已扣除交易成本</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">策略夏普</div>
+          <div class="stat-value">{{ bt.sharpe != null ? bt.sharpe.toFixed(3) : '—' }}</div>
+          <div class="stat-hint">年化口径</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">最大回撤</div>
+          <div class="stat-value text-neg">{{ pct(bt.max_drawdown) }}</div>
+          <div class="stat-hint">净值峰值回落</div>
         </div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-icon" style="background: #f0fdf4; color: #16a34a;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path></svg>
-        </div>
-        <div>
-          <div class="stat-label">标的覆盖范围</div>
-          <div class="stat-val">{{ stats.total_stocks_count || 500 }} 只</div>
-          <div class="stat-sub">A 股全板块核心资产池</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon" style="background: #fefce8; color: #ca8a04;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
-        </div>
-        <div>
-          <div class="stat-label">模型离线评测精度</div>
-          <div class="stat-val">AUC {{ stats.model_metrics?.auc || '0.715' }}</div>
-          <div class="stat-sub">NDCG@10 {{ stats.model_metrics?.ndcg_at_10 || '0.783' }}</div>
+      <!-- 数据口径提示 -->
+      <div class="card notice-card">
+        <div class="notice-row">
+          <span class="source-tag is-real">
+            标签口径：截面超额收益
+          </span>
+          <span class="notice-text">
+            预测目标为未来 5 个交易日收益高于当日候选池平均收益，而非绝对上涨。
+            面板区间 {{ panel.date_range ? panel.date_range[0] : '—' }} 至
+            {{ panel.date_range ? panel.date_range[1] : '—' }}。
+          </span>
         </div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-icon" style="background: #fdf2f8; color: #db2777;">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      <div class="split-grid">
+        <!-- 特征重要性 -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">全局特征重要性</div>
+              <div class="card-subtitle">TreeSHAP Mean |SHAP| 排序</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" @click="$emit('switchTab', 'global')">查看详情</button>
+          </div>
+          <div ref="chartRef" style="height: 300px;"></div>
         </div>
-        <div>
-          <div class="stat-label">A 级高置信推荐</div>
-          <div class="stat-val text-pos">{{ stats.rating_distribution?.A || 0 }} 只</div>
-          <div class="stat-sub">看涨概率 ≥ 75%</div>
-        </div>
-      </div>
-    </div>
 
-    <!-- 核心板块：评级分布与重点标的前瞻 -->
-    <div class="dashboard-split">
-      <!-- 左侧：推荐评级分布环形图 -->
-      <div class="card chart-card">
-        <div class="card-header">
-          <h3>全板块股票推荐评级分布</h3>
-          <span class="sub-tip">A/B/C 三级分类体系</span>
-        </div>
-        <div ref="pieChartRef" style="height: 280px;"></div>
-      </div>
-
-      <!-- 右侧：今日重点看涨标的前瞻 -->
-      <div class="card picks-card">
-        <div class="card-header">
-          <h3>重点看涨标的前瞻清单 (Top 5)</h3>
-          <span class="sub-tip">按 LightGBM 看涨概率降序排列</span>
-        </div>
-        <div class="top-picks-list">
-          <div 
-            v-for="(item, idx) in stats.top_picks" 
-            :key="item.stock_code"
-            class="pick-row"
-          >
-            <div class="pick-rank" :class="'rank-' + (idx + 1)">0{{ idx + 1 }}</div>
-            <div class="pick-info">
-              <strong class="pick-name">{{ item.stock_name }}</strong>
-              <div style="display: flex; gap: 4px; align-items: center;">
-                <code class="pick-code">{{ item.stock_code }}</code>
-                <span v-if="item.board" class="badge" style="font-size: 11px; padding: 1px 4px;">{{ item.board }}</span>
+        <!-- 最新推荐 -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">最新截面推荐</div>
+              <div class="card-subtitle">
+                {{ overview.latest_date || '—' }} · Top {{ overview.latest_count || 0 }}
+                · 按跑赢候选池均值分数排序
               </div>
             </div>
-            <div class="pick-rating">
-              <span v-if="item.recommend_rating === 'A'" class="badge-rating-a">评级 A</span>
-              <span v-else class="badge-rating-b">评级 B</span>
-            </div>
-            <div class="pick-prob">
-              <div class="prob-num">{{ (((item.probability ?? item.predicted_score ?? 0) * 100)).toFixed(1) }}%</div>
-              <div class="prob-bar-bg">
-                <div 
-                  class="prob-bar-fill" 
-                  :style="{ 
-                    width: Math.min(100, Math.max(0, ((item.probability ?? item.predicted_score ?? 0) * 100))) + '%',
-                    background: item.recommend_rating === 'A' ? '#10b981' : '#f59e0b'
-                  }"
-                ></div>
+            <button class="btn btn-ghost btn-sm" @click="$emit('switchTab', 'recommend')">查看全部</button>
+          </div>
+
+          <div v-if="topPicks.length === 0" class="empty-state">
+            <div class="empty-state-title">暂无推荐数据</div>
+            <div class="empty-state-desc">请先运行训练脚本生成推荐结果</div>
+          </div>
+
+          <div v-else class="pick-list">
+            <div v-for="(item, idx) in topPicks" :key="item.stock_code" class="pick-row">
+              <span class="pick-rank" :class="'rank-' + (idx + 1)">{{ idx + 1 }}</span>
+              <div class="pick-main">
+                <div class="pick-name">{{ item.stock_name }}</div>
+                <div class="pick-meta">
+                  <code class="code-font">{{ item.stock_code }}</code>
+                  <span class="badge badge-silver">{{ item.board }}</span>
+                </div>
               </div>
-            </div>
-            <div class="pick-actions">
-              <button class="btn btn-sm btn-outline" @click="$emit('viewKline', item)">查看走势</button>
+              <div class="pick-prob">
+                <span :class="probClass(item.probability)">{{ (item.probability * 100).toFixed(1) }}%</span>
+                <div class="prob-bar-track">
+                  <div class="prob-bar-fill"
+                       :style="{ width: (item.probability * 100) + '%', background: probColor(item.probability) }">
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm" @click="$emit('viewKline', item)">K线</button>
             </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 快捷功能通道导航 -->
-    <div class="card shortcuts-card">
-      <h3 class="shortcuts-title">核心功能工作台快捷入口</h3>
-      <div class="shortcuts-grid">
-        <div class="shortcut-box" @click="$emit('switchTab', 'recommend')">
-          <div class="sc-title">Top-K 智能推荐</div>
-          <div class="sc-desc">截面排序榜单、A/B/C 评级、导出 Excel 报表</div>
-        </div>
-
-        <div class="shortcut-box" @click="$emit('switchTab', 'kline')">
-          <div class="sc-title">行情走势与技术指标</div>
-          <div class="sc-desc">专业日 K 蜡烛图、MA 均线系统与成交量走势</div>
-        </div>
-
-        <div class="shortcut-box" @click="$emit('switchTab', 'manage')">
-          <div class="sc-title">股票池与标的管理</div>
-          <div class="sc-desc">股票池检索、评级筛选与重点关注标的标记</div>
-        </div>
-
-        <div class="shortcut-box" @click="$emit('switchTab', 'global')">
-          <div class="sc-title">TreeSHAP 归因透视</div>
-          <div class="sc-desc">全市场宏观特征重要性与个股可解释诊断</div>
-        </div>
-
-        <div class="shortcut-box" @click="$emit('switchTab', 'engineering')">
-          <div class="sc-title">数据工程与模型生命周期</div>
-          <div class="sc-desc">行情实时数据更新、LightGBM 重训与自动调度</div>
+      <!-- 快捷入口 -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom: 14px;">快速导航</div>
+        <div class="shortcut-grid">
+          <button v-for="s in shortcuts" :key="s.key" class="shortcut" @click="$emit('switchTab', s.key)">
+            <div class="shortcut-title">{{ s.title }}</div>
+            <div class="shortcut-desc">{{ s.desc }}</div>
+          </button>
         </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { api } from '../api'
 
 defineEmits(['switchTab', 'viewKline'])
 
-const stats = ref({})
-const pieChartRef = ref(null)
-let pieChart = null
+const loading = ref(true)
+const overview = ref({})
+const topPicks = ref([])
+const chartRef = ref(null)
+let chart = null
+let importanceCache = []
 
-const loadStats = async () => {
+const panel = computed(() => overview.value.panel || {})
+const model = computed(() => overview.value.model || {})
+const bt = computed(() => overview.value.backtest || {})
+
+const shortcuts = [
+  { key: 'recommend', title: 'Top-K 选股推荐', desc: '截面排序、评级筛选与 Excel 导出' },
+  { key: 'kline', title: '行情走势', desc: '日 K 线、均线系统与成交量联动' },
+  { key: 'metrics', title: '算法评测对比', desc: '基线与本文方法的指标对照' },
+  { key: 'backtest', title: '组合回测', desc: '净值曲线、超额收益与风险指标' },
+  { key: 'engineering', title: '数据与模型', desc: '数据更新、模型重训与运行日志' },
+]
+
+const formatInt = (v) => (v == null ? '—' : Number(v).toLocaleString())
+const pct = (v) => (v == null ? '—' : (v * 100).toFixed(2) + '%')
+const signClass = (v) => (v == null ? '' : v >= 0 ? 'text-pos' : 'text-neg')
+const aucClass = (v) => (v == null ? '' : v >= 0.55 ? 'text-pos' : v >= 0.52 ? '' : 'text-muted')
+const probColor = (p) => (p >= 0.5 ? '#10b981' : '#ef4444')
+const probClass = (p) => (p >= 0.5 ? 'text-pos' : 'text-neg')
+
+const renderChart = (items) => {
+  if (!chartRef.value) return
+  if (!chart) chart = echarts.init(chartRef.value)
+  const sorted = [...items].sort((a, b) => a.importance - b.importance)
+  chart.setOption({
+    grid: { left: 128, right: 28, top: 12, bottom: 24 },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      valueFormatter: (v) => (v * 100).toFixed(2) + '%',
+    },
+    xAxis: {
+      type: 'value',
+      axisLabel: { fontSize: 11, color: '#94a3b8', formatter: (v) => (v * 100).toFixed(0) + '%' },
+      splitLine: { lineStyle: { color: '#f1f5f9' } },
+    },
+    yAxis: {
+      type: 'category',
+      data: sorted.map((i) => i.name_cn),
+      axisLabel: { fontSize: 11.5, color: '#475569' },
+      axisLine: { lineStyle: { color: '#e2e8f0' } },
+    },
+    series: [{
+      type: 'bar',
+      data: sorted.map((i) => i.importance),
+      barWidth: '58%',
+      itemStyle: { color: '#2563eb', borderRadius: [0, 3, 3, 0] },
+    }],
+  })
+}
+
+const handleResize = () => chart?.resize()
+
+onMounted(async () => {
   try {
-    const res = await api.getOverviewStats()
-    stats.value = res.data
-    await nextTick()
-    renderPieChart(res.data.rating_distribution)
+    const [ovRes, impRes, recRes] = await Promise.all([
+      api.getOverviewStats(),
+      api.getGlobalImportance(),
+      api.getTopK(null, 5),
+    ])
+    overview.value = ovRes.data || {}
+    topPicks.value = (recRes.data?.recommendations || []).slice(0, 5)
+    importanceCache = impRes.data || []
+    window.addEventListener('resize', handleResize)
   } catch (err) {
-    console.error('加载系统概览统计失败:', err)
+    console.error('概览加载失败:', err)
+  } finally {
+    loading.value = false
+    // loading 为真时图表容器不在 DOM 中，必须等切换完成后再渲染
+    await nextTick()
+    renderChart(importanceCache)
   }
-}
+})
 
-const renderPieChart = (dist) => {
-  if (!pieChartRef.value) return
-  if (!pieChart) {
-    pieChart = echarts.init(pieChartRef.value)
-  }
-
-  const data = [
-    { value: dist?.A || 0, name: 'A 级 (高置信看涨)', itemStyle: { color: '#10b981' } },
-    { value: dist?.B || 0, name: 'B 级 (中置信看涨)', itemStyle: { color: '#f59e0b' } },
-    { value: dist?.C || 0, name: 'C 级 (低置信防守)', itemStyle: { color: '#94a3b8' } }
-  ]
-
-  const option = {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} 只 ({d}%)' },
-    legend: { bottom: '5%', left: 'center' },
-    series: [
-      {
-        name: '推荐评级',
-        type: 'pie',
-        radius: ['45%', '70%'],
-        avoidLabelOverlap: false,
-        itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
-        label: { show: false, position: 'center' },
-        emphasis: {
-          label: { show: true, fontSize: 16, fontWeight: 'bold' }
-        },
-        data: data
-      }
-    ]
-  }
-
-  pieChart.setOption(option, true)
-}
-
-onMounted(() => {
-  loadStats()
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  chart?.dispose()
+  chart = null
 })
 </script>
 
 <style scoped>
-.home-dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.notice-card {
+  background: var(--slate-50);
+  padding: 14px 18px;
 }
 
-.welcome-banner {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  color: #ffffff;
-  padding: 28px 32px;
-  border-radius: var(--radius-lg);
+.notice-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12px;
   flex-wrap: wrap;
+}
+
+.notice-text {
+  font-size: 12.5px;
+  color: var(--slate-600);
+  flex: 1;
+  min-width: 240px;
+}
+
+.split-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
-.banner-badge {
-  display: inline-block;
-  background: rgba(59, 130, 246, 0.25);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #93c5fd;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 20px;
-  margin-bottom: 10px;
-}
-
-.banner-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.banner-desc {
-  font-size: 14px;
-  color: #cbd5e1;
-  max-width: 780px;
-  line-height: 1.6;
-}
-
-.banner-date {
-  background: rgba(255, 255, 255, 0.08);
-  padding: 16px 20px;
-  border-radius: var(--radius-md);
-  text-align: right;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.banner-date .label {
-  display: block;
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.banner-date .date-val {
-  font-size: 18px;
-  color: #38bdf8;
-  font-weight: 700;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.stat-card {
-  background: #ffffff;
-  border: 1px solid var(--slate-200);
-  border-radius: var(--radius-lg);
-  padding: 18px 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: var(--shadow-sm);
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: var(--slate-600);
-}
-
-.stat-val {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--slate-900);
-  margin: 2px 0;
-}
-
-.stat-sub {
-  font-size: 12px;
-  color: var(--slate-600);
-}
-
-.dashboard-split {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 20px;
-}
-
-@media (max-width: 900px) {
-  .dashboard-split {
+@media (max-width: 1180px) {
+  .split-grid {
     grid-template-columns: 1fr;
   }
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--slate-100);
-  padding-bottom: 10px;
-}
-
-.card-header h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--slate-800);
-}
-
-.sub-tip {
-  font-size: 12px;
-  color: var(--slate-600);
-}
-
-.top-picks-list {
+.pick-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
 }
 
 .pick-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 14px;
-  background: var(--slate-50);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--slate-200);
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.pick-row:last-child {
+  border-bottom: none;
 }
 
 .pick-rank {
-  font-size: 15px;
-  font-weight: 800;
-  color: #64748b;
-  width: 28px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background: var(--slate-100);
+  color: var(--slate-600);
 }
 
-.pick-rank.rank-1 { color: #eab308; }
-.pick-rank.rank-2 { color: #94a3b8; }
-.pick-rank.rank-3 { color: #ca8a04; }
+.pick-rank.rank-1 { background: #fef3c7; color: #b45309; }
+.pick-rank.rank-2 { background: var(--slate-200); color: var(--slate-600); }
+.pick-rank.rank-3 { background: #ffedd5; color: #c2410c; }
 
-.pick-info {
+.pick-main {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  min-width: 0;
 }
 
 .pick-name {
-  font-size: 14px;
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--slate-900);
 }
 
-.pick-code {
-  font-size: 12px;
-  color: var(--slate-600);
+.pick-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 2px;
 }
 
 .pick-prob {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.prob-num {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--primary);
-}
-
-.shortcuts-title {
-  font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-
-.shortcuts-grid {
+.shortcut-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
 }
 
-.shortcut-box {
-  background: var(--slate-50);
+.shortcut {
+  text-align: left;
+  padding: 14px 16px;
   border: 1px solid var(--slate-200);
   border-radius: var(--radius-md);
-  padding: 18px;
+  background: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
-.shortcut-box:hover {
-  background: #ffffff;
+.shortcut:hover {
   border-color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  background: var(--primary-light);
 }
 
-.sc-icon {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-
-.sc-title {
-  font-size: 15px;
-  font-weight: 700;
+.shortcut-title {
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--slate-900);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
-.sc-desc {
+.shortcut-desc {
   font-size: 12px;
-  color: var(--slate-600);
-  line-height: 1.4;
+  color: var(--slate-500);
+  line-height: 1.5;
+}
+
+.text-warn {
+  color: var(--warning);
+  font-weight: 600;
 }
 </style>

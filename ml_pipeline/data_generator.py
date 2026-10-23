@@ -1,3 +1,15 @@
+# =============================================================================
+# 注意：本模块属于「模拟数据方法验证」链路，不参与主训练流程。
+#
+# data_generator.py 使用 np.random 生成因子与未来收益，二者之间存在
+# 人为设定的强线性关系，因此该链路上的任何指标都属于循环论证，
+# 不能作为真实实证结果写入论文正文。
+#
+# 保留原因：记录「曾尝试 Learning-to-Rank 路线」的探索过程，可放入附录，
+# 但所有展示处必须标注数据为模拟生成。
+#
+# 主流程请使用：python -m ml_pipeline.run_training
+# =============================================================================
 """
 Stock Panel Data Generator & Loader
 Simulates or loads multi-period cross-sectional panel data for Chinese A-share stocks.

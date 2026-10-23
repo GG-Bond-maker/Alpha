@@ -1,0 +1,87 @@
+{
+  "periods": 1547,
+  "regression": {
+    "alpha_period": 0.000623,
+    "alpha_annual": 0.0299,
+    "alpha_se_period": 0.000476,
+    "alpha_t": 1.31,
+    "alpha_p": 0.1904,
+    "alpha_ci95_annual": [
+      -0.0148,
+      0.0746
+    ],
+    "beta": 1.1424,
+    "beta_se": 0.0172,
+    "beta_t_vs_1": 8.26,
+    "beta_p_gt1": 0.0,
+    "r_squared": 0.7398,
+    "dof": 1545,
+    "alpha_significant": false,
+    "beta_above_one": true
+  },
+  "relative": {
+    "excess_mean_period": 0.001152,
+    "tracking_error_annual": 0.1312,
+    "information_ratio": 0.4216,
+    "excess_t": 2.393,
+    "excess_p": 0.0168,
+    "excess_significant": true
+  },
+  "beta_neutralized": {
+    "annualized_return": 0.022,
+    "annualized_volatility": 0.1284,
+    "sharpe": 0.2329,
+    "max_drawdown": -0.6681
+  },
+  "regime": [
+    {
+      "regime": "最差 20%",
+      "n_periods": 310,
+      "benchmark_mean": -0.029505,
+      "strategy_mean": -0.031917,
+      "excess_mean": -0.002412
+    },
+    {
+      "regime": "较差",
+      "n_periods": 309,
+      "benchmark_mean": -0.008545,
+      "strategy_mean": -0.010454,
+      "excess_mean": -0.001908
+    },
+    {
+      "regime": "中等",
+      "n_periods": 309,
+      "benchmark_mean": 0.002841,
+      "strategy_mean": 0.004092,
+      "excess_mean": 0.001251
+    },
+    {
+      "regime": "较好",
+      "n_periods": 309,
+      "benchmark_mean": 0.014405,
+      "strategy_mean": 0.018716,
+      "excess_mean": 0.004311
+    },
+    {
+      "regime": "最好 20%",
+      "n_periods": 310,
+      "benchmark_mean": 0.039376,
+      "strategy_mean": 0.043896,
+      "excess_mean": 0.00452
+    }
+  ],
+  "excess_monotonic_with_market": true,
+  "conclusion": {
+    "points": [
+      "策略 beta = 1.1424，显著大于 1（p = 0.0000），说明策略承担了高于市场的系统性风险。",
+      "回归 R² = 0.7398，即策略收益中约 74.0% 可由市场收益解释。",
+      "Jensen alpha 年化 2.99%，但在统计上无法拒绝 alpha = 0（t = 1.31，p = 0.1904，95% 置信区间 [-1.48%, 7.46%]）。",
+      "相对基准的超额收益均值显著异于 0（t = 2.39，p = 0.0168），跟踪误差年化 13.12%，信息比率 IR = 0.4216。",
+      "若完全对冲市场风险（beta 中性），策略年化仅 2.20%、夏普 0.2329、最大回撤 -66.81%，说明策略的主要收益来源是市场暴露而非选股。",
+      "分市场状态看，超额收益随市场涨跌单调变化——上涨时跑赢、下跌时跑输，这进一步确认超额来自 beta 敞口，而非独立的选股能力。"
+    ],
+    "verdict": "alpha 不显著，收益主要来自 beta 暴露",
+    "robust_alpha_annual": 0.0299
+  },
+  "note": "Beta 衡量策略对市场整体涨跌的敏感度；Alpha 是剥离市场影响后的选股能力。R² 表示策略收益中被市场解释的比例。"
+}

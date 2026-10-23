@@ -1,164 +1,237 @@
 # -*- coding: utf-8 -*-
-"""推荐系统与选股算法对比评估引擎
-计算行业标准排序与推荐指标：
-- NDCG@5, NDCG@10 (归一化折损累计增益)
-- Precision@5, Precision@10 (准确率)
-- HitRate@5, HitRate@10 (命中率)
-- AUC / Accuracy (分类性能)
-并对比 LightGBM、Ridge 线性回归、Random Forest 及随机基线
+"""推荐系统离线评测与基线对比
+
+关于「不写兜底数字」
+--------------------
+早期版本在异常分支里硬编码了一组好看的指标（NDCG@5=0.7410 等），
+导致评测脚本一旦出错就静默写入假数据，README 与真实产物互相矛盾。
+本版本移除全部兜底字面量：任何模型评测失败都会记入 errors 字段并在
+结果中显式标记，绝不伪造数值。
+
+指标口径
+--------
+所有排序指标按「截面」计算：同一天的候选股票作为一个推荐列表，
+Top-K 取自该列表。跨截面取均值。
 """
 
-import os
 import json
+import os
+
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import RidgeClassifier
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import roc_auc_score, accuracy_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+from sklearn.preprocessing import StandardScaler
 
-from config.config import FEATURE_COLS, SAVED_MODELS_DIR
+from config.config import FEATURE_COLS, get_model_features, SAVED_MODELS_DIR
+
+TOP_K_VALUES = (5, 10)
+TOP_K_CURVE_MAX = 20
 
 
-def dcg_at_k(relevance_scores: np.ndarray, k: int) -> float:
-    """计算 DCG@K"""
-    relevance_scores = np.asarray(relevance_scores)[:k]
-    if len(relevance_scores) == 0:
+def _dcg(relevances: np.ndarray, k: int) -> float:
+    rel = np.asarray(relevances, dtype=float)[:k]
+    if rel.size == 0:
         return 0.0
-    discounts = np.log2(np.arange(len(relevance_scores)) + 2)
-    return float(np.sum((2 ** relevance_scores - 1) / discounts))
+    discounts = np.log2(np.arange(rel.size) + 2)
+    return float(np.sum((2 ** rel - 1) / discounts))
 
 
-def ndcg_at_k(relevance_scores: np.ndarray, ideal_relevance_scores: np.ndarray, k: int) -> float:
-    """计算 NDCG@K"""
-    actual_dcg = dcg_at_k(relevance_scores, k)
-    ideal_dcg = dcg_at_k(ideal_relevance_scores, k)
-    if ideal_dcg == 0:
-        return 0.0
-    return actual_dcg / ideal_dcg
+def _ndcg(ranked_rel: np.ndarray, ideal_rel: np.ndarray, k: int) -> float:
+    ideal = _dcg(ideal_rel, k)
+    return _dcg(ranked_rel, k) / ideal if ideal > 0 else 0.0
 
 
-def precision_at_k(actual_ranks: np.ndarray, k: int, threshold_rel=1) -> float:
-    """前 K 推荐中，真实上涨（相关度 >= threshold）的比例"""
-    top_k = actual_ranks[:k]
-    if len(top_k) == 0:
-        return 0.0
-    return float(np.sum(top_k >= threshold_rel) / k)
+def evaluate_ranking(panel: pd.DataFrame, score_col: str, label_col: str = 'target_up') -> dict:
+    """按截面计算 NDCG / Precision / HitRate。
 
-
-def hit_rate_at_k(actual_ranks: np.ndarray, k: int, threshold_rel=1) -> float:
-    """前 K 推荐中是否至少包含 1 只上涨标的"""
-    top_k = actual_ranks[:k]
-    return 1.0 if np.any(top_k >= threshold_rel) else 0.0
-
-
-def evaluate_ranking_dataframe(df_pred: pd.DataFrame, score_col="predicted_prob"):
+    Returns:
+        指标字典；若没有任何有效截面则返回空字典（由调用方处理）。
     """
-    按截面（date）逐期评估选股指标并计算均值
-    """
-    if "date" not in df_pred.columns or df_pred.empty:
+    if panel.empty or score_col not in panel.columns:
         return {}
 
-    ndcg5_list = []
-    ndcg10_list = []
-    p5_list = []
-    p10_list = []
-    hr5_list = []
-    hr10_list = []
+    ndcg = {k: [] for k in TOP_K_VALUES}
+    prec = {k: [] for k in TOP_K_VALUES}
+    hit = {k: [] for k in TOP_K_VALUES}
 
-    # 确定标签列
-    target_col = "target_up" if "target_up" in df_pred.columns else "relevance_label"
-    if target_col not in df_pred.columns:
-        df_pred[target_col] = (df_pred["pct_chg_5d"] > 0).astype(int)
-
-    for date, group in df_pred.groupby("date"):
-        if len(group) < 5:
+    for _date, group in panel.groupby('date'):
+        if len(group) < max(TOP_K_VALUES):
             continue
-            
-        sorted_group = group.sort_values(score_col, ascending=False)
-        relevance = sorted_group[target_col].to_numpy()
-        ideal_relevance = np.sort(group[target_col].to_numpy())[::-1]
 
-        ndcg5_list.append(ndcg_at_k(relevance, ideal_relevance, 5))
-        ndcg10_list.append(ndcg_at_k(relevance, ideal_relevance, 10))
-        p5_list.append(precision_at_k(relevance, 5, threshold_rel=1))
-        p10_list.append(precision_at_k(relevance, 10, threshold_rel=1))
-        hr5_list.append(hit_rate_at_k(relevance, 5, threshold_rel=1))
-        hr10_list.append(hit_rate_at_k(relevance, 10, threshold_rel=1))
+        ranked = group.sort_values(score_col, ascending=False)
+        rel = ranked[label_col].to_numpy()
+        ideal = np.sort(group[label_col].to_numpy())[::-1]
 
-    return {
-        "NDCG@5": round(float(np.mean(ndcg5_list)), 4) if ndcg5_list else 0.7250,
-        "NDCG@10": round(float(np.mean(ndcg10_list)), 4) if ndcg10_list else 0.7680,
-        "Precision@5": round(float(np.mean(p5_list)), 4) if p5_list else 0.7333,
-        "Precision@10": round(float(np.mean(p10_list)), 4) if p10_list else 0.6500,
-        "HitRate@5": round(float(np.mean(hr5_list)), 4) if hr5_list else 1.0000,
-        "HitRate@10": round(float(np.mean(hr10_list)), 4) if hr10_list else 1.0000
+        for k in TOP_K_VALUES:
+            ndcg[k].append(_ndcg(rel, ideal, k))
+            prec[k].append(float(np.mean(rel[:k])))
+            hit[k].append(1.0 if rel[:k].sum() > 0 else 0.0)
+
+    if not ndcg[5]:
+        return {}
+
+    out = {}
+    for k in TOP_K_VALUES:
+        out[f'NDCG@{k}'] = round(float(np.mean(ndcg[k])), 4)
+        out[f'Precision@{k}'] = round(float(np.mean(prec[k])), 4)
+        out[f'HitRate@{k}'] = round(float(np.mean(hit[k])), 4)
+    return out
+
+
+def evaluate_topk_curves(panel: pd.DataFrame, score_columns: dict,
+                         label_col: str = 'target_up', max_k: int = TOP_K_CURVE_MAX,
+                         random_repeats: int = 50, random_seed: int = 42):
+    """在相同测试截面上逐 K 计算 Precision@K 与 NDCG@K。
+
+    只纳入所有候选评分和标签均完整、且候选数不少于 10 的日期；
+    K 上限由这些日期中的最小候选数决定，确保每个 K 使用相同日期集合。
+    随机排序基线通过固定随机种子的多次排列取均值，降低单次随机抽样噪声。
+    """
+    score_columns = {name: col for name, col in score_columns.items()
+                     if col in panel.columns}
+    required = [label_col, *score_columns.values()]
+    if panel.empty or not score_columns or any(col not in panel.columns for col in required):
+        return {}, {'n_dates': 0, 'total_dates': int(panel['date'].nunique()) if 'date' in panel else 0,
+                    'max_k': 0}
+
+    complete = panel.dropna(subset=required)
+    groups = [(date, group) for date, group in complete.groupby('date', sort=True)
+              if len(group) >= 10]
+    if not groups:
+        return {}, {'n_dates': 0, 'total_dates': int(panel['date'].nunique()), 'max_k': 0}
+
+    curve_max_k = min(int(max_k), min(len(group) for _, group in groups))
+    ks = list(range(1, curve_max_k + 1))
+    if not ks:
+        return {}, {'n_dates': 0, 'total_dates': int(panel['date'].nunique()), 'max_k': 0}
+
+    accumulated = {
+        name: {'precision': [[] for _ in ks], 'ndcg': [[] for _ in ks]}
+        for name in score_columns
+    }
+    random_rng = np.random.default_rng(random_seed)
+    for _, group in groups:
+        labels = group[label_col].to_numpy(dtype=float)
+        ideal = np.sort(labels)[::-1]
+        for name, score_col in score_columns.items():
+            if name == 'Random Guess':
+                rankings = (labels[random_rng.permutation(len(labels))]
+                            for _ in range(max(1, int(random_repeats))))
+            else:
+                ranked = group.sort_values(score_col, ascending=False, kind='mergesort')
+                rankings = (ranked[label_col].to_numpy(dtype=float),)
+            for relevance in rankings:
+                for index, k in enumerate(ks):
+                    accumulated[name]['precision'][index].append(float(np.mean(relevance[:k])))
+                    accumulated[name]['ndcg'][index].append(_ndcg(relevance, ideal, k))
+
+    curves = {
+        name: {
+            'ks': ks,
+            'precision': [round(float(np.mean(values)), 6)
+                          for values in metrics['precision']],
+            'ndcg': [round(float(np.mean(values)), 6)
+                     for values in metrics['ndcg']],
+        }
+        for name, metrics in accumulated.items()
+    }
+    return curves, {
+        'n_dates': len(groups),
+        'total_dates': int(panel['date'].nunique()),
+        'max_k': curve_max_k,
+        'eligible_dates_min_candidates': min(len(group) for _, group in groups),
+        'random_baseline_repeats': max(1, int(random_repeats)) if 'Random Guess' in score_columns else 0,
+        'random_seed': int(random_seed),
     }
 
 
-def run_baseline_comparison(
-    train_df: pd.DataFrame,
-    test_df: pd.DataFrame,
-    lgb_model,
-    save_path=None
-) -> dict:
-    """
-    运行基线对比实验：LightGBM vs Ridge vs Random Forest vs Random
+def run_baseline_comparison(result: dict, save_path: str = None) -> dict:
+    """在测试集上对比 LightGBM 与基线模型。
+
+    每个模型单独 try/except，失败时记录 error 并把该模型标记为不可用，
+    绝不填充编造数值。
     """
     if save_path is None:
         save_path = os.path.join(SAVED_MODELS_DIR, "evaluation_metrics.json")
 
-    X_train = train_df[FEATURE_COLS].replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(0)
-    y_train = (train_df["pct_chg_5d"] > 0).astype(int)
-    X_test = test_df[FEATURE_COLS].replace([np.inf, -np.inf], np.nan).ffill().bfill().fillna(0)
-    y_test = (test_df["pct_chg_5d"] > 0).astype(int)
+    test = result['test'].copy()
+    model = result['model']
+    X_test, y_test = test[get_model_features()], test['target_up']
+    X_train = result['train'][get_model_features()].copy()
+    medians = X_train.median().fillna(0.0)
+    X_train_filled = X_train.fillna(medians).fillna(0.0)
+    X_test_filled = X_test.fillna(medians).fillna(0.0)
 
-    test_eval = test_df.copy()
-    test_eval["target_up"] = y_test
+    comparison = {}
+    errors = {}
 
-    # 1. Random Guess
-    np.random.seed(42)
-    test_eval["rand_score"] = np.random.rand(len(test_eval))
-    rand_metrics = evaluate_ranking_dataframe(test_eval, "rand_score")
-    rand_metrics["AUC"] = 0.5000
+    # 1. 随机基线：用固定种子生成打分
+    rng = np.random.default_rng(42)
+    test['score_random'] = rng.random(len(test))
+    comparison['Random Guess'] = evaluate_ranking(test, 'score_random')
+    comparison['Random Guess']['AUC'] = 0.5000
 
-    # 2. Ridge Classifier
+    # 2. 逻辑回归（线性判别基线）
     try:
-        ridge = RidgeClassifier(random_state=42)
-        ridge.fit(X_train, y_train)
-        test_eval["ridge_score"] = ridge.decision_function(X_test)
-        ridge_metrics = evaluate_ranking_dataframe(test_eval, "ridge_score")
-        ridge_metrics["AUC"] = round(float(roc_auc_score(y_test, test_eval["ridge_score"])), 4)
-    except Exception:
-        ridge_metrics = {"NDCG@5": 0.6504, "NDCG@10": 0.6981, "Precision@5": 0.6000, "Precision@10": 0.5500, "HitRate@5": 1.0, "AUC": 0.6120}
+        scaler = StandardScaler().fit(X_train_filled)
+        lr = LogisticRegression(max_iter=1000, random_state=42)
+        lr.fit(scaler.transform(X_train_filled), result['train']['target_up'])
+        test['score_lr'] = lr.predict_proba(scaler.transform(X_test_filled))[:, 1]
+        comparison['Logistic Regression'] = evaluate_ranking(test, 'score_lr')
+        comparison['Logistic Regression']['AUC'] = round(float(roc_auc_score(y_test, test['score_lr'])), 4)
+    except Exception as e:
+        errors['Logistic Regression'] = str(e)
 
-    # 3. Random Forest
+    # 3. 随机森林
     try:
-        rf = RandomForestClassifier(n_estimators=100, max_depth=6, random_state=42)
-        rf.fit(X_train, y_train)
-        test_eval["rf_score"] = rf.predict_proba(X_test)[:, 1]
-        rf_metrics = evaluate_ranking_dataframe(test_eval, "rf_score")
-        rf_metrics["AUC"] = round(float(roc_auc_score(y_test, test_eval["rf_score"])), 4)
-    except Exception:
-        rf_metrics = {"NDCG@5": 0.6720, "NDCG@10": 0.7130, "Precision@5": 0.6667, "Precision@10": 0.5800, "HitRate@5": 1.0, "AUC": 0.6450}
+        rf = RandomForestClassifier(n_estimators=200, max_depth=8, random_state=42, n_jobs=-1)
+        rf.fit(X_train_filled, result['train']['target_up'])
+        test['score_rf'] = rf.predict_proba(X_test_filled)[:, 1]
+        comparison['Random Forest'] = evaluate_ranking(test, 'score_rf')
+        comparison['Random Forest']['AUC'] = round(float(roc_auc_score(y_test, test['score_rf'])), 4)
+    except Exception as e:
+        errors['Random Forest'] = str(e)
 
-    # 4. LightGBM (Ours)
+    # 4. 本文方法：LightGBM
     try:
-        test_eval["lgb_score"] = lgb_model.predict_proba(X_test)[:, 1]
-        lgb_metrics = evaluate_ranking_dataframe(test_eval, "lgb_score")
-        lgb_metrics["AUC"] = round(float(roc_auc_score(y_test, test_eval["lgb_score"])), 4)
-    except Exception:
-        lgb_metrics = {"NDCG@5": 0.7410, "NDCG@10": 0.7830, "Precision@5": 0.7333, "Precision@10": 0.6667, "HitRate@5": 1.0, "AUC": 0.7150}
+        test['score_lgb'] = model.predict_proba(X_test)[:, 1]
+        comparison['LightGBM (Ours)'] = evaluate_ranking(test, 'score_lgb')
+        comparison['LightGBM (Ours)']['AUC'] = round(float(roc_auc_score(y_test, test['score_lgb'])), 4)
+    except Exception as e:
+        errors['LightGBM (Ours)'] = str(e)
 
-    comparison = {
-        "Random Guess": rand_metrics,
-        "Ridge Classifier": ridge_metrics,
-        "Random Forest": rf_metrics,
-        "LightGBM (Ours)": lgb_metrics
+    score_columns = {
+        'Random Guess': 'score_random',
+        'Logistic Regression': 'score_lr',
+        'Random Forest': 'score_rf',
+        'LightGBM (Ours)': 'score_lgb',
+    }
+    score_columns = {name: column for name, column in score_columns.items()
+                     if name in comparison and column in test.columns}
+    ranking_curves, ranking_curve_meta = evaluate_topk_curves(test, score_columns)
+
+    payload = {
+        'comparison': comparison,
+        'errors': errors,
+        'ranking_curves': ranking_curves,
+        'ranking_curve_meta': ranking_curve_meta,
+        'meta': {
+            'test_rows': int(len(test)),
+            'test_dates': int(test['date'].nunique()),
+            'feature_cols': get_model_features(),
+            'label_mode': 'excess_return_5d',
+            'test_pos_rate': round(float(y_test.mean()), 4),
+            'loss_history': result.get('loss_history', {}),
+        },
     }
 
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(comparison, f, ensure_ascii=False, indent=2)
+    with open(save_path, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    print(f"[Metrics] 基线对比评测完成并保存至: {save_path}")
-    return comparison
+    if errors:
+        print(f"[Metrics] 以下模型评测失败，已如实记录: {list(errors)}")
+    print(f"[Metrics] 基线对比已保存: {save_path}")
+    return payload

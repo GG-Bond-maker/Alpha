@@ -1,278 +1,259 @@
 <template>
-  <div class="app-layout">
-    <!-- 顶部应用标题栏 -->
-    <header class="app-header">
-      <div class="container header-container">
-        <div class="brand">
-          <div class="brand-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-              <polyline points="16 7 22 7 22 13"></polyline>
-            </svg>
-          </div>
-          <div>
-            <h1 class="brand-title">基于 LightGBM 与特征归因的 A 股智能选股与可视化推荐系统 v2.0</h1>
-            <p class="brand-sub">全面覆盖中国 A 股全部板块 (主板 / 创业板 / 科创板 / 北交所) | LightGBM 推荐预测 | 交互式 K 线走势分析 | TreeSHAP 归因诊断</p>
-          </div>
+  <div class="app-shell">
+    <!-- ============ 侧边栏 ============ -->
+    <aside class="sidebar" :class="{ 'is-collapsed': collapsed }">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+            <polyline points="16 7 22 7 22 13"></polyline>
+          </svg>
         </div>
-        <div class="header-tags">
-          <span class="badge badge-blue">A 股全板块覆盖</span>
-          <span class="badge badge-green">Optuna 贝叶斯调优</span>
-          <span class="badge badge-gold">日K线与均线系统</span>
-          <span class="badge badge-silver">TreeSHAP XAI 解释</span>
+        <div class="sidebar-brand-text">
+          <div class="sidebar-brand-title">股票推荐系统</div>
+          <div class="sidebar-brand-sub">LightGBM + 特征归因</div>
         </div>
       </div>
-    </header>
 
-    <!-- 主体区域 -->
-    <main class="container">
-      <!-- 导航标签页 -->
-      <nav class="tabs-nav">
-        <button 
-          class="tab-btn" 
-          :class="{ active: currentTab === 'home' }"
-          @click="handleSwitchTab('home')"
-        >
-          全景概览
-        </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: currentTab === 'recommend' }"
-          @click="handleSwitchTab('recommend')"
-        >
-          Top-K 智能选股推荐
-        </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: currentTab === 'kline' }"
-          @click="handleSwitchTab('kline')"
-        >
-          行情走势与技术指标
-        </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: currentTab === 'manage' }"
-          @click="handleSwitchTab('manage')"
-        >
-          股票池与标的管理
-        </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: currentTab === 'engineering' }"
-          @click="handleSwitchTab('engineering')"
-        >
-          数据工程与生命周期
-        </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: currentTab === 'global' }"
-          @click="handleSwitchTab('global')"
-        >
-          全局特征归因透视
-        </button>
-        <button 
-          class="tab-btn" 
-          :class="{ active: currentTab === 'metrics' }"
-          @click="handleSwitchTab('metrics')"
-        >
-          算法评测与基线对比
-        </button>
+      <nav class="sidebar-nav">
+        <div v-for="group in navGroups" :key="group.label" class="nav-group">
+          <div class="nav-group-label">{{ group.label }}</div>
+          <button
+            v-for="item in group.items"
+            :key="item.key"
+            class="nav-item"
+            :class="{ 'is-active': currentTab === item.key }"
+            :title="item.label"
+            @click="switchTab(item.key)"
+          >
+            <span class="nav-item-icon" v-html="item.icon"></span>
+            <span class="nav-item-label">{{ item.label }}</span>
+          </button>
+        </div>
       </nav>
 
-      <!-- 标签页 0: 首页看板 -->
-      <section v-if="currentTab === 'home'">
-        <HomeDashboardView @switchTab="handleSwitchTab" @viewKline="handleViewKline" />
-      </section>
+      <div class="sidebar-footer">
+        <button class="sidebar-toggle" @click="collapsed = !collapsed"
+                :title="collapsed ? '展开侧边栏' : '收起侧边栏'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline v-if="collapsed" points="9 18 15 12 9 6"></polyline>
+            <polyline v-else points="15 18 9 12 15 6"></polyline>
+          </svg>
+          <span v-if="!collapsed">收起</span>
+        </button>
+      </div>
+    </aside>
 
-      <!-- 标签页 1: 股票推荐面板 -->
-      <section v-if="currentTab === 'recommend'" class="tab-content">
-        <!-- 筛选与控制栏 -->
-        <div class="card filter-card">
-          <div class="filter-group">
-            <label class="filter-label">截面日期：</label>
-            <select v-model="selectedDate" @change="fetchRecommendations" class="select-control">
-              <option v-for="d in datesList" :key="d" :value="d">{{ d }} (最新截面)</option>
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">股票板块：</label>
-            <select v-model="selectedBoard" @change="fetchRecommendations" class="select-control">
-              <option value="全部">全部板块 (全市场)</option>
-              <option value="主板">主板 (沪深主板)</option>
-              <option value="创业板">创业板</option>
-              <option value="科创板">科创板</option>
-              <option value="北交所">北交所</option>
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">推荐数量 K：</label>
-            <select v-model="selectedK" @change="fetchRecommendations" class="select-control">
-              <option :value="5">Top 5 优选标的</option>
-              <option :value="10">Top 10 优选标的</option>
-              <option :value="15">Top 15 优选标的</option>
-              <option :value="20">Top 20 优选标的</option>
-            </select>
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">行业分类：</label>
-            <select v-model="selectedIndustry" @change="fetchRecommendations" class="select-control">
-              <option value="全部">全部行业</option>
-              <option v-for="ind in industryList" :key="ind" :value="ind">{{ ind }}</option>
-            </select>
-          </div>
-
-          <button class="btn btn-primary" @click="fetchRecommendations" :disabled="loading">
-            {{ loading ? '计算中...' : '刷新推荐结果' }}
-          </button>
-
-          <button class="btn btn-success" @click="handleExportExcel">
-            导出 Excel 报表
+    <!-- ============ 主区域 ============ -->
+    <div class="main-area" :class="{ 'is-expanded': collapsed }">
+      <header class="topbar">
+        <div>
+          <div class="topbar-title">{{ currentMeta.title }}</div>
+          <div class="topbar-desc">{{ currentMeta.desc }}</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="source-tag" :class="dataSourceClass">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+            </svg>
+            {{ dataSourceLabel }}
+          </span>
+          <button class="btn btn-outline btn-sm" @click="refreshCurrent" :disabled="loading">
+            {{ loading ? '加载中' : '刷新' }}
           </button>
         </div>
+      </header>
 
-        <!-- 推荐排行榜表格 -->
-        <div class="card">
-          <div class="table-header">
-            <div>
-              <h2>A 股优质股票排序推荐清单 (Top-{{ selectedK }})</h2>
-              <p class="table-sub">
-                当前截面候选标的总数: <strong>{{ totalCandidates }}</strong> 只 | 范围覆盖: <strong>A 股全部板块 (沪深主板 / 创业板 / 科创板 / 北交所)</strong>
-              </p>
+      <main class="content">
+        <section v-if="currentTab === 'home'">
+          <HomeDashboardView @switchTab="switchTab" @viewKline="viewKline" />
+        </section>
+
+        <section v-else-if="currentTab === 'recommend'">
+          <div class="filter-bar">
+            <div class="filter-field">
+              <label class="filter-label">截面日期</label>
+              <select v-model="selectedDate" @change="fetchRecommendations" class="form-select">
+                <option v-for="d in datesList" :key="d" :value="d">{{ d }}</option>
+              </select>
             </div>
-            <div class="hint-text">评级说明：A 级（高置信度多头，概率≥75%）、B 级（中等置信度，60%~75%）、C 级（防守标的，&lt;60%） | 支持联动查看日 K 线与 TreeSHAP 归因诊断</div>
+            <div class="filter-field">
+              <label class="filter-label">板块</label>
+              <select v-model="selectedBoard" @change="fetchRecommendations" class="form-select">
+                <option value="全部">全部板块</option>
+                <option value="主板">主板</option>
+                <option value="创业板">创业板</option>
+                <option value="科创板">科创板</option>
+                <option value="北交所">北交所</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label class="filter-label">推荐数量</label>
+              <select v-model="selectedK" @change="fetchRecommendations" class="form-select">
+                <option :value="5">Top 5</option>
+                <option :value="10">Top 10</option>
+                <option :value="15">Top 15</option>
+                <option :value="20">Top 20</option>
+              </select>
+            </div>
+            <div class="filter-field">
+              <label class="filter-label">行业</label>
+              <select v-model="selectedIndustry" @change="fetchRecommendations" class="form-select">
+                <option value="全部">全部行业</option>
+                <option v-for="ind in industryList" :key="ind" :value="ind">{{ ind }}</option>
+              </select>
+            </div>
+            <button class="btn btn-success" style="margin-left: auto;" @click="handleExportExcel">
+              导出 Excel
+            </button>
           </div>
 
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 70px;">排位</th>
-                  <th>股票代码</th>
-                  <th>股票名称</th>
-                  <th>所属板块</th>
-                  <th>所属行业</th>
-                  <th>推荐评级</th>
-                  <th>预测看涨概率</th>
-                  <th>是否涨停</th>
-                  <th>最新收盘价</th>
-                  <th>当日涨幅</th>
-                  <th>14日RSI</th>
-                  <th>MACD</th>
-                  <th>20日均线比率</th>
-                  <th style="text-align: center; min-width: 200px;">综合操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="loading">
-                  <td colspan="14" style="text-align: center; padding: 36px 0; color: var(--slate-600);">
-                    <div style="font-size: 16px; margin-bottom: 6px; font-weight: 600;">计算分析中...</div>
-                    <p>正在由 LightGBM 针对全市场资产池进行截面排序与打分...</p>
-                  </td>
-                </tr>
-                <tr v-else-if="stockList.length === 0">
-                  <td colspan="14" style="text-align: center; padding: 36px 0; color: var(--slate-500);">
-                    <div style="font-size: 16px; margin-bottom: 6px; font-weight: 600;">暂无匹配推荐结果</div>
-                    <p>请尝试选择其他截面日期、板块或行业分类，或点击上方「刷新推荐结果」。</p>
-                  </td>
-                </tr>
-                <tr v-for="item in stockList" :key="item.stock_code">
-                  <td>
-                    <span v-if="item.predicted_rank === 1" class="badge badge-gold">01</span>
-                    <span v-else-if="item.predicted_rank === 2" class="badge badge-silver">02</span>
-                    <span v-else-if="item.predicted_rank === 3" class="badge badge-bronze">03</span>
-                    <span v-else class="badge badge-blue">{{ String(item.predicted_rank || 0).padStart(2, '0') }}</span>
-                  </td>
-                  <td><code class="code-font">{{ item.stock_code }}</code></td>
-                  <td><strong>{{ item.stock_name }}</strong></td>
-                  <td>
-                    <span class="badge" :class="getBoardBadgeClass(item.board)">
-                      {{ item.board || '主板' }}
-                    </span>
-                  </td>
-                  <td><span class="badge badge-silver">{{ item.industry || '综合' }}</span></td>
-                  <td>
-                    <span v-if="item.recommend_rating === 'A'" class="badge-rating-a">A 级 (高置信)</span>
-                    <span v-else-if="item.recommend_rating === 'B'" class="badge-rating-b">B 级 (中置信)</span>
-                    <span v-else class="badge-rating-c">C 级 (低置信)</span>
-                  </td>
-                  <td>
-                    <div class="prob-bar-container">
-                      <strong>{{ (((item.probability ?? item.predicted_score ?? 0) * 100)).toFixed(1) }}%</strong>
-                      <div class="prob-bar-bg">
-                        <div 
-                          class="prob-bar-fill" 
-                          :style="{ 
-                            width: Math.min(100, Math.max(0, ((item.probability ?? item.predicted_score ?? 0) * 100))) + '%', 
-                            background: (item.probability ?? item.predicted_score ?? 0) >= 0.75 ? '#10b981' : ((item.probability ?? item.predicted_score ?? 0) >= 0.6 ? '#f59e0b' : '#3b82f6') 
-                          }"
-                        ></div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">推荐清单 (Top-{{ selectedK }})</div>
+                <div class="card-subtitle">
+                  候选标的 <strong>{{ totalCandidates }}</strong> 只 ·
+                  截面分档 A 前10% / B 随后20% / C 其余
+                </div>
+              </div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 64px;">排位</th>
+                    <th>代码</th>
+                    <th>名称</th>
+                    <th>板块</th>
+                    <th>行业</th>
+                    <th>评级</th>
+                    <th>跑赢候选池均值概率</th>
+                    <th>涨停</th>
+                    <th>收盘价</th>
+                    <th>涨跌幅</th>
+                    <th>RSI14</th>
+                    <th>MACD</th>
+                    <th style="text-align: center;">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="loading">
+                    <td colspan="13">
+                      <div class="loading-state">
+                        <div class="spinner"></div>
+                        正在计算截面排序...
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span v-if="item.is_limit_up === '是'" class="badge-limit-up">涨停</span>
-                    <span v-else style="color: #64748b;">否</span>
-                  </td>
-                  <td><strong>¥{{ item.close_price ?? item.price ?? item.pe_ratio ?? '--' }}</strong></td>
-                  <td :class="(item.pct_chg || 0) >= 0 ? 'text-pos' : 'text-neg'">
-                    {{ (item.pct_chg || 0) >= 0 ? '+' : '' }}{{ item.pct_chg || 0 }}%
-                  </td>
-                  <td>{{ item.rsi14 || 50.0 }}</td>
-                  <td :class="(item.macd || 0) >= 0 ? 'text-pos' : 'text-neg'">{{ item.macd || 0.0 }}</td>
-                  <td>{{ item.ema20_ratio || 1.0 }}</td>
-                  <td style="text-align: center;">
-                    <div style="display: flex; gap: 6px; justify-content: center;">
-                      <button class="btn btn-primary btn-sm" @click="handleViewKline(item)" title="在可视化视图中查看K线走势">
-                        查看K线
+                    </td>
+                  </tr>
+                  <tr v-else-if="stockList.length === 0">
+                    <td colspan="13">
+                      <div class="empty-state">
+                        <div class="empty-state-title">暂无推荐结果</div>
+                        <div class="empty-state-desc">请调整筛选条件或点击刷新</div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-for="item in stockList" :key="item.stock_code">
+                    <td>
+                      <span class="badge" :class="rankBadgeClass(item.predicted_rank)">
+                        {{ String(item.predicted_rank || 0).padStart(2, '0') }}
+                      </span>
+                    </td>
+                    <td><code class="code-font">{{ item.stock_code }}</code></td>
+                    <td><strong>{{ item.stock_name }}</strong></td>
+                    <td><span class="badge badge-silver">{{ item.board || '主板' }}</span></td>
+                    <td class="text-muted">{{ item.industry || '综合' }}</td>
+                    <td>
+                      <span :class="'badge-rating-' + (item.recommend_rating || 'c').toLowerCase()">
+                        {{ item.recommend_rating }} 级
+                      </span>
+                    </td>
+                    <td>
+                      <div class="prob-bar">
+                        <span :class="probClass(item.probability)">
+                          {{ (item.probability * 100).toFixed(1) }}%
+                        </span>
+                        <div class="prob-bar-track">
+                          <div class="prob-bar-fill"
+                               :style="{ width: Math.min(100, item.probability * 100) + '%', background: probColor(item.probability) }">
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span v-if="item.is_limit_up === '是'" class="badge-limit-up">涨停</span>
+                      <span v-else class="text-muted">—</span>
+                    </td>
+                    <td>{{ item.close_price != null ? '¥' + item.close_price : '—' }}</td>
+                    <td :class="(item.pct_chg || 0) >= 0 ? 'text-pos' : 'text-neg'">
+                      {{ (item.pct_chg || 0) >= 0 ? '+' : '' }}{{ item.pct_chg || 0 }}%
+                    </td>
+                    <td>{{ item.rsi14 != null ? item.rsi14.toFixed(1) : '—' }}</td>
+                    <td :class="(item.macd || 0) >= 0 ? 'text-pos' : 'text-neg'">
+                      {{ item.macd != null ? item.macd.toFixed(3) : '—' }}
+                    </td>
+                    <td style="text-align: center; white-space: nowrap;">
+                      <button class="btn btn-outline btn-sm" @click="viewKline(item)">K线</button>
+                      <button class="btn btn-primary btn-sm" style="margin-left: 6px;" @click="showExplain(item)">
+                        归因
                       </button>
-                      <button class="btn btn-outline btn-sm" @click="handleExplain(item)" title="查看 TreeSHAP 归因瀑布图">
-                        归因诊断
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- 标签页: 股票K线走势与数据可视化 (复刻截图) -->
-      <section v-if="currentTab === 'kline'">
-        <StockKlineView ref="klineViewRef" @switchTab="handleSwitchTab" />
-      </section>
+        <section v-else-if="currentTab === 'kline'">
+          <StockKlineView ref="klineViewRef" @switchTab="switchTab" />
+        </section>
 
-      <!-- 标签页: 股票管理 (主板股票池检索与重点关注) -->
-      <section v-if="currentTab === 'manage'">
-        <StockManageView @viewKline="handleViewKline" @explain="handleExplain" />
-      </section>
+        <section v-else-if="currentTab === 'manage'">
+          <StockManageView @viewKline="viewKline" @explain="showExplain" />
+        </section>
 
-      <!-- 标签页: 数据工程与模型生命周期 (数据更新与模型重训) -->
-      <section v-if="currentTab === 'engineering'">
-        <DataEngineeringView @switchTab="handleSwitchTab" />
-      </section>
+        <section v-else-if="currentTab === 'global'">
+          <GlobalExplainView />
+        </section>
 
-      <!-- 标签页 2: 全局解释 -->
-      <section v-if="currentTab === 'global'">
-        <GlobalExplainView />
-      </section>
+        <section v-else-if="currentTab === 'metrics'">
+          <MetricsView />
+        </section>
 
-      <!-- 标签页 3: 评测指标 -->
-      <section v-if="currentTab === 'metrics'">
-        <MetricsView />
-      </section>
-    </main>
+        <section v-else-if="currentTab === 'backtest'">
+          <BacktestView />
+        </section>
 
-    <!-- 弹出的可解释性诊断模态窗 -->
+        <section v-else-if="currentTab === 'factors'">
+          <FactorDiagnosisView />
+        </section>
+
+        <section v-else-if="currentTab === 'walkforward'">
+          <WalkForwardView />
+        </section>
+
+        <section v-else-if="currentTab === 'attribution'">
+          <AttributionView />
+        </section>
+
+        <section v-else-if="currentTab === 'engineering'">
+          <DataEngineeringView @switchTab="switchTab" />
+        </section>
+      </main>
+    </div>
+
     <ExplainModal ref="explainModalRef" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { api } from './api'
 import ExplainModal from './components/ExplainModal.vue'
 import GlobalExplainView from './components/GlobalExplainView.vue'
@@ -281,7 +262,12 @@ import StockKlineView from './components/StockKlineView.vue'
 import HomeDashboardView from './components/HomeDashboardView.vue'
 import StockManageView from './components/StockManageView.vue'
 import DataEngineeringView from './components/DataEngineeringView.vue'
+import BacktestView from './components/BacktestView.vue'
+import FactorDiagnosisView from './components/FactorDiagnosisView.vue'
+import WalkForwardView from './components/WalkForwardView.vue'
+import AttributionView from './components/AttributionView.vue'
 
+const collapsed = ref(false)
 const currentTab = ref('home')
 const datesList = ref([])
 const selectedDate = ref('')
@@ -295,36 +281,92 @@ const loading = ref(false)
 const explainModalRef = ref(null)
 const klineViewRef = ref(null)
 
+const svg = (paths) =>
+  '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + paths + '</svg>'
+
+// 导航按论文逻辑分组：推荐主线 -> 标的分析 -> 实验验证 -> 系统运维
+const navGroups = [
+  {
+    label: '推荐主线',
+    items: [
+      { key: 'home', label: '全景概览', icon: svg('<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>') },
+      { key: 'recommend', label: 'Top-K 选股推荐', icon: svg('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>') },
+      { key: 'global', label: '全局特征归因', icon: svg('<path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7"/><rect x="12" y="6" width="3" height="11"/><rect x="17" y="13" width="3" height="4"/>') },
+    ],
+  },
+  {
+    label: '标的分析',
+    items: [
+      { key: 'kline', label: '行情走势', icon: svg('<path d="M3 17l5-6 4 4 6-8"/><circle cx="21" cy="7" r="1.5"/>') },
+      { key: 'manage', label: '股票池管理', icon: svg('<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"/><path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>') },
+    ],
+  },
+  {
+    label: '实验验证',
+    items: [
+      { key: 'factors', label: '因子有效性检验', icon: svg('<path d="M3 3v18h18"/><path d="M7 16l4-5 3 3 5-7"/>') },
+      { key: 'metrics', label: '算法评测对比', icon: svg('<path d="M9 3h6v6H9z"/><path d="M3 21h18"/><path d="M6 21V9H3v12"/><path d="M21 21V9h-3v12"/>') },
+      { key: 'backtest', label: '组合回测', icon: svg('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>') },
+      { key: 'walkforward', label: '滚动窗口验证', icon: svg('<path d="M3 3v18h18"/><path d="M6 15l4-5 4 3 5-7"/><circle cx="6" cy="15" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="14" cy="13" r="1.2"/><circle cx="19" cy="6" r="1.2"/>') },
+      { key: 'attribution', label: '业绩归因', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/>') },
+    ],
+  },
+  {
+    label: '系统运维',
+    items: [
+      { key: 'engineering', label: '数据与模型', icon: svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>') },
+    ],
+  },
+]
+
+const TAB_META = {
+  home: { title: '全景概览', desc: '推荐系统运行状态、核心指标与最新截面摘要' },
+  recommend: { title: 'Top-K 选股推荐', desc: '按截面排序输出候选标的，支持板块与行业筛选' },
+  global: { title: '全局特征归因', desc: '基于 TreeSHAP 的全市场特征重要性排序' },
+  kline: { title: '行情走势', desc: '日 K 线、均线系统与成交量联动分析' },
+  manage: { title: '股票池管理', desc: '标的全景检索、评级分布与重点关注管理' },
+  factors: { title: '因子有效性检验', desc: 'IC / ICIR / t 值与分层收益单调性检验' },
+  metrics: { title: '算法评测对比', desc: 'NDCG / Precision / AUC 基线与本文方法对比' },
+  backtest: { title: '组合回测', desc: 'Top-K 等权组合净值、超额收益与风险指标' },
+  walkforward: { title: '滚动窗口验证', desc: '逐窗口 AUC 分布与因子跨窗口稳定性' },
+  attribution: { title: '业绩归因', desc: 'Alpha / Beta 分解、显著性检验与分市场状态表现' },
+  engineering: { title: '数据与模型', desc: '数据更新、模型重训与运行日志' },
+}
+
+const currentMeta = computed(() => TAB_META[currentTab.value] || { title: '', desc: '' })
+
 const industryList = [
   '食品饮料', '医药生物', '电子', '电力设备', '计算机', '非银金融', '银行', '汽车',
   '机械设备', '国防军工', '通信', '基础化工', '有色金属', '家用电器', '公用事业',
   '交通运输', '石油石化', '建筑装饰', '建筑材料', '商贸零售', '房地产', '传媒',
-  '煤炭', '农林牧渔', '钢铁', '环保', '美容护理'
+  '煤炭', '农林牧渔', '钢铁', '环保', '美容护理',
 ]
 
-const getBoardBadgeClass = (board) => {
-  switch (board) {
-    case '主板': return 'badge-board-main'
-    case '创业板': return 'badge-board-chinext'
-    case '科创板': return 'badge-board-star'
-    case '北交所': return 'badge-board-bse'
-    default: return 'badge-silver'
+const dataSourceLabel = computed(() => (stockList.value.length > 0 ? '真实行情数据' : '等待数据'))
+const dataSourceClass = computed(() => (stockList.value.length > 0 ? 'is-real' : 'is-synthetic'))
+
+const rankBadgeClass = (rank) => {
+  if (rank === 1) return 'badge-gold'
+  if (rank === 2) return 'badge-silver'
+  if (rank === 3) return 'badge-bronze'
+  return 'badge-blue'
+}
+
+const probColor = (p) => (p >= 0.5 ? '#10b981' : '#ef4444')
+const probClass = (p) => (p >= 0.5 ? 'text-pos' : 'text-neg')
+
+const switchTab = (tab) => {
+  currentTab.value = tab
+  if (tab === 'recommend' && stockList.value.length === 0) {
+    fetchRecommendations()
+  } else if (tab === 'kline') {
+    nextTick(() => klineViewRef.value?.handleResize?.())
   }
 }
 
-const handleSwitchTab = (tab) => {
-  currentTab.value = tab
-  if (tab === 'recommend') {
-    if (stockList.value.length === 0) {
-      fetchRecommendations()
-    }
-  } else if (tab === 'kline') {
-    nextTick(() => {
-      if (klineViewRef.value?.handleResize) {
-        klineViewRef.value.handleResize()
-      }
-    })
-  }
+const refreshCurrent = () => {
+  if (currentTab.value === 'recommend') fetchRecommendations()
+  else window.location.reload()
 }
 
 const loadDates = async () => {
@@ -332,15 +374,10 @@ const loadDates = async () => {
     const res = await api.getDates()
     datesList.value = res.data || []
     if (datesList.value.length > 0) {
-      if (!selectedDate.value) {
-        selectedDate.value = datesList.value[datesList.value.length - 1]
-      }
-    } else {
-      selectedDate.value = '2026-10-13'
+      selectedDate.value = datesList.value[datesList.value.length - 1]
     }
   } catch (err) {
-    console.error('加载交易日期列表失败:', err)
-    selectedDate.value = '2026-10-13'
+    console.error('加载截面日期失败:', err)
   }
   await fetchRecommendations()
 }
@@ -349,305 +386,46 @@ const fetchRecommendations = async () => {
   loading.value = true
   try {
     const res = await api.getTopK(selectedDate.value, selectedK.value, selectedIndustry.value, selectedBoard.value)
-    stockList.value = res.data.recommendations
-    totalCandidates.value = res.data.total_candidates
+    stockList.value = res.data.recommendations || []
+    totalCandidates.value = res.data.total_candidates || 0
   } catch (err) {
-    console.error('获取股票推荐失败:', err)
+    console.error('获取推荐失败:', err)
+    stockList.value = []
   } finally {
     loading.value = false
   }
 }
 
-const handleExportExcel = () => {
-  api.exportExcel()
-}
+const handleExportExcel = () => api.exportExcel()
 
-// 点击表格中的「查看K线」，直接联动并切换到可视化选项卡
-const handleViewKline = (item) => {
+const viewKline = (item) => {
   currentTab.value = 'kline'
   nextTick(async () => {
-    if (klineViewRef.value) {
-      if (typeof klineViewRef.value.loadStockByCode === 'function') {
-        await klineViewRef.value.loadStockByCode(item)
-      } else {
-        const rawCode = String(item.stock_code || item.code || '600030').padStart(6, '0')
-        let suffix = 'SH'
-        if (rawCode.startsWith('60') || rawCode.startsWith('68')) {
-          suffix = 'SH'
-        } else if (rawCode.startsWith('00') || rawCode.startsWith('30')) {
-          suffix = 'SZ'
-        } else if (rawCode.startsWith('8') || rawCode.startsWith('4') || rawCode.startsWith('9')) {
-          suffix = 'BJ'
-        }
-        klineViewRef.value.selectedStockCode = `${rawCode}.${suffix}`
-        await klineViewRef.value.handleSearch()
-      }
+    const view = klineViewRef.value
+    if (!view) return
+    if (typeof view.loadStockByCode === 'function') {
+      await view.loadStockByCode(item)
     }
   })
 }
 
-const handleExplain = async (item) => {
+const showExplain = async (item) => {
+  const rawCode = item.stock_code || item.code || ''
+  const pureCode = String(rawCode).split('.')[0]
   try {
-    const rawCode = item.stock_code || item.code
-    const pureCode = rawCode ? rawCode.split('.')[0] : ''
-    const stockName = item.stock_name || item.name || pureCode
     const res = await api.getStockExplanation(pureCode, selectedDate.value)
-    if (explainModalRef.value) {
-      explainModalRef.value.openModal(res.data)
-    }
+    explainModalRef.value?.openModal(res.data)
   } catch (err) {
-    const name = item.stock_name || item.name || item.code
-    alert(`获取股票 ${name} 的归因失败: ` + err.message)
+    alert('获取归因失败: ' + err.message)
   }
 }
 
-onMounted(() => {
-  loadDates()
-})
+onMounted(loadDates)
 </script>
 
 <style scoped>
-.app-header {
-  background: #ffffff;
-  border-bottom: 1px solid var(--slate-200);
-  box-shadow: var(--shadow-sm);
-  padding: 18px 0;
-}
-
-.header-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.brand-icon {
-  font-size: 32px;
-}
-
-.brand-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--slate-900);
-}
-
-.brand-sub {
-  font-size: 13px;
-  color: var(--slate-600);
-  margin-top: 2px;
-}
-
-.header-tags {
-  display: flex;
-  gap: 8px;
-}
-
-.tabs-nav {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  border-bottom: 2px solid var(--slate-200);
-  padding-bottom: 2px;
-}
-
-.tab-btn {
-  padding: 10px 18px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--slate-600);
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.tab-btn:hover {
-  color: var(--primary);
-}
-
-.tab-btn.active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-}
-
-.filter-card {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-  padding: 16px 20px;
-  background: #ffffff;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--slate-200);
-  margin-bottom: 20px;
-}
-
-.filter-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.filter-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--slate-700);
-}
-
-.select-control {
-  padding: 8px 12px;
-  border: 1px solid var(--slate-300);
-  border-radius: var(--radius-md);
-  font-size: 14px;
-  background: #ffffff;
-  outline: none;
-}
-
-.table-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.table-sub {
-  font-size: 13px;
-  color: var(--slate-600);
-  margin-top: 4px;
-}
-
-.hint-text {
-  font-size: 13px;
+.text-warn {
   color: var(--warning);
-  font-weight: 500;
-}
-
-.table-container {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 14px;
-}
-
-th {
-  background-color: var(--slate-100);
-  color: var(--slate-700);
-  padding: 12px 14px;
   font-weight: 600;
-  border-bottom: 1px solid var(--slate-200);
-  white-space: nowrap;
-}
-
-td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--slate-200);
-  vertical-align: middle;
-}
-
-tbody tr:hover {
-  background-color: var(--slate-50);
-}
-
-.code-font {
-  font-family: monospace;
-  background: var(--slate-100);
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: var(--slate-800);
-}
-
-.score-text {
-  color: var(--primary);
-  font-size: 15px;
-}
-
-.badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.badge-blue {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.badge-green {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.badge-gold {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.badge-silver {
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.badge-bronze {
-  background: #ffedd5;
-  color: #9a3412;
-}
-
-.badge-board-main {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-  font-weight: 600;
-}
-
-.badge-board-chinext {
-  background: #ecfdf5;
-  color: #047857;
-  border: 1px solid #a7f3d0;
-  font-weight: 600;
-}
-
-.badge-board-star {
-  background: #f5f3ff;
-  color: #6d28d9;
-  border: 1px solid #ddd6fe;
-  font-weight: 600;
-}
-
-.badge-board-bse {
-  background: #fff7ed;
-  color: #c2410c;
-  border: 1px solid #fed7aa;
-  font-weight: 600;
-}
-
-.text-pos {
-  color: #16a34a;
-  font-weight: 600;
-}
-
-.text-neg {
-  color: #dc2626;
-  font-weight: 600;
-}
-
-.btn-sm {
-  padding: 5px 10px;
-  font-size: 13px;
 }
 </style>

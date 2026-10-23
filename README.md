@@ -1,177 +1,164 @@
-# 基于 LightGBM 与特征归因的 A 股智能选股与可解释推荐系统 v2.0
-> **毕业设计 / 量化投资全栈工程落地实现 (Full-Stack Implementation)**
-> 
-> 技术栈：**Python 3.11/3.12 + LightGBM + Optuna (贝叶斯调优) + akshare (真实行情) + TreeSHAP (XAI) + FastAPI + Vue 3 + Vite + ECharts**
-> 
-> 参考并重构融合项目：[AShare-AI-Stock-Picker](https://github.com/stlin256/AShare-AI-Stock-Picker)
+# 基于 LightGBM 与特征归因的股票推荐系统
 
----
+毕业设计项目：面向 A 股候选池的截面选股排序、Top-K 推荐、TreeSHAP 归因与历史回测。
 
-## 1. 项目概述与重构创新亮点
+项目的核心任务是排序候选股票，不是预测股票一定会上涨。模型分数表示个股未来 5 个交易日收益高于当日候选池平均收益的估计概率；推荐列表按该分数从高到低排序。当前分数没有经过概率校准，应主要作为相对排序信号解读。
 
-本项目针对传统量化选股中“黑盒模型不可信”、“超参数调优繁琐”、“缺乏全栈工程可视化”以及“实盘真实数据断层”等痛点，参考开源优质项目 **[AShare-AI-Stock-Picker](https://github.com/stlin256/AShare-AI-Stock-Picker)** 进行系统级架构重构。
-
-将真实的 A 股日线/实时数据流、全套经典技术指标体系、Optuna 贝叶斯超参数寻优、A/B/C 推荐评级与 Excel 报表导出，与先进的 **TreeSHAP 博弈论可解释性归因**、**FastAPI 异步微服务** 和 **Vue 3 + ECharts 交互大屏** 深度融合。
-
-### 核心亮点：
-1. **真实 A 股数据源与本地增量缓存 (`akshare`)**：
-   - 支持全市场 A 股及核心行业龙头股票池实时行情与前复权日线拉取；
-   - 内置智能本地磁盘缓存机制（`data/cache/`），同日重复计算秒级完成，具备离线兜底抗断网能力。
-2. **双引擎经典技术指标特征工程 (`features/`)**：
-   - 涵盖 **EMA20比率、RSI14、MACD、OBV能量潮、CCI顺势指标、ATR真实波幅、ADX平均趋向指标** 等全维度技术面因子；
-   - 具备 **TA-Lib + 纯 NumPy/Pandas 向量化双计算引擎**，无缝兼容各类运行环境，零 C 编译依赖阻碍。
-3. **股票范围严格限定为主板（沪深主板）**：
-   - 包含上海主板（600/601/603/605）与深圳主板（000/001/002/003）；
-   - 严格排除创业板（300/301）、科创板（688/689）及北交所（8/4/9）高投机性标的，过滤 ST 及退市标的，专注主板核心蓝筹资产。
-4. **专业级股票 K 线走势与数据可视化大屏 (`StockKlineView.vue`)**：
-   - 参考专业股票可视化推荐系统设计，集成高交互性 **日K线蜡烛图 (Candlestick)** 与 **MA5/MA10/MA20/MA30 多周期均线系统**；
-   - 标注历史区间最高点与最低点水平支撑/阻力虚线及对角趋势辅助线；
-   - 结构化悬浮 Tooltip 详尽展示开高低收与均线数据；
-   - 下方无缝联动 **成交量 (Volume) 量能柱状图** 与均量线，支持 `DataZoom` 滑块双向自由缩放。
-5. **Optuna 贝叶斯超参数自动寻优 (`optuna`)**：
-   - 基于时间序列交叉验证（`TimeSeriesSplit`）优化 ROC-AUC / NDCG，杜绝未来信息穿越；
-   - 自动搜索最优树深、学习率、采样率及正则项，相比固定超参具有更强泛化能力。
-6. **多维推荐评级与自动化 Excel 报表生成**：
-   - **A 级推荐**：预测看涨概率 $\ge 75\%$（高置信度多头动能标的）；
-   - **B 级推荐**：$60\% \le$ 预测看涨概率 $< 75\%$（中等置信度关注标的）；
-   - **C 级推荐**：预测看涨概率 $< 60\%$（中低置信度防守标的）；
-   - 涨停检测警示（当日涨幅 $\ge 9.9\%$ 自动标注）；
-   - 命令行 CLI 与 Web 界面均支持一键生成带有日期戳的专业格式 Excel 推荐报表（`stock_recommend_YYYYMMDD.xlsx`）。
-7. **细粒度特征归因（TreeSHAP 局部瀑布图与全局透视）**：
-   - **个股局部归因**：基于 Shapley 公理体系，将每只推荐标的的预测打分拆解为各技术指标的正负贡献，并生成自然语言诊断报告；
-   - **全市场全局重要性**：透明化展示全市场宏观技术指标权重。
-8. **现代化前后端分离落地**：
-   - **FastAPI**：异步 ASGI 接口，支持 Swagger UI 交互式在线调试及 Excel 文件流下载；
-   - **Vue 3 + Vite + ECharts**：响应式仪表盘，支持实时刷新、动态筛选、评级高亮、看涨概率条、K 线联动及瀑布图模态窗。
-
----
-
-## 2. 系统快速启动指南
-
-### 方式一：一键启动全栈服务（推荐）
-双击根目录下的 `start_all.bat`，或者在终端运行：
-```powershell
-python backend/run_server.py
-```
-启动后直接打开浏览器访问：
-- **系统前端交互主界面**：[http://127.0.0.1:8008](http://127.0.0.1:8008)
-- **FastAPI 交互式接口文档 (Swagger UI)**：[http://127.0.0.1:8008/docs](http://127.0.0.1:8008/docs)
-- **ReDoc 接口文档**：[http://127.0.0.1:8008/redoc](http://127.0.0.1:8008/redoc)
-
-### 方式二：命令行 CLI 智能选股与导出 Excel
-参考原项目控制台操作习惯，系统提供交互式与参数化 CLI 选股工具：
-```powershell
-# 1. 快速选股（扫描代表性核心标的，秒级导出 Excel）
-python main.py --limit 20
-
-# 2. 启用 Optuna 贝叶斯超参数自动调优并重训
-python main.py --optuna --limit 20
-
-# 3. 强制重训并忽略缓存
-python main.py --no-cache
-```
-执行完毕后，根目录将自动产出带日期戳的报表：`stock_recommend_YYYYMMDD.xlsx`。
-
-### 方式三：前端独立热更新开发模式 (Dev Mode)
-若需二次定制前端页面与交互组件：
-```powershell
-# 终端 1：启动后端服务 (8008 端口)
-python backend/run_server.py
-
-# 终端 2：启动前端 Vite 开发服务器 (5174 端口，自动反向代理 8008)
-cd frontend
-npm run dev
-```
-访问开发服务器：[http://127.0.0.1:5174](http://127.0.0.1:5174)
-
----
-
-## 3. 项目工程目录结构
+## 系统流程
 
 ```text
-Alpha/
-├── config/                      # 全局配置中心
-│   ├── __init__.py
-│   └── config.py                # 特征列定义、评级阈值、核心股票池及路径配置
-│
-├── data/                        # 数据管理与持久化
-│   ├── cache/                   # 真实 A 股数据本地增量缓存
-│   ├── stock_models/            # 单股 LightGBM 模型持久化目录
-│   └── processed/               # 选股推荐结果缓存与评估样本
-│
-├── features/                    # 特征工程模块
-│   ├── __init__.py
-│   └── feature_engineering.py   # 双引擎技术指标计算（EMA, RSI, MACD, OBV, CCI, ATR, ADX）
-│
-├── models/                      # 核心算法与建模模块
-│   ├── __init__.py
-│   └── model_trainer.py         # Optuna 贝叶斯调优、LightGBM 训练与预测推理引擎
-│
-├── ml_pipeline/                 # 可解释性与评测流水线
-│   ├── train_explainer.py       # TreeSHAP 解释器与自然语言推荐理由生成
-│   └── evaluate_metrics.py      # NDCG@K, Precision@K, AUC 基线对比评测
-│
-├── saved_models/                # 序列化模型与预计算缓存
-│   ├── lgbm_market_classifier.pkl # 训练好的市场通用 LightGBM 模型
-│   ├── shap_explainer.pkl       # TreeSHAP 解释器实例
-│   ├── global_importance.json   # 全局技术指标重要性数据
-│   └── evaluation_metrics.json  # 对比模型评测指标数据
-│
-├── backend/                     # 后端工程 (FastAPI)
-│   ├── app/
-│   │   ├── api/                 # API 路由 (/recommend, /explain, /evaluation)
-│   │   ├── schemas/             # Pydantic 响应数据模型规范
-│   │   ├── services/            # 选股推荐、SHAP 计算与 Excel 导出服务
-│   │   └── main.py              # FastAPI 入口 (自动挂载前端静态包)
-│   └── run_server.py            # 后端启动脚本
-│
-├── frontend/                    # 前端工程 (Vue 3 + Vite + ECharts)
-│   ├── src/
-│   │   ├── api/                 # Axios 接口封装 (含 Excel 导出)
-│   │   ├── components/
-│   │   │   ├── ExplainModal.vue # 个股 SHAP 瀑布图与诊断模态窗
-│   │   │   ├── GlobalExplainView.vue # 全局特征重要性分析大屏
-│   │   │   └── MetricsView.vue  # 算法评测指标对比大屏
-│   │   ├── App.vue              # 主应用视图、评级排行榜与 Excel 导出
-│   │   └── style.css            # 现代响应式主题与评级徽章样式
-│   └── dist/                    # 生产构建静态包 (自动被后端托管)
-│
-├── main.py                      # CLI 选股命令行主入口 (支持 Banner, 进度条, 导出 Excel)
-├── requirements.txt             # 完整运行依赖清单
-├── start_all.bat                # Windows 一键全栈启动脚本
-└── README.md                    # 项目说明文档
+日线与基本面数据
+        ↓
+技术、量价、估值与财务因子
+        ↓
+按交易日做截面行业中性化与标准化
+        ↓
+训练期因子诊断 → LightGBM 二分类排序分数
+        ↓                         ↓
+测试集排序评价               TreeSHAP 全局与个股归因
+        ↓
+Top-K 等权组合回测与滚动窗口验证
 ```
 
----
+| 功能 | 主要实现 |
+| --- | --- |
+| 面板构建、标签与时序切分 | `ml_pipeline/dataset.py` |
+| 因子检验与训练期筛选 | `ml_pipeline/factor_diagnosis.py` |
+| LightGBM 与日期分组调参 | `models/model_trainer.py` |
+| Top-K 组合回测 | `ml_pipeline/backtest.py` |
+| 滚动窗口验证 | `ml_pipeline/walk_forward.py` |
+| TreeSHAP 归因 | `ml_pipeline/train_explainer.py` |
+| REST API 与推荐界面 | `backend/`、`frontend/` |
 
-## 4. 算法性能与基线对比实验结果
+## 标签与推荐口径
 
-在时序测试集样本上的对比评测实验结果如下：
+信号在交易日 `t` 收盘后生成。前瞻收益按下一交易日开盘买入、持有至第 5 个交易日收盘计算：
 
-| 对比模型 | 建模范式 | NDCG@5 | NDCG@10 | Precision@5 | Precision@10 | HitRate@5 | AUC |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Random Guess** | 随机基线 | 0.3099 | 0.3467 | 0.3667 | 0.3500 | 1.0000 | 0.5000 |
-| **Ridge Classifier** | 线性判别 | 0.6504 | 0.6981 | 0.6000 | 0.5500 | 1.0000 | 0.6120 |
-| **Random Forest** | 随机森林 | 0.6720 | 0.7130 | 0.6667 | 0.5800 | 1.0000 | 0.6450 |
-| **LightGBM + Optuna** | **梯度提升树 (本文系统)** | **0.7410** | **0.7830** | **0.7333** | **0.6667** | **1.0000** | **0.7150** |
+```text
+ret_5d_fwd = close[t+5] / open[t+1] - 1
+excess_ret_5d = ret_5d_fwd - 当日有效候选池的平均 ret_5d_fwd
+target_up = excess_ret_5d > 0
+```
 
----
+LightGBM 输出 `target_up` 的模型分数。它描述相对跑赢候选池均值的倾向，不代表绝对收益为正，也不等同于经过校准的真实概率。A/B/C 评级按当日候选池的相对排名分档：A 为前 10%，B 为随后 20%，C 为其余标的；Top-K 推荐仍以横截面排序为主。
 
-## 5. 核心 API 接口速查
+## 数据与历史成分股
 
-| 请求方法 | 路由地址 | 接口描述 |
-| :--- | :--- | :--- |
-| `GET` | `/api/health` | 后端服务健康状态检查 |
-| `GET` | `/api/v1/recommend/dates` | 获取所有可选的推荐截面日期列表 |
-| `GET` | `/api/v1/recommend/topk` | 获取指定截面与行业过滤的 Top-K 推荐股票及评级 |
-| `GET` | `/api/v1/recommend/export_excel` | **导出并下载推荐结果为 Excel 文件 (`.xlsx`)** |
-| `GET` | `/api/v1/explain/local/{stock_code}` | 获取指定股票的 TreeSHAP 瀑布图归因与自然语言诊断 |
-| `GET` | `/api/v1/explain/global` | 获取全市场全局特征重要性排序 (Mean \|SHAP\|) |
-| `GET` | `/api/v1/evaluation/metrics` | 获取算法评测指标与基线模型对比实验数据 |
+当前线上候选池由 `config/config.py` 中的沪深 300 池配置。历史回测若要避免幸存者偏差，必须提供真实的历史成分股与行业生效期文件：`data/csi300_membership_history.csv`。字段格式见 `data/csi300_membership_history_template.csv`：
 
----
+```text
+code,name,industry,board,start_date,end_date
+```
 
-## 6. 许可证与免责声明
+起止日期均包含在有效期内；仍在指数内的股票 `end_date` 留空。项目不会从当前成分股名单伪造历史成分股。如果该文件不存在，训练流程会退回当前候选池回溯，并在 `training_report.json` 标记幸存者偏差；这种结果只能视为受限的探索性回测，不能宣称已消除幸存者偏差。
 
-- 本项目遵循开源许可协议；
-- **免责声明**：本项目产出的模型预测、技术指标与推荐评级仅供学术研究、毕业设计与量化技术探讨，不构成任何实质性投资建议。股市有风险，入市需谨慎。
+财务字段应按公告可用日期滞后对齐。请检查 `data/factor_fetcher.py` 的数据源与披露日期处理，并在论文中记录数据来源、覆盖区间、复权方式和缺失处理。
+
+## 训练与启动
+
+安装依赖：
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+完整训练并生成模型、评估、回测、归因及最新截面推荐：
+
+```powershell
+python -m ml_pipeline.run_training --trials 20 --k 10
+```
+
+小样本参数 `--limit` 仅用于检查数据与代码流程，结果不应用作论文主结论。训练会写入 `saved_models/` 和 `data/processed/` 中的实验产物；如需保留当前模型结果，请先备份这些产物。
+
+用已训练模型刷新最新截面推荐：
+
+```powershell
+python main.py --k 10
+```
+
+`main.py --board 主板` 只筛选导出结果，模型分数仍按完整候选池计算。`--limit` 只用于小样本预览，会写入独立预览文件，不覆盖完整推荐缓存。
+
+生成论文图表与实验结果 Word 参考文档：
+
+```powershell
+python scripts/make_figures.py
+python scripts/make_report_docx.py
+```
+
+启动 API 与前端：
+
+```powershell
+python backend/run_server.py
+```
+
+默认访问 `http://127.0.0.1:8008`，API 文档为 `http://127.0.0.1:8008/docs`。前端独立开发可在 `frontend/` 执行 `npm install`、`npm run dev`；发布构建使用 `npm run build`。
+
+## 方法与验证设计
+
+### 因子构建及中性化
+
+候选因子包括技术指标、量价派生指标，以及估值和财务指标。模型使用的每个交易日截面因子先缩尾，再按行业去均值；样本不足或行业未知时退回全截面去均值，随后做截面标准化。中性化仅使用该交易日可观察到的信息。
+
+训练期按因子与未来收益的截面 Spearman IC、Newey–West HAC t 统计量及因子相关性进行诊断。通过门槛的因子进入模型；若没有因子同时通过门槛，则只使用训练期 |IC| 排名前五的候选因子，并在产物中记录该回退方式。特征筛选在 Optuna 的每个训练折内重新执行，验证折标签不参与该折的因子筛选。
+
+### 时序验证
+
+数据按日期先后切分为训练、验证和测试区间，训练/验证及验证/测试边界按 5 个交易日设置标签隔离期。超参数搜索使用按完整交易日分组的时序交叉验证，并在折间应用同样的标签成熟期隔离。最终模型只在训练区间拟合；验证集与测试集用于评价，不参与最终拟合。滚动窗口重新执行训练期因子筛选，并单独报告窗口内结果。
+
+主要报告截面 AUC、NDCG@K、Precision@K、基线比较、因子 IC/HAC t 值及滚动窗口稳定性。Precision@K / NDCG@K 曲线在相同测试日期集合上计算，K 上限受可用候选数量约束。训练时逐轮记录训练集与验证集 Binary Logloss，用于观察收敛和过拟合趋势；该曲线不包含测试集损失，也不据此选择迭代轮数。排序指标按每个交易日的候选列表计算，再对交易日等权汇总，避免样本量大的日期支配结果。
+
+### 回测口径
+
+回测按分数构建 Top-K 等权组合，每 5 个交易日调仓，使用可执行的下一交易日开盘至第 5 个交易日收盘收益，并扣除买入佣金、过户费和卖出印花税。等权候选池收益作为基准。滚动窗口的验证段预测会按时间合并后统一回测，以便跨窗口延续持仓并连续计算换手成本。
+
+回测结果仍受历史成分股覆盖、停牌/涨跌停成交假设、复权和数据缺失等影响。当前成交模型未模拟冲击成本、涨跌停无法成交、融资约束或容量限制。论文应报告这些限制，并避免将历史收益表述为未来收益保证。
+
+### 特征归因
+
+全局归因使用测试期样本的 Mean |SHAP| 排序，个股解释使用生成推荐时保存的同一组行业中性化模型特征。局部 SHAP 的 base value、贡献和最终输出均在 LightGBM 原始 log-odds 空间；前端将它们分开显示，概率估计仅作为单独的模型输出展示。
+
+SHAP 描述模型如何使用特征，不代表因果关系。全局重要性衡量影响幅度，不给出单调方向；个股正负贡献也不能单独解释为投资理由。
+
+## 实验结果与图表
+
+不要把旧模型生成的指标当作当前代码的实验结论。运行训练流程后，`saved_models/training_report.json`、`evaluation_metrics.json`、`walk_forward.json` 和 `attribution.json` 是各自指标的结果来源。报告与图表脚本从这些产物读取数字，不再在 README 中维护一组可能过期的固定指标。
+
+论文图表包括：
+
+1. 训练期因子 IC 与 HAC t 值；
+2. 测试集 NDCG@5、Precision@5 与 AUC 基线比较；
+3. 测试集 Precision@K 与 NDCG@K 随推荐深度变化；
+4. LightGBM 训练集与验证集 Binary Logloss 随迭代轮次的变化；
+5. 滚动窗口 AUC 与 0.5 随机基线；
+6. 滚动验证期策略与基准净值；
+7. 不同市场状态下的策略与基准收益；
+8. 测试集 SHAP summary beeswarm，展示特征贡献方向与样本差异。
+
+损失曲线在训练页面的评测区展示，并由 `scripts/make_figures.py` 输出为论文图。验证损失用于观察拟合趋势；最终模型迭代轮数由训练集内部交叉验证确定，不用测试集损失选轮数。现有旧模型如果未记录逐轮结果，需运行一次完整训练后才会生成这张图。
+
+图片保存在 `docs/figures/`。每张图应与同一训练批次的 JSON 结果配套归档，避免图表和模型产物来自不同实验批次。
+
+## 主要产物
+
+| 文件 | 内容 |
+| --- | --- |
+| `saved_models/selected_factors.json` | 训练期入选因子、筛选区间与筛选方式 |
+| `saved_models/lgbm_market_classifier.pkl` | 模型、时序切分和评估结果 |
+| `saved_models/evaluation_metrics.json` | 模型基线、截面排序指标及 Precision@K / NDCG@K 曲线 |
+| `saved_models/backtest_result.json` | 测试区间 Top-K 回测 |
+| `saved_models/walk_forward.json` | 滚动窗口验证及连续回测 |
+| `saved_models/global_importance.json` | 全局 TreeSHAP 重要性 |
+| `saved_models/shap_summary.json` | beeswarm 图使用的测试集 SHAP 与标准化特征值样本 |
+| `saved_models/attribution.json` | 策略收益 Alpha/Beta 分析（有可用滚动回测时） |
+| `saved_models/training_report.json` | 数据、标签、指标及历史股票池口径摘要 |
+| `data/processed/realtime_recommendations.csv` | 最新截面分数、行情和 SHAP 模型特征输入 |
+
+## 论文中需要说明的限制
+
+- 模型输出是相对候选池均值的二分类分数，不是绝对上涨概率；当前未做概率校准。A/B/C 是截面相对档位，不代表置信度。
+- 如果没有历史 CSI 300 成分股生效期数据，历史回测存在幸存者偏差。
+- 5 日收益信号噪声较高，必须同时报告单次测试区间、滚动窗口分布、基线和交易成本。
+- SHAP 是预测模型的特征归因，不是因果解释。
+- 回测成交假设较理想；应说明停牌、涨跌停、滑点、冲击成本及容量限制。

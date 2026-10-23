@@ -1,0 +1,517 @@
+{
+  "results": [
+    {
+      "factor": "ATR_ratio",
+      "name_cn": "相对真实波幅(ATR/价格)",
+      "n_sections": 2856,
+      "ic_mean": -0.0221,
+      "ic_std": 0.2792,
+      "icir": -0.079,
+      "t_stat": -4.22,
+      "ic_positive_ratio": 0.459,
+      "layered_returns": [
+        0.002216,
+        0.002378,
+        0.003144,
+        0.004273,
+        0.006196
+      ],
+      "top_minus_bottom": 0.00398,
+      "monotonic": true,
+      "usable": true,
+      "rejected_reason": null,
+      "in_model": true
+    },
+    {
+      "factor": "MACD_norm",
+      "name_cn": "归一化异同移动平均线(MACD)",
+      "n_sections": 2856,
+      "ic_mean": -0.021,
+      "ic_std": 0.2189,
+      "icir": -0.0957,
+      "t_stat": -5.11,
+      "ic_positive_ratio": 0.472,
+      "layered_returns": [
+        0.004068,
+        0.003087,
+        0.002734,
+        0.00401,
+        0.004291
+      ],
+      "top_minus_bottom": 0.000223,
+      "monotonic": false,
+      "usable": true,
+      "rejected_reason": null,
+      "in_model": true
+    },
+    {
+      "factor": "EMA20_ratio",
+      "name_cn": "价格/20日均线比率",
+      "n_sections": 2856,
+      "ic_mean": -0.0206,
+      "ic_std": 0.2073,
+      "icir": -0.0995,
+      "t_stat": -5.32,
+      "ic_positive_ratio": 0.4804,
+      "layered_returns": [
+        0.003899,
+        0.002925,
+        0.003057,
+        0.003649,
+        0.004659
+      ],
+      "top_minus_bottom": 0.00076,
+      "monotonic": false,
+      "usable": true,
+      "rejected_reason": "与 MACD_norm 高度相关（|r|=0.763）",
+      "in_model": false
+    },
+    {
+      "factor": "momentum_20d",
+      "name_cn": "20日动量",
+      "n_sections": 2856,
+      "ic_mean": -0.0201,
+      "ic_std": 0.2085,
+      "icir": -0.0962,
+      "t_stat": -5.14,
+      "ic_positive_ratio": 0.487,
+      "layered_returns": [
+        0.004122,
+        0.002861,
+        0.003085,
+        0.003693,
+        0.004429
+      ],
+      "top_minus_bottom": 0.000307,
+      "monotonic": false,
+      "usable": true,
+      "rejected_reason": "与 MACD_norm 高度相关（|r|=0.857）",
+      "in_model": false
+    },
+    {
+      "factor": "momentum_60d",
+      "name_cn": "60日动量",
+      "n_sections": 2856,
+      "ic_mean": -0.0183,
+      "ic_std": 0.2189,
+      "icir": -0.0836,
+      "t_stat": -4.47,
+      "ic_positive_ratio": 0.4762,
+      "layered_returns": [
+        0.004494,
+        0.002985,
+        0.003231,
+        0.003487,
+        0.003992
+      ],
+      "top_minus_bottom": -0.000502,
+      "monotonic": false,
+      "usable": true,
+      "rejected_reason": null,
+      "in_model": true
+    },
+    {
+      "factor": "volatility_20d",
+      "name_cn": "20日波动率",
+      "n_sections": 2856,
+      "ic_mean": -0.0183,
+      "ic_std": 0.2594,
+      "icir": -0.0705,
+      "t_stat": -3.77,
+      "ic_positive_ratio": 0.4678,
+      "layered_returns": [
+        0.002094,
+        0.002267,
+        0.003491,
+        0.004294,
+        0.006066
+      ],
+      "top_minus_bottom": 0.003972,
+      "monotonic": true,
+      "usable": true,
+      "rejected_reason": "与 ATR_ratio 高度相关（|r|=0.881）",
+      "in_model": false
+    },
+    {
+      "factor": "OBV_zscore",
+      "name_cn": "能量潮标准分(OBV-Z)",
+      "n_sections": 2856,
+      "ic_mean": -0.0176,
+      "ic_std": 0.1687,
+      "icir": -0.1044,
+      "t_stat": -5.58,
+      "ic_positive_ratio": 0.4748,
+      "layered_returns": [
+        0.003763,
+        0.003739,
+        0.003477,
+        0.003243,
+        0.003979
+      ],
+      "top_minus_bottom": 0.000216,
+      "monotonic": false,
+      "usable": true,
+      "rejected_reason": null,
+      "in_model": true
+    },
+    {
+      "factor": "ma_gap",
+      "name_cn": "短期均线偏离度",
+      "n_sections": 2856,
+      "ic_mean": -0.0154,
+      "ic_std": 0.2049,
+      "icir": -0.0753,
+      "t_stat": -4.02,
+      "ic_positive_ratio": 0.493,
+      "layered_returns": [
+        0.003873,
+        0.002745,
+        0.003239,
+        0.003542,
+        0.004792
+      ],
+      "top_minus_bottom": 0.000919,
+      "monotonic": false,
+      "usable": true,
+      "rejected_reason": "与 MACD_norm 高度相关（|r|=0.803）",
+      "in_model": false
+    },
+    {
+      "factor": "RSI14",
+      "name_cn": "14日相对强弱指标(RSI)",
+      "n_sections": 2856,
+      "ic_mean": -0.0128,
+      "ic_std": 0.2019,
+      "icir": -0.0635,
+      "t_stat": -3.39,
+      "ic_positive_ratio": 0.4902,
+      "layered_returns": [
+        0.003093,
+        0.003233,
+        0.003432,
+        0.003866,
+        0.004581
+      ],
+      "top_minus_bottom": 0.001488,
+      "monotonic": true,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "pe_ttm",
+      "name_cn": "市盈率(TTM)",
+      "n_sections": 2856,
+      "ic_mean": -0.0116,
+      "ic_std": 0.2294,
+      "icir": -0.0505,
+      "t_stat": -2.7,
+      "ic_positive_ratio": 0.4832,
+      "layered_returns": [
+        0.003116,
+        0.002915,
+        0.002929,
+        0.003991,
+        0.00535
+      ],
+      "top_minus_bottom": 0.002234,
+      "monotonic": false,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "pb",
+      "name_cn": "市净率(PB)",
+      "n_sections": 2856,
+      "ic_mean": -0.0101,
+      "ic_std": 0.2642,
+      "icir": -0.0381,
+      "t_stat": -2.03,
+      "ic_positive_ratio": 0.4905,
+      "layered_returns": [
+        0.002464,
+        0.003056,
+        0.003449,
+        0.004347,
+        0.00493
+      ],
+      "top_minus_bottom": 0.002466,
+      "monotonic": true,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "roe",
+      "name_cn": "净资产收益率(ROE)",
+      "n_sections": 2856,
+      "ic_mean": 0.0095,
+      "ic_std": 0.1689,
+      "icir": 0.0565,
+      "t_stat": 3.02,
+      "ic_positive_ratio": 0.5322,
+      "layered_returns": [
+        0.004206,
+        0.003624,
+        0.003793,
+        0.002859,
+        0.00372
+      ],
+      "top_minus_bottom": -0.000486,
+      "monotonic": false,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "pct_chg",
+      "name_cn": "当日涨跌幅(%)",
+      "n_sections": 2856,
+      "ic_mean": -0.0094,
+      "ic_std": 0.1898,
+      "icir": -0.0493,
+      "t_stat": -2.64,
+      "ic_positive_ratio": 0.4765,
+      "layered_returns": [
+        0.003888,
+        0.003482,
+        0.00304,
+        0.003406,
+        0.004377
+      ],
+      "top_minus_bottom": 0.000489,
+      "monotonic": false,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "ADX",
+      "name_cn": "平均趋向指标(ADX)",
+      "n_sections": 2856,
+      "ic_mean": 0.0078,
+      "ic_std": 0.1396,
+      "icir": 0.0556,
+      "t_stat": 2.97,
+      "ic_positive_ratio": 0.5266,
+      "layered_returns": [
+        0.001971,
+        0.002842,
+        0.003375,
+        0.004488,
+        0.005531
+      ],
+      "top_minus_bottom": 0.00356,
+      "monotonic": true,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "debt_ratio",
+      "name_cn": "资产负债率",
+      "n_sections": 2856,
+      "ic_mean": -0.0078,
+      "ic_std": 0.184,
+      "icir": -0.0426,
+      "t_stat": -2.28,
+      "ic_positive_ratio": 0.4846,
+      "layered_returns": [
+        0.004627,
+        0.00458,
+        0.00455,
+        0.002528,
+        0.001916
+      ],
+      "top_minus_bottom": -0.002711,
+      "monotonic": true,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "net_margin",
+      "name_cn": "销售净利率",
+      "n_sections": 2856,
+      "ic_mean": 0.0068,
+      "ic_std": 0.1357,
+      "icir": 0.0502,
+      "t_stat": 2.68,
+      "ic_positive_ratio": 0.5154,
+      "layered_returns": [
+        0.0042,
+        0.003405,
+        0.004742,
+        0.003892,
+        0.001971
+      ],
+      "top_minus_bottom": -0.002229,
+      "monotonic": false,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "gross_margin",
+      "name_cn": "销售毛利率",
+      "n_sections": 2856,
+      "ic_mean": 0.0067,
+      "ic_std": 0.1291,
+      "icir": 0.052,
+      "t_stat": 2.78,
+      "ic_positive_ratio": 0.5326,
+      "layered_returns": [
+        0.0033,
+        0.003814,
+        0.004333,
+        0.003555,
+        0.003207
+      ],
+      "top_minus_bottom": -9.3e-05,
+      "monotonic": false,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "turnover_proxy",
+      "name_cn": "换手活跃度",
+      "n_sections": 2856,
+      "ic_mean": -0.006,
+      "ic_std": 0.1411,
+      "icir": -0.0424,
+      "t_stat": -2.27,
+      "ic_positive_ratio": 0.4853,
+      "layered_returns": [
+        0.003253,
+        0.003435,
+        0.003707,
+        0.004083,
+        0.003732
+      ],
+      "top_minus_bottom": 0.000479,
+      "monotonic": false,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "vol_ratio",
+      "name_cn": "成交量放大倍数",
+      "n_sections": 2856,
+      "ic_mean": -0.0057,
+      "ic_std": 0.1406,
+      "icir": -0.0403,
+      "t_stat": -2.15,
+      "ic_positive_ratio": 0.486,
+      "layered_returns": [
+        0.003282,
+        0.003357,
+        0.003597,
+        0.004022,
+        0.003949
+      ],
+      "top_minus_bottom": 0.000667,
+      "monotonic": false,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "CCI",
+      "name_cn": "顺势指标(CCI)",
+      "n_sections": 2856,
+      "ic_mean": -0.0048,
+      "ic_std": 0.1853,
+      "icir": -0.0261,
+      "t_stat": -1.39,
+      "ic_positive_ratio": 0.4979,
+      "layered_returns": [
+        0.002782,
+        0.003332,
+        0.003586,
+        0.004048,
+        0.004458
+      ],
+      "top_minus_bottom": 0.001676,
+      "monotonic": true,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    },
+    {
+      "factor": "revenue_growth",
+      "name_cn": "营业收入增长率",
+      "n_sections": 2856,
+      "ic_mean": 0.0011,
+      "ic_std": 0.1552,
+      "icir": 0.0071,
+      "t_stat": 0.38,
+      "ic_positive_ratio": 0.5,
+      "layered_returns": [
+        0.00325,
+        0.003106,
+        0.0036,
+        0.003901,
+        0.004353
+      ],
+      "top_minus_bottom": 0.001103,
+      "monotonic": false,
+      "usable": false,
+      "rejected_reason": "IC 或 t 值未达门槛",
+      "in_model": false
+    }
+  ],
+  "usable_factors": [
+    "ATR_ratio",
+    "MACD_norm",
+    "momentum_60d",
+    "OBV_zscore"
+  ],
+  "rejected_factors": [
+    "EMA20_ratio",
+    "momentum_20d",
+    "volatility_20d",
+    "ma_gap",
+    "RSI14",
+    "pe_ttm",
+    "pb",
+    "roe",
+    "pct_chg",
+    "ADX",
+    "debt_ratio",
+    "net_margin",
+    "gross_margin",
+    "turnover_proxy",
+    "vol_ratio",
+    "CCI",
+    "revenue_growth"
+  ],
+  "decorrelation_dropped": {
+    "EMA20_ratio": {
+      "conflicts_with": "MACD_norm",
+      "corr": 0.763
+    },
+    "momentum_20d": {
+      "conflicts_with": "MACD_norm",
+      "corr": 0.857
+    },
+    "volatility_20d": {
+      "conflicts_with": "ATR_ratio",
+      "corr": 0.881
+    },
+    "ma_gap": {
+      "conflicts_with": "MACD_norm",
+      "corr": 0.803
+    }
+  },
+  "criteria": {
+    "min_abs_ic": 0.015,
+    "min_abs_t": 2.0,
+    "max_pairwise_corr": 0.7,
+    "min_sections": 20
+  },
+  "n_sections_total": 2856,
+  "n_stocks_total": 300
+}

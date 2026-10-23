@@ -5,7 +5,7 @@
       <div class="filter-header">
         <div>
           <h2>A 股全板块股票池与推荐状态管理</h2>
-          <p class="sub-text">全面覆盖沪深主板、创业板、科创板与北交所核心标的，监控 LightGBM 预测看涨概率与推荐评级，标记重点跟踪标的</p>
+          <p class="sub-text">展示 LightGBM 对未来 5 个交易日跑赢候选池平均收益的概率估计与排序，支持标记重点跟踪标的</p>
         </div>
         <div class="stats-badge-box">
           <span class="badge badge-blue">全板块资产池: {{ totalCount }} 只</span>
@@ -63,9 +63,9 @@
           <label>推荐评级：</label>
           <select v-model="selectedRating" class="select-control" @change="fetchStocks">
             <option value="全部">全部评级</option>
-            <option value="A">A 级 (高置信看涨)</option>
-            <option value="B">B 级 (中置信看涨)</option>
-            <option value="C">C 级 (低置信防守)</option>
+            <option value="A">A 级 (截面前 10%)</option>
+            <option value="B">B 级 (随后 20%)</option>
+            <option value="C">C 级 (其余标的)</option>
           </select>
         </div>
 
@@ -93,7 +93,7 @@
               <th>所属板块</th>
               <th>所属行业</th>
               <th>推荐评级</th>
-              <th>LightGBM 看涨概率</th>
+              <th>跑赢候选池均值概率</th>
               <th>是否涨停</th>
               <th>最新收盘价</th>
               <th>当日涨幅</th>
@@ -141,7 +141,7 @@
                 <span v-else-if="item.rating === 'B'" class="badge-rating-b">B 级</span>
                 <span v-else class="badge-rating-c">C 级</span>
               </td>
-              <!-- 预测看涨概率 -->
+              <!-- 预测跑赢候选池均值的概率估计 -->
               <td>
                 <div class="prob-bar-container">
                   <strong>{{ (((item.probability ?? 0) * 100)).toFixed(1) }}%</strong>

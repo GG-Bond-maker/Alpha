@@ -31,10 +31,44 @@ export const api = {
   getGlobalImportance() {
     return apiClient.get('/explain/global')
   },
+
+  getGlobalShapSummary() {
+    return apiClient.get('/explain/global-summary')
+  },
   
   // 获取模型评测指标对比
   getEvaluationMetrics() {
     return apiClient.get('/evaluation/metrics')
+  },
+
+  // 获取 Top-K 组合回测结果
+  getBacktest() {
+    return apiClient.get('/evaluation/backtest')
+  },
+
+  // 获取训练与实验汇总报告
+  getTrainingReport() {
+    return apiClient.get('/evaluation/report')
+  },
+
+  // 获取因子有效性诊断
+  getFactorDiagnosis() {
+    return apiClient.get('/evaluation/factors')
+  },
+
+  // 获取全市场 vs 行业中性回测对比
+  getBacktestComparison() {
+    return apiClient.get('/evaluation/backtest/comparison')
+  },
+
+  // 获取滚动窗口验证结果
+  getWalkForward() {
+    return apiClient.get('/evaluation/walk-forward')
+  },
+
+  // 获取 Alpha/Beta 业绩归因
+  getAttribution() {
+    return apiClient.get('/evaluation/attribution')
   },
 
   // 导出 Excel 选股推荐报表

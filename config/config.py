@@ -1,97 +1,235 @@
 # -*- coding: utf-8 -*-
-"""全局系统配置参数模块
-融合 AShare-AI-Stock-Picker 技术指标体系与 Alpha 全栈架构配置
-严格限定股票池与扫描范围为 A 股主板（沪市主板 600/601/603/605，深市主板 000/001/002/003）
+"""全局配置中心（单一事实源）
+
+本模块是所有特征、标签、评级与路径定义的唯一来源。
+修改特征集或标签口径只需改动此处，模型训练、归因、评测与回测会同步生效。
+
+设计约定
+--------
+1. FEATURE_COLS 为模型实际使用的特征集合，跨模块必须引用同一常量。
+2. 标签统一采用「截面超额收益」口径，而非绝对涨跌，避免模型退化为市场 beta。
+3. 股票池按板块分层定义，主板/全板块的口径在此显式声明，不再分散到各模块。
 """
 
 import os
 
-# 项目根目录
+# ---------------------------------------------------------------------------
+# 路径
+# ---------------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 核心技术指标特征列配置（与 AShare-AI-Stock-Picker 保持一致并扩充）
-FEATURE_COLS = [
-    'close', 'volume', 'pct_chg',
-    'EMA20_ratio', 'RSI14', 'MACD',
-    'OBV', 'CCI', 'ATR', 'ADX'
-]
-
-# 核心特征中英文映射对照表（用于前端可视化大屏与 TreeSHAP 归因解释）
-FEATURE_NAMES_CN = {
-    'close': '收盘价',
-    'volume': '成交量',
-    'pct_chg': '当日涨跌幅(%)',
-    'EMA20_ratio': '价格/20日均线比率',
-    'RSI14': '14日相对强弱指标(RSI)',
-    'MACD': '异同移动平均线(MACD)',
-    'OBV': '能量潮指标(OBV)',
-    'CCI': '顺势指标(CCI)',
-    'ATR': '真实波幅(ATR)',
-    'ADX': '平均趋向指标(ADX)'
-}
-
-# 预测目标参数：未来 N 日收益率
-TARGET_DAYS = 5
-
-# 推荐评级划分阈值
-RATING_BINS = [0.0, 0.60, 0.75, 1.0]
-RATING_LABELS = ['C', 'B', 'A']
-
-# 数据存储与缓存路径
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 CACHE_DIR = os.path.join(DATA_DIR, 'cache')
 MODEL_DIR = os.path.join(DATA_DIR, 'stock_models')
 PROCESSED_DIR = os.path.join(DATA_DIR, 'processed')
+FACTOR_DIR = os.path.join(DATA_DIR, 'factors')
 SAVED_MODELS_DIR = os.path.join(BASE_DIR, 'saved_models')
 
-# 确保核心目录已创建
-for d in [DATA_DIR, CACHE_DIR, MODEL_DIR, PROCESSED_DIR, SAVED_MODELS_DIR]:
-    os.makedirs(d, exist_ok=True)
+for _d in (DATA_DIR, CACHE_DIR, MODEL_DIR, PROCESSED_DIR, FACTOR_DIR, SAVED_MODELS_DIR):
+    os.makedirs(_d, exist_ok=True)
+
+# ---------------------------------------------------------------------------
+# 特征定义
+# ---------------------------------------------------------------------------
+# 归一化后的量价与技术指标特征（10 维）。
+# 注意：close / volume / OBV 的原始量级跨股票不可比，模型直接使用会退化为
+# 「价格水平识别器」。因此这里一律使用无量纲化后的表达。
+FEATURE_COLS = [
+    'EMA20_ratio',   # 收盘价 / 20 日 EMA，衡量价格相对均线位置
+    'RSI14',         # 14 日相对强弱指标
+    'MACD_norm',     # MACD 除以收盘价，消除价格量级
+    'OBV_zscore',    # OBV 的 60 日滚动 z-score，消除累计量级
+    'CCI',           # 顺势指标
+    'ATR_ratio',     # ATR / 收盘价，波动率相对水平
+    'ADX',           # 平均趋向指标
+    'pct_chg',       # 当日涨跌幅
+    'vol_ratio',     # 成交量 / 20 日均量，量能放大倍数
+    'ma_gap',        # (MA5 - MA20) / MA20，短期均线偏离度
+]
+
+# 候选因子池：所有可能入模的因子，供诊断模块逐一检验。
+CANDIDATE_FACTORS = FEATURE_COLS + [
+    'momentum_20d', 'momentum_60d', 'volatility_20d', 'turnover_proxy',
+    'pe_ttm', 'pb', 'roe', 'roa', 'gross_margin', 'net_margin',
+    'debt_ratio', 'revenue_growth', 'profit_growth',
+]
+
+# 入选因子的默认值（无诊断产物时的兜底）。
+# 正常运行时会由 ml_pipeline/run_training.py 依据诊断结果覆盖此列表，
+# 并写入 saved_models/selected_factors.json，保证「诊断选什么、模型用什么」。
+DEFAULT_SELECTED_FACTORS = [
+    'debt_ratio', 'roe', 'net_margin', 'pb', 'gross_margin', 'RSI14', 'momentum_20d',
+]
+
+# 诊断产物路径
+SELECTED_FACTORS_PATH = os.path.join(SAVED_MODELS_DIR, 'selected_factors.json')
+
+
+def _load_selected_factors() -> list:
+    """优先读取诊断产出的因子列表，缺失时用默认值。"""
+    try:
+        import json
+        if os.path.exists(SELECTED_FACTORS_PATH):
+            with open(SELECTED_FACTORS_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            factors = data.get('factors') or []
+            if factors:
+                return factors
+    except Exception:
+        pass
+    return list(DEFAULT_SELECTED_FACTORS)
+
+
+SELECTED_FACTORS = _load_selected_factors()
+
+
+def get_model_features() -> list:
+    """模型实际输入的列名：入选因子经行业中性化与标准化后的版本。
+
+    用函数而非常量，确保 run_training 写入新的 selected_factors.json 后，
+    同一进程内后续步骤（训练、评测、归因）能读到一致的口径。
+    """
+    return [f + '_neu' for f in _load_selected_factors()]
+
+
+MODEL_FEATURES = get_model_features()
+
+FEATURE_NAMES_CN = {
+    'EMA20_ratio': '价格/20日均线比率',
+    'RSI14': '14日相对强弱指标(RSI)',
+    'MACD_norm': '归一化异同移动平均线(MACD)',
+    'OBV_zscore': '能量潮标准分(OBV-Z)',
+    'CCI': '顺势指标(CCI)',
+    'ATR_ratio': '相对真实波幅(ATR/价格)',
+    'ADX': '平均趋向指标(ADX)',
+    'pct_chg': '当日涨跌幅(%)',
+    'vol_ratio': '成交量放大倍数',
+    'ma_gap': '短期均线偏离度',
+    'pe_ttm': '市盈率(TTM)',
+    'pb': '市净率(PB)',
+    'roe': '净资产收益率(ROE)',
+    'roa': '总资产收益率(ROA)',
+    'gross_margin': '销售毛利率',
+    'net_margin': '销售净利率',
+    'debt_ratio': '资产负债率',
+    'revenue_growth': '营业收入增长率',
+    'profit_growth': '净利润增长率',
+    'momentum_20d': '20日动量',
+    'momentum_60d': '60日动量',
+    'volatility_20d': '20日波动率',
+    'turnover_proxy': '换手活跃度',
+}
+
+# ---------------------------------------------------------------------------
+# 标签定义
+# ---------------------------------------------------------------------------
+# 预测周期（交易日）
+TARGET_DAYS = 5
+
+# 标签口径：截面超额收益 = 个股 N 日收益 - 同一截面全样本 N 日收益均值
+# 使用绝对涨跌会让模型在牛市中全部预测为上涨，学到的只是市场 beta。
+LABEL_MODE = 'excess'          # 'excess' | 'absolute'
+LABEL_COL = 'excess_ret_5d'    # 超额收益列名
+TARGET_COL = 'target_up'       # 二分类标签列名
+
+# 截面评级比例：A 为分数前 10%，B 为随后 20%，其余为 C。
+# 概率未校准，因此评级按当日候选池内的相对名次生成。
+RATING_TOP_A_RATIO = 0.10
+RATING_TOP_B_RATIO = 0.30
+
+# ---------------------------------------------------------------------------
+# 股票池与板块
+# ---------------------------------------------------------------------------
+STOCK_BOARDS = ["全部", "主板", "创业板", "科创板", "北交所"]
+
+_MAIN_BOARD_PREFIXES = ('600', '601', '603', '605', '000', '001', '002', '003')
+_CHINEXT_PREFIXES = ('300', '301')
+_STAR_PREFIXES = ('688', '689')
+_BSE_PREFIXES = ('8', '4', '92')
 
 
 def get_stock_board(code: str) -> str:
-    """
-    判断 A 股股票所属板块：
-    - 主板：沪市主板 (600, 601, 603, 605) 及 深市主板 (000, 001, 002, 003)
-    - 创业板：深市创业板 (300, 301)
-    - 科创板：沪市科创板 (688, 689)
-    - 北交所：北京证券交易所 (82, 83, 87, 88, 43, 92)
-    """
+    """按代码前缀判定 A 股所属板块。"""
     clean = str(code).zfill(6)
-    if clean.startswith(('600', '601', '603', '605', '000', '001', '002', '003')):
+    if clean.startswith(_MAIN_BOARD_PREFIXES):
         return "主板"
-    elif clean.startswith(('300', '301')):
+    if clean.startswith(_CHINEXT_PREFIXES):
         return "创业板"
-    elif clean.startswith(('688', '689')):
+    if clean.startswith(_STAR_PREFIXES):
         return "科创板"
-    elif clean.startswith(('8', '4', '92')):
+    if clean.startswith(_BSE_PREFIXES):
         return "北交所"
     return "主板"
 
 
 def is_valid_a_stock(code: str) -> bool:
-    """判断是否为中国 A 股全市场有效股票代码（覆盖全市场全部板块）"""
+    """是否为可识别的 A 股代码。"""
     clean = str(code).zfill(6)
-    return clean.startswith((
-        '600', '601', '603', '605', '000', '001', '002', '003',
-        '300', '301',
-        '688', '689',
-        '8', '4', '92'
-    ))
+    return clean.startswith(
+        _MAIN_BOARD_PREFIXES + _CHINEXT_PREFIXES + _STAR_PREFIXES + _BSE_PREFIXES
+    )
 
 
 def is_main_board_stock(code: str) -> bool:
-    """
-    判断股票是否属于中国 A 股主板标的
-    """
-    clean = str(code).zfill(6)
-    return clean.startswith(('600', '601', '603', '605', '000', '001', '002', '003'))
+    """是否属于沪深主板。"""
+    return str(code).zfill(6).startswith(_MAIN_BOARD_PREFIXES)
 
 
-# A 股全板块板块分类定义表
-STOCK_BOARDS = ["全部", "主板", "创业板", "科创板", "北交所"]
+# ---------------------------------------------------------------------------
+# 股票池
+# ---------------------------------------------------------------------------
+# 建模范畴锁定为沪深300 成分股。
+#
+# 为什么不用 500 只全板块池：早前 40 只样本分摊到 6 个行业，平均每组 6.4 只，
+# 34.4% 的股票在自己的行业组里是唯一一只，行业中性化退化为「减去自身」，
+# 把因子抹成 0。沪深300 覆盖 300 只大市值标的、行业分布完整，是直接解法，
+# 也是 A 股量化研究的标准基准池。
+POOL_SCOPE = "csi300"
 
-# 代表性核心资产股票池（全面覆盖 A 股全板块：主板、创业板、科创板、北交所，共 500 支）
-from config.stock_pool import CORE_STOCK_POOL_500 as CORE_STOCK_POOL
+from config.stock_pool import CORE_STOCK_POOL_500 as _POOL_500  # noqa: E402
+
+# 全市场核心池（保留作为兜底与对照，不参与主建模）
+CORE_STOCK_POOL = _POOL_500
+
+# 沪深300 池由 data/csi300_pool.py 构建并缓存到 data/cache/csi300_pool.csv
+_CSI300_CACHE = None
 
 
+def _load_csi300_pool() -> list:
+    """加载沪深300 股票池；缓存缺失时回退到核心池并告警。"""
+    global _CSI300_CACHE
+    if _CSI300_CACHE is not None:
+        return _CSI300_CACHE
+
+    import pandas as pd
+    path = os.path.join(CACHE_DIR, 'csi300_pool.csv')
+    if os.path.exists(path):
+        try:
+            df = pd.read_csv(path, dtype={'code': str})
+            df['code'] = df['code'].str.zfill(6)
+            _CSI300_CACHE = [
+                {
+                    'code': r['code'],
+                    'name': r['name'],
+                    'industry': r.get('industry') or '未分类',
+                    'board': r.get('board') or get_stock_board(r['code']),
+                }
+                for _, r in df.iterrows()
+            ]
+            return _CSI300_CACHE
+        except Exception:
+            pass
+
+    print('[Config] 未找到沪深300 缓存，回退到核心池。'
+          '请运行 python -m data.csi300_pool 重新构建')
+    _CSI300_CACHE = list(_POOL_500)
+    return _CSI300_CACHE
+
+
+def get_pool(scope: str = None) -> list:
+    """返回建模股票池。scope 缺省为 POOL_SCOPE（沪深300）。"""
+    scope = scope or POOL_SCOPE
+    if scope in ("csi300", "全部"):
+        return _load_csi300_pool()
+    pool = _load_csi300_pool()
+    return [s for s in pool if s.get('board', get_stock_board(s['code'])) == scope]

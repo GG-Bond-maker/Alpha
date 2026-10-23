@@ -1,131 +1,184 @@
 # -*- coding: utf-8 -*-
-"""数据获取与预处理模块
-融合 AShare-AI-Stock-Picker 真实 A 股数据获取体系与高性能本地缓存机制
-严格限定股票池与数据范围为 A 股主板（沪深主板），并提供专业 K 线走势数据结构服务
+"""行情数据获取与本地缓存模块
+
+数据质量约定
+------------
+早期版本对前复权产生的非正价格直接 clip 到 0.5，导致 600519 等标的
+近三分之一的历史区间 OHLC 全为 0.5，技术指标完全失真。本版本改为
+**剔除**异常行而非压平：任何 OHLC 非正或明显失真的交易日直接从样本中移除，
+并在返回时附带质量报告，让上层能判断该标的是否仍可用。
 """
 
 import os
-import time
 import datetime
+
 import pandas as pd
 import numpy as np
 import akshare as ak
 
-from config.config import CACHE_DIR, CORE_STOCK_POOL, is_main_board_stock, get_stock_board, is_valid_a_stock
+from config.config import (
+    CACHE_DIR,
+    CORE_STOCK_POOL, get_pool,
+    is_main_board_stock,
+    get_stock_board,
+    is_valid_a_stock,
+)
 from features.feature_engineering import calculate_technical_indicators
+
+# 单只标的最少可用交易日数，低于此值不参与训练
+MIN_VALID_ROWS = 120
+
+# 价格下限：低于此值的行视为复权异常，直接剔除
+MIN_VALID_PRICE = 0.01
+
+
+def _has_new_features(df: pd.DataFrame) -> bool:
+    """判断缓存是否已包含当前特征集（含归一化特征）。"""
+    from config.config import FEATURE_COLS
+    return all(c in df.columns for c in FEATURE_COLS)
+
+
+def _clean_price_rows(df: pd.DataFrame) -> tuple:
+    """剔除复权异常行，返回 (清洗后数据, 质量报告)。
+
+    判定规则：OHLC 任一列非正、或四价完全相等且等于某个固定常数
+    （典型的 clip 残留特征），均视为不可用。
+    """
+    price_cols = [c for c in ('open', 'close', 'high', 'low') if c in df.columns]
+    if not price_cols:
+        return df, {"removed": 0, "reason": "no_price_columns"}
+
+    before = len(df)
+    valid = (df[price_cols] > MIN_VALID_PRICE).all(axis=1)
+
+    # 四价完全相等在真实行情中几乎不可能出现，视为填充残留
+    if len(price_cols) == 4:
+        degenerate = (df[price_cols].nunique(axis=1) == 1)
+        valid &= ~degenerate
+
+    cleaned = df[valid].copy()
+    removed = before - len(cleaned)
+
+    report = {
+        "removed": int(removed),
+        "removed_ratio": round(removed / before, 4) if before else 0.0,
+        "remaining": int(len(cleaned)),
+    }
+    return cleaned, report
 
 
 def get_stock_data(code: str, use_cache: bool = True, force_refresh: bool = False) -> pd.DataFrame:
-    """
-    获取单只主板股票历史数据并计算全套技术指标
-    
+    """获取单只股票历史日线并计算技术指标。
+
     Args:
-        code (str): 6位数字股票代码 (例如 "600030")
-        use_cache (bool): 是否使用本地磁盘缓存
-        force_refresh (bool): 是否强制重新从网络拉取
-        
+        code: 6 位股票代码
+        use_cache: 是否使用本地磁盘缓存
+        force_refresh: 是否强制从数据源重新拉取
+
     Returns:
-        pd.DataFrame or None: 包含技术指标的 DataFrame (以 date 为索引)
+        以 date 为索引的 DataFrame，含指标与 ret_5d_fwd；
+        数据不可用时返回 None。
     """
     clean_code = str(code).zfill(6)
     cache_file = os.path.join(CACHE_DIR, f"{clean_code}_hist.csv")
-    
-    # 1. 尝试从本地缓存读取（若缓存数据量达到 10~15 年大跨度，优先复用以保障秒级性能）
-    df_cache_found = None
+    cached_df = None
+
+    # 1. 本地缓存优先
     if use_cache and not force_refresh and os.path.exists(cache_file):
         try:
-            df_cache = pd.read_csv(cache_file)
-            if len(df_cache) > 20 and 'close' in df_cache.columns and 'RSI14' in df_cache.columns:
-                df_cache['date'] = pd.to_datetime(df_cache['date'])
-                df_cache = df_cache.set_index('date')
-                df_cache_found = df_cache
-                # 如果缓存已有大于等于 2000 行（即已覆盖 8~15 年行情），则直接快速复用
-                if len(df_cache) >= 2000:
-                    return df_cache
-        except Exception as e:
-            print(f"[DataFetcher] 读取股票 {clean_code} 缓存失败，重新网络拉取: {e}")
+            raw = pd.read_csv(cache_file)
+            if len(raw) > 20 and 'close' in raw.columns:
+                raw['date'] = pd.to_datetime(raw['date'])
+                raw = raw.sort_values('date')
+                cached_df = raw.set_index('date')
 
-    # 2. 从 akshare 获取真实历史日线行情 (前复权，跨度 15 年，覆盖 2011 至今完整多轮牛熊大周期)
+                # 缓存已含新特征：直接复用
+                if _has_new_features(cached_df):
+                    return cached_df
+
+                # 缓存只有 OHLCV：本地重算指标，避免依赖网络
+                if {'open', 'high', 'low', 'volume'}.issubset(raw.columns):
+                    clean, report = _clean_price_rows(raw.copy())
+                    if report.get('removed', 0) > 0:
+                        print(f"[DataFetcher] {clean_code} 缓存中剔除 {report['removed']} 行"
+                              f"异常价格（占比 {report['removed_ratio']:.1%}）")
+                    if len(clean) < MIN_VALID_ROWS:
+                        print(f"[DataFetcher] {clean_code} 清洗后仅 {len(clean)} 行，数据不可用")
+                        return None
+                    recalc = calculate_technical_indicators(clean)
+                    if use_cache:
+                        try:
+                            recalc.to_csv(cache_file, index=False, encoding='utf-8-sig')
+                        except Exception:
+                            pass
+                    return recalc.set_index('date')
+        except Exception as e:
+            print(f"[DataFetcher] 读取 {clean_code} 缓存失败，转为网络拉取: {e}")
+
+    # 2. 从数据源拉取前复权日线（约 15 年）
     try:
-        # 获取近 15 年的历史日线数据以保证 K 线跨度充足 (约 5500 个自然日，约 3600~3800 个交易日)
         start_date = (datetime.date.today() - datetime.timedelta(days=15 * 365 + 60)).strftime("%Y%m%d")
         df = ak.stock_zh_a_hist(symbol=clean_code, period="daily", start_date=start_date, adjust="qfq")
-        
-        if df is None or len(df) == 0:
-            print(f"[DataFetcher] 未获取到股票 {clean_code} 的 15 年历史数据，尝试使用已有缓存")
-            if df_cache_found is not None:
-                return df_cache_found
-            return None
 
-        # 统一规范化字段名
+        if df is None or len(df) == 0:
+            print(f"[DataFetcher] {clean_code} 无网络数据，回退本地缓存")
+            return cached_df
+
         df = df.rename(columns={
-            '日期': 'date',
-            '开盘': 'open',
-            '收盘': 'close',
-            '最高': 'high',
-            '最低': 'low',
-            '成交量': 'volume',
-            '涨跌幅': 'pct_chg'
+            '日期': 'date', '开盘': 'open', '收盘': 'close',
+            '最高': 'high', '最低': 'low', '成交量': 'volume', '涨跌幅': 'pct_chg',
         })
-        
-        # 转换并规整类型
+
         df['date'] = pd.to_datetime(df['date'])
-        for col in ['open', 'close', 'high', 'low', 'volume', 'pct_chg']:
+        for col in ('open', 'close', 'high', 'low', 'volume', 'pct_chg'):
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
 
-        # 针对 10~15 年超长跨度且历史累计分红极高的标的（如贵州茅台），防范前复权折算产生负价格
-        for p_col in ['open', 'close', 'high', 'low']:
-            if p_col in df.columns and (df[p_col] <= 0).any():
-                df[p_col] = df[p_col].clip(lower=0.50)
-                
         df = df.sort_values('date').reset_index(drop=True)
-        
-        # 计算 25 维技术指标与动能特征
+
+        # 关键改动：剔除异常行，而不是把价格压成常数
+        df, report = _clean_price_rows(df)
+        if report.get("removed_ratio", 0) > 0.2:
+            print(f"[DataFetcher] {clean_code} 剔除 {report['removed']} 行异常价格"
+                  f"（占比 {report['removed_ratio']:.1%}），数据质量偏低")
+
+        if len(df) < MIN_VALID_ROWS:
+            print(f"[DataFetcher] {clean_code} 有效样本仅 {len(df)} 行，低于阈值 {MIN_VALID_ROWS}")
+            return cached_df
+
         df = calculate_technical_indicators(df)
-        
-        # 缓存到本地
+
         if use_cache:
             try:
                 df.to_csv(cache_file, index=False, encoding='utf-8-sig')
             except Exception:
                 pass
-                
-        df = df.set_index('date')
-        return df
+
+        return df.set_index('date')
 
     except Exception as e:
-        print(f"[DataFetcher] 从 akshare 获取股票 {clean_code} 15年数据异常: {str(e)}")
-        if df_cache_found is not None:
-            return df_cache_found
+        print(f"[DataFetcher] 拉取 {clean_code} 行情异常: {e}")
+        if cached_df is not None:
+            return cached_df
         if os.path.exists(cache_file):
             try:
-                df_fallback = pd.read_csv(cache_file)
-                df_fallback['date'] = pd.to_datetime(df_fallback['date'])
-                df_fallback = df_fallback.set_index('date')
-                return df_fallback
+                fb = pd.read_csv(cache_file)
+                fb['date'] = pd.to_datetime(fb['date'])
+                return fb.set_index('date')
             except Exception:
                 pass
         return None
 
 
-def get_stock_list(filter_st: bool = True, main_board_only: bool = False, board: str = None, limit: int = None) -> pd.DataFrame:
-    """
-    获取 A 股全市场股票行情列表（支持全板块：主板、创业板、科创板、北交所）
-    
-    Args:
-        filter_st (bool): 是否过滤 ST 及退市股票
-        main_board_only (bool): 是否仅限制为主板股票
-        board (str, optional): 指定筛选板块 ("全部" / "主板" / "创业板" / "科创板" / "北交所")
-        limit (int, optional): 返回最大股票数
-        
-    Returns:
-        pd.DataFrame: 包含 code, name, price, change_pct, board 等字段的数据表
+def get_stock_list(filter_st: bool = True, main_board_only: bool = False,
+                   board: str = None, limit: int = None) -> pd.DataFrame:
+    """获取股票列表，支持板块筛选。
+
+    网络不可用时回退到本地核心股票池，保证离线可演示。
     """
     cache_list_file = os.path.join(CACHE_DIR, "stock_market_list.csv")
     df = None
 
-    # 1. 优先读取本地磁盘缓存
     if os.path.exists(cache_list_file):
         try:
             df = pd.read_csv(cache_list_file)
@@ -133,66 +186,47 @@ def get_stock_list(filter_st: bool = True, main_board_only: bool = False, board:
         except Exception:
             df = None
 
-    # 2. 若指定了较小的 limit 且暂无缓存，直接优先使用全板块核心股票池
-    if (df is None or len(df) == 0) and limit is not None and limit <= len(CORE_STOCK_POOL):
-        core_records = []
-        for s in CORE_STOCK_POOL[:limit]:
-            core_records.append({
-                'code': s['code'],
-                'name': s['name'],
-                'price': 100.0,
-                'change_pct': 0.0,
-                'board': s.get('board', get_stock_board(s['code']))
-            })
-        df = pd.DataFrame(core_records)
+    if (df is None or len(df) == 0) and limit is not None and limit <= len(get_pool()):
+        df = pd.DataFrame([{
+            'code': s['code'],
+            'name': s['name'],
+            'price': 0.0,
+            'change_pct': 0.0,
+            'board': s.get('board', get_stock_board(s['code'])),
+        } for s in get_pool()[:limit]])
 
-    # 3. 否则尝试拉取东方财富全市场实时列表
     if df is None or len(df) == 0:
         try:
-            print("[DataFetcher] 正在从数据源拉取最新全市场行情列表...")
+            print("[DataFetcher] 拉取全市场行情列表...")
             raw_df = ak.stock_zh_a_spot_em()
             if raw_df is not None and len(raw_df) > 0:
                 df = raw_df.rename(columns={
-                    '代码': 'code',
-                    '名称': 'name',
-                    '最新价': 'price',
-                    '涨跌幅': 'change_pct'
+                    '代码': 'code', '名称': 'name',
+                    '最新价': 'price', '涨跌幅': 'change_pct',
                 })[['code', 'name', 'price', 'change_pct']]
                 df['code'] = df['code'].apply(lambda x: str(x).zfill(6))
                 df.to_csv(cache_list_file, index=False, encoding='utf-8-sig')
         except Exception as e:
-            print(f"[DataFetcher] 获取实时全市场行情超时或失败: {e}，启用核心池兜底")
-            core_records = [{
-                'code': s['code'], 
-                'name': s['name'], 
-                'price': 100.0, 
-                'change_pct': 0.0,
-                'board': s.get('board', get_stock_board(s['code']))
-            } for s in CORE_STOCK_POOL]
-            df = pd.DataFrame(core_records)
-                
+            print(f"[DataFetcher] 行情列表获取失败，启用本地核心池: {e}")
+
     if df is None or len(df) == 0:
         df = pd.DataFrame([{
-            'code': s['code'], 
-            'name': s['name'], 
-            'price': 50.0, 
+            'code': s['code'],
+            'name': s['name'],
+            'price': 0.0,
             'change_pct': 0.0,
-            'board': s.get('board', get_stock_board(s['code']))
-        } for s in CORE_STOCK_POOL])
+            'board': s.get('board', get_stock_board(s['code'])),
+        } for s in get_pool()])
 
-    # 附加板块属性
     if 'board' not in df.columns and 'code' in df.columns:
         df['board'] = df['code'].apply(get_stock_board)
 
-    # 4. 过滤 ST 与退市
     if filter_st and 'name' in df.columns:
         df = df[~df['name'].str.contains('ST|退', na=False)]
-        
-    # 主板限定（仅当显式指定 main_board_only 为 True 时）
+
     if main_board_only and 'code' in df.columns:
         df = df[df['code'].apply(is_main_board_stock)]
 
-    # 板块筛选
     if board and board != "全部" and 'board' in df.columns:
         df = df[df['board'] == board]
 
@@ -202,123 +236,96 @@ def get_stock_list(filter_st: bool = True, main_board_only: bool = False, board:
     return df.reset_index(drop=True)
 
 
+def _fallback_kline(clean_code: str, stock_name: str, limit: int) -> dict:
+    """网络与缓存均不可用时的 K 线占位数据。
+
+    明确标记 is_synthetic=True，前端必须据此提示用户，
+    避免把占位曲线误认为真实行情。
+    """
+    periods = min(limit, 2500)
+    dates = pd.date_range(end=datetime.date.today(), periods=periods, freq='B').strftime('%Y/%m/%d').tolist()
+    k_values, volumes = [], []
+    for i in range(len(dates)):
+        p = 20.0 + np.sin(i / 15) * 4.5 + np.cos(i / 40) * 3.0 + i * 0.03
+        o = round(p + np.random.uniform(-0.3, 0.3), 2)
+        c = round(p + np.random.uniform(-0.3, 0.3), 2)
+        l = round(min(o, c) - np.random.uniform(0.1, 0.4), 2)
+        h = round(max(o, c) + np.random.uniform(0.1, 0.4), 2)
+        k_values.append([o, c, l, h])
+        volumes.append(int(100000 + np.random.randint(10000, 50000)))
+
+    c_series = pd.Series([x[1] for x in k_values])
+    return {
+        "stock_code": clean_code,
+        "stock_name": stock_name,
+        "is_synthetic": True,
+        "dates": dates,
+        "kline_values": k_values,
+        "volumes": volumes,
+        "ma5": c_series.rolling(5, min_periods=1).mean().round(3).tolist(),
+        "ma10": c_series.rolling(10, min_periods=1).mean().round(3).tolist(),
+        "ma20": c_series.rolling(20, min_periods=1).mean().round(3).tolist(),
+        "ma30": c_series.rolling(30, min_periods=1).mean().round(3).tolist(),
+        "highest": round(max(x[3] for x in k_values), 2),
+        "highest_date": dates[int(np.argmax([x[3] for x in k_values]))],
+        "lowest": round(min(x[2] for x in k_values), 2),
+        "lowest_date": dates[int(np.argmin([x[2] for x in k_values]))],
+        "latest_close": k_values[-1][1],
+        "change_pct": 0.0,
+        "start_date": dates[0] if dates else "",
+        "end_date": dates[-1] if dates else "",
+        "total_count": len(dates),
+        "years_span": round(len(dates) / 242, 1),
+    }
+
+
 def get_stock_kline_data(code: str, limit: int = 3800) -> dict:
-    """
-    获取指定主板股票的专业 K 线图数据（包含日K OHLC、MA5/10/20/30、成交量及极值标注）
-    严格适配 ECharts K线图 (Candlestick) 与走势图渲染格式
-    
-    Args:
-        code (str): 股票代码
-        limit (int): 返回的最大交易日数 (默认支持 10~15 年超大跨度，约 3800 根K线)
-        
-    Returns:
-        dict: 结构化 K 线走势数据包
-    """
+    """返回适配 ECharts 的日 K 线、均线与成交量数据。"""
     clean_code = str(code).zfill(6)
     df = get_stock_data(clean_code)
-    
-    # 寻找标的名称
+
     stock_name = clean_code
-    for s in CORE_STOCK_POOL:
+    for s in get_pool():
         if s['code'] == clean_code:
             stock_name = s['name']
             break
 
     if df is None or len(df) == 0:
-        # 兜底生成模拟平滑走势（跨度 10~15 年大周期，确保无网络时体验完备）
-        periods_count = min(limit, 2500)
-        dates = pd.date_range(end=datetime.date.today(), periods=periods_count, freq='B').strftime('%Y/%m/%d').tolist()
-        base_p = 20.0
-        k_values = []
-        volumes = []
-        for i in range(len(dates)):
-            p = base_p + np.sin(i / 15) * 4.5 + np.cos(i / 40) * 3.0 + (i * 0.03)
-            o = round(p + np.random.uniform(-0.3, 0.3), 2)
-            c = round(p + np.random.uniform(-0.3, 0.3), 2)
-            l = round(min(o, c) - np.random.uniform(0.1, 0.4), 2)
-            h = round(max(o, c) + np.random.uniform(0.1, 0.4), 2)
-            k_values.append([o, c, l, h])
-            volumes.append(int(100000 + np.random.randint(10000, 50000)))
-            
-        c_series = pd.Series([x[1] for x in k_values])
-        ma5 = c_series.rolling(5, min_periods=1).mean().round(3).tolist()
-        ma10 = c_series.rolling(10, min_periods=1).mean().round(3).tolist()
-        ma20 = c_series.rolling(20, min_periods=1).mean().round(3).tolist()
-        ma30 = c_series.rolling(30, min_periods=1).mean().round(3).tolist()
-        
-        return {
-            "stock_code": clean_code,
-            "stock_name": stock_name,
-            "dates": dates,
-            "kline_values": k_values,  # [open, close, lowest, highest]
-            "volumes": volumes,
-            "ma5": ma5,
-            "ma10": ma10,
-            "ma20": ma20,
-            "ma30": ma30,
-            "highest": round(max([x[3] for x in k_values]), 2),
-            "highest_date": dates[np.argmax([x[3] for x in k_values])],
-            "lowest": round(min([x[2] for x in k_values]), 2),
-            "lowest_date": dates[np.argmin([x[2] for x in k_values])],
-            "latest_close": k_values[-1][1],
-            "change_pct": 1.25,
-            "start_date": dates[0] if dates else "",
-            "end_date": dates[-1] if dates else "",
-            "total_count": len(dates),
-            "years_span": round(len(dates) / 242, 1)
-        }
+        return _fallback_kline(clean_code, stock_name, limit)
 
-    # 截取近 limit 条数据 (默认取全量 10~15 年)
     df_sub = df.tail(limit).copy() if limit and limit > 0 else df.copy()
-    
-    dates = [d.strftime('%Y/%m/%d') if hasattr(d, 'strftime') else str(d).replace('-', '/') for d in df_sub.index]
-    
-    # ECharts Candlestick 标准格式: [open, close, lowest, highest]
-    k_values = []
-    for _, row in df_sub.iterrows():
-        o = round(float(row['open']), 2)
-        c = round(float(row['close']), 2)
-        l = round(float(row['low']), 2)
-        h = round(float(row['high']), 2)
-        k_values.append([o, c, l, h])
+    dates = [d.strftime('%Y/%m/%d') if hasattr(d, 'strftime') else str(d).replace('-', '/')
+             for d in df_sub.index]
+
+    k_values = [
+        [round(float(r['open']), 2), round(float(r['close']), 2),
+         round(float(r['low']), 2), round(float(r['high']), 2)]
+        for _, r in df_sub.iterrows()
+    ]
 
     close_series = df_sub['close'].astype(float)
-    ma5 = close_series.rolling(5, min_periods=1).mean().round(3).tolist()
-    ma10 = close_series.rolling(10, min_periods=1).mean().round(3).tolist()
-    ma20 = close_series.rolling(20, min_periods=1).mean().round(3).tolist()
-    ma30 = close_series.rolling(30, min_periods=1).mean().round(3).tolist()
+    ma = {n: close_series.rolling(n, min_periods=1).mean().round(3).tolist() for n in (5, 10, 20, 30)}
 
     volumes = df_sub['volume'].astype(float).fillna(0).astype(int).tolist()
-    
-    # 极值点计算
-    high_idx = np.argmax([x[3] for x in k_values])
-    low_idx = np.argmin([x[2] for x in k_values])
-    highest_val = round(k_values[high_idx][3], 2)
-    lowest_val = round(k_values[low_idx][2], 2)
-    highest_date = dates[high_idx]
-    lowest_date = dates[low_idx]
-
-    latest_close = k_values[-1][1] if k_values else 0.0
-    latest_pct = round(float(df_sub['pct_chg'].iloc[-1]), 2) if 'pct_chg' in df_sub.columns else 0.0
+    high_idx = int(np.argmax([x[3] for x in k_values]))
+    low_idx = int(np.argmin([x[2] for x in k_values]))
 
     return {
         "stock_code": clean_code,
         "stock_name": stock_name,
+        "is_synthetic": False,
         "dates": dates,
         "kline_values": k_values,
         "volumes": volumes,
-        "ma5": ma5,
-        "ma10": ma10,
-        "ma20": ma20,
-        "ma30": ma30,
-        "highest": highest_val,
-        "highest_date": highest_date,
-        "lowest": lowest_val,
-        "lowest_date": lowest_date,
-        "latest_close": latest_close,
-        "change_pct": latest_pct,
+        "ma5": ma[5], "ma10": ma[10], "ma20": ma[20], "ma30": ma[30],
+        "highest": round(k_values[high_idx][3], 2),
+        "highest_date": dates[high_idx],
+        "lowest": round(k_values[low_idx][2], 2),
+        "lowest_date": dates[low_idx],
+        "latest_close": k_values[-1][1] if k_values else 0.0,
+        "change_pct": round(float(df_sub['pct_chg'].iloc[-1]), 2) if 'pct_chg' in df_sub.columns else 0.0,
         "start_date": dates[0] if dates else "",
         "end_date": dates[-1] if dates else "",
         "total_count": len(dates),
-        "years_span": round(len(dates) / 242, 1)
+        "years_span": round(len(dates) / 242, 1),
     }

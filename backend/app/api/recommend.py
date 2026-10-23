@@ -1,43 +1,39 @@
 # -*- coding: utf-8 -*-
-"""推荐 API 路由模块
-提供 Top-K 推荐查询、日期列表及 Excel 报表导出下载
-"""
+"""推荐 API 路由"""
 
 import os
-from fastapi import APIRouter, Query, HTTPException
+from typing import List, Optional
+
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
-from typing import Optional, List
-from backend.app.schemas.recommend import RecommendTopKResponse
+
 from backend.app.services.recommend_service import service_instance
 
-router = APIRouter(prefix="/recommend", tags=["Top-K 智能选股推荐"])
+router = APIRouter(prefix="/recommend", tags=["Top-K 选股推荐"])
 
 
-@router.get("/dates", summary="获取所有可推荐的交易截面日期")
+@router.get("/dates", summary="获取可选截面日期列表")
 def list_available_dates() -> List[str]:
     return service_instance.get_available_dates()
 
 
-@router.get("/topk", response_model=RecommendTopKResponse, summary="获取指定日期的 Top-K 推荐股票列表")
-def get_topk_recommendations(
-    date: Optional[str] = Query(None, description="截面日期 (格式: YYYY-MM-DD)，缺省为最新"),
-    k: int = Query(10, ge=1, le=50, description="推荐数量 K (默认 10)"),
-    industry: Optional[str] = Query(None, description="按申万行业筛选，默认全部"),
-    board: Optional[str] = Query(None, description="按板块筛选 (主板/创业板/科创板/北交所/全部)")
+@router.get("/topk", summary="获取指定截面的 Top-K 推荐列表")
+def get_topk(
+    date: Optional[str] = Query(None, description="截面日期 YYYY-MM-DD，缺省为最新"),
+    k: int = Query(10, ge=1, le=50, description="推荐数量"),
+    industry: Optional[str] = Query(None, description="行业筛选"),
+    board: Optional[str] = Query(None, description="板块筛选"),
 ):
-    result = service_instance.get_topk_recommendations(date=date, k=k, industry=industry, board=board)
-    return result
+    return service_instance.get_topk(date=date, k=k, industry=industry, board=board)
 
 
-@router.get("/export_excel", summary="导出并下载当前选股推荐结果为 Excel 文件")
-def export_recommendations_excel():
-    excel_path = service_instance.export_excel()
-    if not os.path.exists(excel_path):
-        raise HTTPException(status_code=500, detail="生成 Excel 报表失败")
-    
-    filename = os.path.basename(excel_path)
+@router.get("/export_excel", summary="导出推荐结果为 Excel")
+def export_excel():
+    path = service_instance.export_excel()
+    if not path or not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="暂无可导出的推荐数据")
     return FileResponse(
-        path=excel_path,
-        filename=filename,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        path=path,
+        filename=os.path.basename(path),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )

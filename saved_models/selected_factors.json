@@ -1,0 +1,39 @@
+{
+  "factors": [
+    "ATR_ratio",
+    "MACD_norm",
+    "momentum_60d",
+    "OBV_zscore"
+  ],
+  "model_features": [
+    "ATR_ratio_neu",
+    "MACD_norm_neu",
+    "momentum_60d_neu",
+    "OBV_zscore_neu"
+  ],
+  "criteria": {
+    "min_abs_ic": 0.015,
+    "min_abs_t": 2.0,
+    "max_pairwise_corr": 0.7,
+    "min_sections": 20
+  },
+  "rejected": [
+    "EMA20_ratio",
+    "momentum_20d",
+    "volatility_20d",
+    "ma_gap",
+    "RSI14",
+    "pe_ttm",
+    "pb",
+    "roe",
+    "pct_chg",
+    "ADX",
+    "debt_ratio",
+    "net_margin",
+    "gross_margin",
+    "turnover_proxy",
+    "vol_ratio",
+    "CCI",
+    "revenue_growth"
+  ]
+}
