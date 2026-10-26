@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 
 import joblib
 import pandas as pd
+from ml_pipeline.artifacts import artifact_dir, recommendation_path, experiment_status, live_dir
 
 from config.config import (
     PROCESSED_DIR, SAVED_MODELS_DIR, get_stock_board,
@@ -47,6 +48,19 @@ class RecommendationService:
     # 资源加载
     # ------------------------------------------------------------------
     def _load(self):
+        # 一次解析当前批次，所有模型和评测文件从同一目录读取。
+        active = artifact_dir()
+        for attribute, filename in {
+            'model_path': 'lgbm_market_classifier.pkl', 'explainer_path': 'shap_explainer.pkl',
+            'importance_path': 'global_importance.json', 'shap_summary_path': 'shap_summary.json',
+            'metrics_path': 'evaluation_metrics.json', 'backtest_path': 'backtest_result.json',
+            'report_path': 'training_report.json', 'factor_path': 'factor_diagnosis.json',
+            'backtest_cmp_path': 'backtest_comparison.json', 'walk_forward_path': 'walk_forward.json',
+            'attribution_path': 'attribution.json', 'stress_test_path': 'stress_test_report.json',
+            'sensitivity_path': 'sensitivity_analysis.json',
+        }.items():
+            setattr(self, attribute, os.path.join(active, filename))
+        self.realtime_path = recommendation_path(active)
         # API 查询会频繁调用 reload。按文件签名刷新缓存，避免每次请求都重读模型和结果文件。
         self._load_asset_if_changed("data_df", self.realtime_path, self._read_csv, pd.DataFrame)
         self._load_asset_if_changed("explainer", self.explainer_path, self._read_pickle, lambda: None)
@@ -110,7 +124,7 @@ class RecommendationService:
         if not os.path.exists(path):
             return pd.DataFrame()
         try:
-            return pd.read_csv(path)
+            return pd.read_csv(path, dtype={'代码': str})
         except Exception:
             return pd.DataFrame()
 
@@ -163,11 +177,14 @@ class RecommendationService:
         df = self.data_df.copy()
 
         date_col = "更新日期" if "更新日期" in df.columns else None
-        if date and date_col and date in df[date_col].astype(str).values:
-            df = df[df[date_col].astype(str) == date]
-            current_date = date
-        else:
-            current_date = str(df[date_col].iloc[-1]) if date_col else datetime.today().strftime("%Y-%m-%d")
+        if date is not None:
+            try:
+                if datetime.strptime(date, '%Y-%m-%d').strftime('%Y-%m-%d') != date:
+                    raise ValueError('日期格式应为 YYYY-MM-DD')
+            except ValueError as exc:
+                raise ValueError('日期格式应为 YYYY-MM-DD') from exc
+        current_date = date or (str(df[date_col].astype(str).max()) if date_col else '')
+        df = df[df[date_col].astype(str) == current_date] if date_col else df.iloc[0:0]
 
         if board and board != "全部" and "板块" in df.columns:
             df = df[df["板块"] == board]
@@ -434,8 +451,7 @@ class RecommendationService:
     def get_stress_test(self) -> Dict[str, Any]:
         self.reload()
         if not getattr(self, "stress_test", None):
-            from ml_pipeline.stress_test import load_stress_test_report
-            return load_stress_test_report()
+            return {'historical_crises': [], 'hypothetical_shocks': [], 'error': '本批次未生成压力情景分析'}
         return self.stress_test
 
     def get_walk_forward(self) -> Dict[str, Any]:
@@ -468,11 +484,11 @@ class RecommendationService:
     # 导出
     # ------------------------------------------------------------------
     def export_excel(self) -> str:
+        self.reload()
         if self.data_df.empty:
             return ""
-        self.reload()
         tag = datetime.today().strftime("%Y%m%d")
-        path = os.path.join(PROCESSED_DIR, f"stock_recommend_{tag}.xlsx")
+        path = os.path.join(live_dir(), f"stock_recommend_{tag}.xlsx")
         self.data_df.to_excel(path, index=False, engine="openpyxl")
         return path
 

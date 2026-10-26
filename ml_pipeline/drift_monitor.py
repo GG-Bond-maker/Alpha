@@ -119,8 +119,9 @@ def evaluate_feature_drift(ref_series: pd.Series, cur_series: pd.Series, n_bins:
 
 def generate_drift_report(model_path: str = None) -> Dict[str, Any]:
     """生成全套特征与模型预测稳定性检测报告并持久化。"""
+    from ml_pipeline.artifacts import artifact_dir, live_dir
     if model_path is None:
-        model_path = os.path.join(SAVED_MODELS_DIR, 'lgbm_market_classifier.pkl')
+        model_path = os.path.join(artifact_dir(), 'lgbm_market_classifier.pkl')
 
     if not os.path.exists(model_path):
         return {'error': '未找到模型权重与训练集快照'}
@@ -213,7 +214,8 @@ def generate_drift_report(model_path: str = None) -> Dict[str, Any]:
         }
     }
 
-    out_path = os.path.join(SAVED_MODELS_DIR, 'feature_drift_report.json')
+    destination = os.environ.get('ALPHA_ARTIFACT_DIR') or live_dir()
+    out_path = os.path.join(destination, 'feature_drift_report.json')
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 

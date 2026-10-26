@@ -66,7 +66,7 @@ def _calc_pandas(df: pd.DataFrame) -> pd.DataFrame:
 
     tp = (high + low + close) / 3.0
     tp_sma = tp.rolling(14, min_periods=1).mean()
-    mad = (tp - tp_sma).abs().rolling(14, min_periods=1).mean()
+    mad = tp.rolling(14, min_periods=14).apply(lambda x: np.abs(x - x.mean()).mean(), raw=True)
     df['CCI'] = (tp - tp_sma) / (0.015 * mad + 1e-9)
 
     prev_close = close.shift(1)
@@ -128,13 +128,8 @@ def calculate_technical_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
-    if HAS_TALIB:
-        try:
-            df = _calc_talib(df)
-        except Exception:
-            df = _calc_pandas(df)
-    else:
-        df = _calc_pandas(df)
+    # 固定实现，避免是否安装 TA-Lib 改变训练/推理特征。
+    df = _calc_pandas(df)
 
     df = add_normalized_features(df)
 

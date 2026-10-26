@@ -81,18 +81,18 @@
           <div class="stat-value" :class="strategy.dsr >= 0.8 ? 'text-pos' : ''">
             {{ strategy.dsr != null ? (strategy.dsr * 100).toFixed(1) + '%' : '—' }}
           </div>
-          <div class="stat-hint">扣除 {{ params.n_trials || 25 }} 次试验过拟合偏差</div>
+          <div class="stat-hint">{{ strategy.dsr == null ? '缺少可比试验的夏普分布，未计算' : '使用已记录的可比策略试验' }}</div>
         </div>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div>
-            <div class="card-title">策略净值与动态回撤全景 (Institutional Dual-Chart)</div>
+            <div class="card-title">周期末净值与回撤</div>
             <div class="card-subtitle">
               共 {{ strategy.periods }} 个调仓周期 · 单边买入成本
               {{ (params.buy_cost * 100).toFixed(3) }}% · 卖出成本
-              {{ (params.sell_cost * 100).toFixed(3) }}%（含 5 bps 滑点与印花税）· 上图净值走势 · 下图动态回撤水下曲线
+              {{ (params.sell_cost * 100).toFixed(3) }}%（含本次配置的滑点与印花税）· 每期末全额平仓，下一期开盘重新建仓 · 回撤包含初始本金
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@
         <div class="card-header">
           <div>
             <div class="card-title">风险收益全景对照</div>
-            <div class="card-subtitle">策略与基准在同一时序测试区间、考虑涨跌停约束与微观摩擦下的深度对比</div>
+            <div class="card-subtitle">策略与等权候选池使用相同双边费用；信号日涨停筛选不保证下一开盘可成交</div>
           </div>
         </div>
         <div class="table-wrap">
@@ -559,20 +559,21 @@ const sizingModes = [
   { id: 'vol_parity', name: '3. 风险平价/反波动率 (Inverse-Vol)' },
 ]
 
+// 以下仅为方案说明，当前回测只执行等权配置。
 const sizingInfoMap = {
   equal: {
-    tag: '基准实盘采用',
-    title: '等权 1/N 头寸配置 (Equal Weight Portfolio)',
-    description: '每期入选 Top-K 的成分股严格均分组合资金（各占 10.0%），不依赖次级参数优化。根据 DeMiguel et al. (2009) 经典量化金融实证，1/N 策略因彻底摆脱参数估计误差与过拟合偏误，在绝大多数样本外真实回测中夏普比率显著跑赢马克维茨均值-方差优化。',
+    tag: '当前回测采用',
+    title: '等权 1/N 配置（当前回测）',
+    description: '每期入选 Top-K 的成分股严格均分组合资金（各占 10.0%），不依赖次级参数优化。当前回测每个持有期末全额平仓，下期重新等权建仓；不承诺优于其他配置方法。',
     formula: 'w_i = 1 / K = 10.0%',
     robustness: '极高（无二次估计误差）',
-    concentration: '完全分散（单股上限 10%）',
-    turnoverCost: '低（仅定期平衡摩擦）',
+    concentration: '单股权重为 1/K，行业暴露另行检查',
+    turnoverCost: '每期完整买卖，按双边费率计费',
     fitScenario: '基准主策略、宽基量化选股、因子截面预测有排序力但绝对收益率预测存在噪声时',
   },
   conviction: {
     tag: '进取增强型',
-    title: '模型确信度动态加权 (Conviction / Alpha-Proportional)',
+    title: '分数加权方案（概念说明，未回测）',
     description: '头寸权重与 LightGBM 模型预测概率超出中性水平的置信度 (P_i - 0.50) 成正比。对模型极为看好的核心龙头赋予更高权重（12%~18%），对临界入选的尾部标的降低权重（4%~7%），放大高胜率 Alpha 的收益弹性。',
     formula: 'w_i = (P_i - 0.50) / Σ(P_j - 0.50)',
     robustness: '中等（依赖概率校准度）',
@@ -582,7 +583,7 @@ const sizingInfoMap = {
   },
   vol_parity: {
     tag: '防守抗跌型',
-    title: '反波动率风险平价加权 (Inverse-Volatility Risk Parity)',
+    title: '反波动率方案（概念说明，未回测）',
     description: '头寸权重与个股近期真实波幅成反比 (w_i ∝ 1/ATR_i)。降低高弹性、高投机性个股的资金占用，自动增配大盘蓝筹、金融及公用事业等低波稳健标的，使每只持仓对组合总方差的风险贡献趋于均等。',
     formula: 'w_i = (1 / ATR_i) / Σ(1 / ATR_j)',
     robustness: '高（有效平抑极端黑天鹅下行）',
@@ -631,7 +632,7 @@ const renderChart = () => {
 
   // 计算水下动态回撤曲线 (Underwater Drawdown)
   const drawdowns = []
-  let peak = -Infinity
+  let peak = 1
   for (let i = 0; i < nav.length; i++) {
     const val = nav[i]
     if (val > peak) peak = val

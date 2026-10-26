@@ -1,0 +1,84 @@
+// Browser verification over local Chrome DevTools Protocol; no extra npm packages.
+import { writeFile, mkdir } from 'node:fs/promises'
+
+const [socketUrl, siteUrl, output] = process.argv.slice(2)
+await mkdir(output, { recursive: true })
+const socket = new WebSocket(socketUrl)
+await new Promise((resolve, reject) => { socket.onopen = resolve; socket.onerror = reject })
+let sequence = 0
+const pending = new Map(), errors = []
+socket.onmessage = ({ data }) => {
+  const message = JSON.parse(data)
+  if (message.id) {
+    const promise = pending.get(message.id)
+    pending.delete(message.id)
+    if (message.error) promise?.reject(new Error(JSON.stringify(message.error)))
+    else promise?.resolve(message.result)
+  }
+  if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails)
+  if (message.method === 'Runtime.consoleAPICalled' && message.params.type === 'error') errors.push(message.params)
+}
+function send(method, params = {}) {
+  const id = ++sequence
+  return new Promise((resolve, reject) => {
+    pending.set(id, { resolve, reject })
+    socket.send(JSON.stringify({ id, method, params }))
+  })
+}
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+async function evaluate(expression) {
+  const result = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })
+  if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails))
+  return result.result.value
+}
+async function until(expression, limit = 30000) {
+  const start = Date.now()
+  while (Date.now() - start < limit) {
+    if (await evaluate(expression)) return
+    await sleep(100)
+  }
+  throw new Error('Browser condition timed out: ' + expression)
+}
+async function screenshot(name) {
+  const { cssContentSize } = await send('Page.getLayoutMetrics')
+  const width = await evaluate('innerWidth')
+  await send('Emulation.setDeviceMetricsOverride', { width, height: Math.min(Math.ceil(cssContentSize.height), 5000), deviceScaleFactor: 1, mobile: false, screenWidth: width, screenHeight: Math.min(Math.ceil(cssContentSize.height), 5000) })
+  await sleep(300)
+  const result = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false })
+  await writeFile(`${output}/${name}.png`, Buffer.from(result.data, 'base64'))
+}
+try {
+  await send('Runtime.enable')
+  await send('Page.enable')
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
+  await send('Page.navigate', { url: siteUrl })
+  await until("document.querySelectorAll('.nav-item').length > 5")
+  const tabs = ['算法评测对比', '组合回测', '滚动窗口验证', '业绩归因', '数据与模型', '全局特征归因', '实验诊断图表']
+  const snapshots = []
+  for (const tab of tabs) {
+    await evaluate(`Array.from(document.querySelectorAll('.nav-item')).find(b => b.textContent.includes(${JSON.stringify(tab)})).click()`)
+    await until("(document.querySelector('.content section')?.innerText.length || 0) > 80 && !document.querySelector('.content .loading-state') && !document.querySelector('.content section')?.innerText.includes('正在加载')")
+    await sleep(600)
+    snapshots.push(await evaluate(`({tab:${JSON.stringify(tab)}, text:document.querySelector('.content section').innerText.slice(0,500), canvases:document.querySelectorAll('.content canvas').length, overflow:document.documentElement.scrollWidth>innerWidth})`))
+  }
+  await until("document.querySelectorAll('.diagnostic-chart svg').length === 4")
+  await sleep(600)
+  const desktopCharts = await evaluate("Array.from(document.querySelectorAll('.diagnostic-chart')).map(n=>({width:n.getBoundingClientRect().width,svgWidth:n.querySelector('svg')?.getAttribute('width')}))")
+  const desktopLayout = await evaluate("({width:innerWidth,sidebar:document.querySelector('.sidebar').getBoundingClientRect().width,margin:getComputedStyle(document.querySelector('.main-area')).marginLeft})")
+  await screenshot('diagnostics-desktop')
+  await evaluate("document.querySelector('select[aria-label=\"选择月度收益口径\"]').value='relative'; document.querySelector('select[aria-label=\"选择月度收益口径\"]').dispatchEvent(new Event('change',{bubbles:true}))")
+  await sleep(200)
+  await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false })
+  await sleep(500)
+  const mobile = await evaluate("({width:innerWidth, scrollWidth:document.documentElement.scrollWidth, chartWidths:Array.from(document.querySelectorAll('.diagnostic-chart')).map(n=>n.getBoundingClientRect().width)})")
+  await screenshot('diagnostics-mobile')
+  const result = { tabs: snapshots, desktopCharts, desktopLayout, mobile, errors }
+  await writeFile(`${output}/browser-checks.json`, JSON.stringify(result, null, 2))
+  console.log(JSON.stringify(result))
+  if (errors.length) process.exitCode = 1
+  if (mobile.scrollWidth > mobile.width) process.exitCode = 1
+} finally {
+  if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ id: ++sequence, method: 'Browser.close' }))
+  await sleep(100)
+  socket.close()
+}

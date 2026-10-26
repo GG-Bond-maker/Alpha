@@ -39,6 +39,8 @@ DEFAULT_PARAMS = {
     'max_depth': 5,
     'num_leaves': 31,
     'subsample': 0.85,
+    'subsample_freq': 1,
+    'n_jobs': 4,
     'colsample_bytree': 0.85,
     'reg_alpha': 0.1,
     'reg_lambda': 0.1,
@@ -64,6 +66,9 @@ def _date_grouped_splits(train: pd.DataFrame, n_splits: int = 3,
             continue
         tr_idx = np.flatnonzero(train['date'].isin(train_dates).to_numpy())
         va_idx = np.flatnonzero(train['date'].isin(val_dates).to_numpy())
+        if 'label_end_date' in train:
+            mature = (pd.to_datetime(train['label_end_date']) < pd.Timestamp(val_dates[0])).to_numpy()
+            tr_idx = tr_idx[mature[tr_idx]]
         if tr_idx.size and va_idx.size:
             splits.append((tr_idx, va_idx))
     return splits
@@ -120,6 +125,8 @@ def optimize_hyperparameters(train: pd.DataFrame, feature_cols: list,
             'max_depth': trial.suggest_int('max_depth', 3, 8),
             'num_leaves': trial.suggest_int('num_leaves', 8, 63),
             'subsample': trial.suggest_float('subsample', 0.6, 1.0),
+            'subsample_freq': 1,
+            'n_jobs': 4,
             'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
             'reg_alpha': trial.suggest_float('reg_alpha', 1e-4, 5.0, log=True),
             'reg_lambda': trial.suggest_float('reg_lambda', 1e-4, 5.0, log=True),
@@ -146,11 +153,13 @@ def optimize_hyperparameters(train: pd.DataFrame, feature_cols: list,
         return float(np.mean(scores)) if scores else 0.5
 
     try:
-        study = optuna.create_study(direction='maximize')
+        study = optuna.create_study(direction='maximize', sampler=optuna.samplers.TPESampler(seed=42))
         study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
         best = dict(study.best_params)
         best['random_state'] = 42
         best['verbose'] = -1
+        best['subsample_freq'] = 1
+        best['n_jobs'] = 4
         print(f"[Optuna] 最优验证 AUC: {study.best_value:.4f}（{n_trials} 轮）")
         return best
     except Exception as e:
@@ -257,7 +266,7 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
 
     os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
     # 为轻量持久化与 Git 提交，裁剪保存包中的冗余大体积全量面板，压缩存储
-    cols_to_keep = list(set(['date', 'stock_code', 'ret_5d_fwd', 'excess_ret_5d', 'industry', 'score_lgb', 'target_up'] + get_model_features() + [c for c in candidate_factors if c in train.columns]))
+    cols_to_keep = list(dict.fromkeys(['date', 'stock_code', 'ret_5d_fwd', 'excess_ret_5d', 'industry', 'score_lgb', 'target_up', 'label_end_date', 'entry_date', 'pct_chg'] + get_model_features() + [c for c in (candidate_factors or []) if c in train.columns]))
     train_sub = train[[c for c in cols_to_keep if c in train.columns]].copy()
     test_sub = test[[c for c in cols_to_keep if c in test.columns]].copy()
     for c in train_sub.select_dtypes(include=[np.float64]).columns:
@@ -298,7 +307,11 @@ def predict_signal(code: str, model, df: pd.DataFrame = None, panel: pd.DataFram
     sub = panel[panel['stock_code'].astype(str).str.zfill(6) == clean_code]
     if sub.empty:
         return None
-    latest_row = sub.sort_values('date').iloc[-1]
+    latest_date = panel['date'].max()
+    sub = sub[sub['date'] == latest_date]
+    if sub.empty:
+        return None
+    latest_row = sub.iloc[-1]
     X = latest_row[get_model_features()].to_frame().T.astype(float)
     if np.isinf(X.to_numpy(dtype=float)).any():
         return None
@@ -326,7 +339,7 @@ def predict_signal(code: str, model, df: pd.DataFrame = None, panel: pd.DataFram
         'pct_chg': round(latest_pct, 2),
         'update_date': latest_date,
         'features': {
-            c: (round(float(X.iloc[0][c]), 4) if pd.notna(X.iloc[0][c]) else None)
+            c: (float(X.iloc[0][c]) if pd.notna(X.iloc[0][c]) else None)
             for c in get_model_features()
         },
         'raw_features': {

@@ -34,6 +34,7 @@ MIN_STOCKS_PER_SECTION = 20
 PARAMS = dict(
     n_estimators=300, learning_rate=0.013, max_depth=3, num_leaves=46,
     subsample=0.8, colsample_bytree=0.9, reg_alpha=5e-4, reg_lambda=0.009,
+    subsample_freq=1, n_jobs=4,
     random_state=42, verbose=-1,
 )
 
@@ -125,6 +126,9 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
         val_end = dates[val_return_stop - 1]
         tr = panel[panel['date'].isin(train_dates)]
         va = panel[panel['date'].isin(val_dates)]
+        if 'label_end_date' in tr.columns:
+            tr = tr[pd.to_datetime(tr['label_end_date']) < pd.Timestamp(val_start)]
+            va = va[pd.to_datetime(va['label_end_date']) <= pd.Timestamp(dates[val_stop - 1])]
 
         if tr['date'].nunique() < MIN_TRAIN_DAYS or va['date'].nunique() < MIN_VAL_DAYS:
             continue
@@ -145,6 +149,7 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
 
         va = va.copy()
         va['pred'] = model.predict_proba(va[fold_features])[:, 1]
+        va['model_train_end'] = tr['date'].max()
         scored_windows.append(va)
 
         overall_auc = float(roc_auc_score(va['target_up'], va['pred']))
@@ -244,11 +249,15 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
         }
 
     # 把各窗口的样本拼回一条时间序列后统一回测，使持仓与换手成本
-    # 在窗口边界连续计算，避免每个窗口都把组合重置为现金。
+    # 在所有窗口使用一致的期末平仓与双边费用口径。
     aggregated = {}
     if backtest_k and backtest_k > 0 and scored_windows:
         from ml_pipeline.backtest import run_backtest
         scored_panel = pd.concat(scored_windows, ignore_index=True)
+        scored_panel = scored_panel.sort_values(['date', 'model_train_end']).drop_duplicates(['date', 'stock_code'], keep='first')
+        from config.config import PROCESSED_DIR
+        keep = ['date', 'stock_code', 'pred', 'ret_5d_fwd', 'industry', 'pct_chg', 'model_train_end', 'label_end_date']
+        scored_panel[[c for c in keep if c in scored_panel]].to_csv(os.path.join(PROCESSED_DIR, 'walk_forward_predictions.csv'), index=False)
         aggregated = run_backtest(
             scored_panel, k=backtest_k, ret_col='ret_5d_fwd',
             score_col='pred', selection=backtest_selection,
@@ -278,7 +287,7 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
         'backtest_aggregated': aggregated,
         'note': ('滚动窗口结果比单次切分更可靠：单次验证集 AUC 受切分点所在市场状态影响，'
                  '滚动窗口给出的是分布的均值与离散度。连续回测把每个窗口模型在其验证段的'
-                 '预测拼接后统一计算，并在窗口边界延续持仓与交易成本。'),
+                 '预测拼接后统一计算，每个持有期末平仓，窗口边界沿用相同收益与双边费用口径。'),
     }
 
 

@@ -70,7 +70,7 @@ def _read_cache(kind: str, code: str, max_age_days: int = 7):
     path = _cache_path(kind, code)
     if not os.path.exists(path):
         return None
-    if (time.time() - os.path.getmtime(path)) > max_age_days * 86400:
+    if os.environ.get('ALPHA_OFFLINE') != '1' and (time.time() - os.path.getmtime(path)) > max_age_days * 86400:
         return None
     try:
         df = pd.read_csv(path)
@@ -94,6 +94,8 @@ def fetch_price_history(code: str, start: str = '20150101', force: bool = False)
     if cached is not None and len(cached) > 100:
         cached['date'] = pd.to_datetime(cached['date'])
         return cached
+    if os.environ.get('ALPHA_OFFLINE') == '1':
+        return None
 
     clean = str(code).zfill(6)
     prefix = 'sh' if clean.startswith(('6', '9')) else ('bj' if clean.startswith(('4', '8')) else 'sz')
@@ -130,6 +132,8 @@ def fetch_valuation(code: str, force: bool = False) -> pd.DataFrame:
     if cached is not None and len(cached) > 20:
         cached['date'] = pd.to_datetime(cached['date'])
         return cached
+    if os.environ.get('ALPHA_OFFLINE') == '1':
+        return None
 
     clean = str(code).zfill(6)
     frames = []
@@ -162,6 +166,8 @@ def fetch_financials(code: str, force: bool = False) -> pd.DataFrame:
     if cached is not None and len(cached) > 0:
         cached['available_date'] = pd.to_datetime(cached['available_date'])
         return cached
+    if os.environ.get('ALPHA_OFFLINE') == '1':
+        return None
 
     clean = str(code).zfill(6)
     try:

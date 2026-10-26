@@ -33,7 +33,10 @@ def get_topk(
     industry: Optional[str] = Query(None, description="行业筛选"),
     board: Optional[str] = Query(None, description="板块筛选"),
 ):
-    return service_instance.get_topk(date=date, k=k, industry=industry, board=board)
+    try:
+        return service_instance.get_topk(date=date, k=k, industry=industry, board=board)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get("/risk_status", summary="获取风控熔断器状态 (ML4T Risk Guard)")
@@ -53,7 +56,7 @@ def reset_risk(req: ResetRiskRequest):
     from ml_pipeline.risk_guard import risk_guard_instance
     success = risk_guard_instance.reset(req.auth_token)
     if not success:
-        raise HTTPException(status_code=403, detail="口令鉴权失败，无法解除风控熔断（默认口令: ALPHA_SAFE_RESET_2026）")
+        raise HTTPException(status_code=403, detail="无法解除熔断，请核对服务端 ALPHA_RISK_RESET_TOKEN 配置与输入口令")
     return risk_guard_instance.status_report
 
 

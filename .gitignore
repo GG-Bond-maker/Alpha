@@ -77,6 +77,9 @@ data/skills/
 # Large Datasets (>100MB, cannot be pushed to GitHub)
 data/processed/panel_dataset.csv
 data/factors/
+saved_models/runs/
+saved_models/current.json
+data/processed/live/
 
 # Temporary root inspection scripts & logs
 /*.txt

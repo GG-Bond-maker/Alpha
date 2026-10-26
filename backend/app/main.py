@@ -5,8 +5,25 @@ from backend.app.api.explain import router as explain_router
 from backend.app.api.evaluation import router as eval_router
 from backend.app.api.stock import router as stock_router
 from backend.app.api.data_engineering import router as engineering_router
+from contextlib import asynccontextmanager, suppress
+import asyncio
+from backend.app.services.scheduler import DailyScheduler
+from backend.app.services.data_engineering_service import engineering_service_instance
+
+
+@asynccontextmanager
+async def lifespan(app):
+    scheduler = DailyScheduler(engineering_service_instance)
+    task = asyncio.create_task(scheduler.run())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
 app = FastAPI(
+    lifespan=lifespan,
     title="基于 LightGBM 与特征归因的主板股票智能选股与可视化推荐系统 API",
     description="包含基于 A 股主板的 LightGBM 推荐预测、专业日K线走势可视化、TreeSHAP 特征归因、评测服务及数据工程与模型生命周期管理。",
     version="2.0.0"

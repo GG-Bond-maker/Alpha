@@ -11,6 +11,10 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys
+sys.path.insert(0, BASE)
+from ml_pipeline.artifacts import artifact_dir
+SM = artifact_dir()
 OUT = os.path.join(BASE, "docs", "figures")
 os.makedirs(OUT, exist_ok=True)
 
@@ -44,7 +48,7 @@ def font(size, bold=False):
 
 
 def load(name):
-    p = os.path.join(BASE, "saved_models", name)
+    p = os.path.join(SM, name)
     if not os.path.exists(p):
         return None
     return json.load(open(p, encoding="utf-8"))

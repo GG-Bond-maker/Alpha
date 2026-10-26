@@ -6,7 +6,7 @@
           <div class="modal-icon-doc">📄</div>
           <div>
             <div class="modal-title">量化策略尽职调查简报 (Quantitative Strategy Tearsheet)</div>
-            <div class="modal-subtitle">符合 ML4T 国际量化尽调标准 · 一键导出与打印归档</div>
+            <div class="modal-subtitle">本批次实验结果与假设说明 · 支持导出与打印</div>
           </div>
         </div>
         <div class="header-actions">
@@ -27,8 +27,8 @@
           <h1 class="tearsheet-main-title">沪深300 Top-K 行业中性多因子量化选股策略</h1>
           <div class="tearsheet-meta-strip">
             <span><strong>报告日期:</strong> {{ reportDate }}</span>
-            <span><strong>回测周期:</strong> {{ backtest.strategy?.periods || 86 }} 周期 (双周调仓)</span>
-            <span><strong>研究池:</strong> 沪深300成分股动态池</span>
+            <span><strong>回测周期:</strong> {{ backtest.strategy?.periods ?? '未生成' }} 周期（每 5 个交易日调仓）</span>
+            <span><strong>研究池:</strong> 沪深300候选池（历史成分股可用性以实验数据说明为准）</span>
             <span><strong>选股口径:</strong> 申万行业中性化 Top-{{ backtest.params?.k || 10 }}</span>
             <span><strong>执行模型:</strong> LightGBM + TreeSHAP 归因</span>
           </div>
@@ -38,8 +38,8 @@
         <section class="tearsheet-section">
           <h3 class="section-title">一、策略架构与实盘微观结构假设</h3>
           <p class="section-desc">
-            策略旨在通过机器学习非线性拟合技术、量价与基本面融合因子，在沪深300大盘蓝筹基准上获取稳健截面 Alpha。
-            为防范传统量化“纸面虚高”问题，模型严格内嵌了中国 A 股真实交易微观结构与流动性摩擦约束：
+            策略旨在通过机器学习非线性拟合技术、量价与基本面融合因子，对沪深300候选池做相对收益排序，实际效果以样本外评测为准。
+            采用期末平仓和下期开盘重建仓的简化模型，仍存在停牌、涨跌停、容量和历史费用近似限制：
           </p>
           <div class="friction-grid">
             <div class="friction-item">
@@ -52,11 +52,11 @@
             </div>
             <div class="friction-item">
               <span class="friction-label">涨停过滤</span>
-              <span class="friction-val">信号日封板个股次日开盘自动剔除并顺延 (主板 ≥9.85%, 双创 ≥19.85%)</span>
+              <span class="friction-val">按信号日涨幅筛选候选；不保证下一开盘可成交</span>
             </div>
             <div class="friction-item">
               <span class="friction-label">多重检验</span>
-              <span class="friction-val">引入 Bailey & de Prado (2014) DSR 修正 Optuna 25 次搜索偏差</span>
+              <span class="friction-val">缺少可比策略试验夏普分布时，DSR 显示未计算</span>
             </div>
           </div>
         </section>
@@ -144,7 +144,7 @@
                   <td><strong>{{ backtest.strategy?.dsr != null ? (backtest.strategy.dsr * 100).toFixed(1) + '%' : '—' }}</strong></td>
                   <td>—</td>
                   <td>—</td>
-                  <td>扣除 25 次试验超参偏差</td>
+                  <td>需要真实可比策略试验记录</td>
                 </tr>
               </tbody>
             </table>
@@ -197,7 +197,7 @@
             </div>
             <div class="gov-item">
               <span class="gov-title">累计回撤熔断线: -25.0%</span>
-              <span class="gov-text">策略净值若从历史高点跌破 25%，启动底线熔断，转入持仓防御观察。</span>
+              <span class="gov-text">阈值定义为 -25%；当前未接入真实持仓回撤，不能宣称自动监控已运行。</span>
             </div>
             <div class="gov-item">
               <span class="gov-title">单票集中度上限: 20.0%</span>
@@ -255,8 +255,8 @@ const downloadMarkdown = () => {
   let md = `# 沪深300 Top-K 行业中性多因子量化选股策略尽职调查简报 (Tearsheet)\n\n`
   md += `- **报告生成日期**: ${reportDate}\n`
   md += `- **研究标的池**: 沪深300成分股动态池\n`
-  md += `- **回测周期数**: ${s.periods || 86} 周期 (约 430 个交易日)\n`
-  md += `- **选股模式**: 申万行业中性化配额 Top-${b.params?.k || 10}\n\n`
+  md += `- **回测周期数**: ${s.periods ?? '未生成'} 周期\n`
+  md += `- **选股模式**: 行业配额筛选 Top-${b.params?.k || 10}\n\n`
 
   md += `## 一、核心风险与收益指标全景对照\n\n`
   md += `| 指标名称 | 策略表现 | 市场基准 | 相对超额/减幅 |\n`
@@ -269,19 +269,19 @@ const downloadMarkdown = () => {
   md += `| 卡玛比率 (Calmar) | ${Number(s.calmar).toFixed(4)} | ${Number(bm.calmar).toFixed(4)} | — |\n`
   md += `| 最大回撤 (MDD) | ${(s.max_drawdown * 100).toFixed(2)}% | ${(bm.max_drawdown * 100).toFixed(2)}% | 减幅 ${(Math.abs(bm.max_drawdown) - Math.abs(s.max_drawdown)) * 100}% |\n`
   md += `| 95% 条件期望短缺 (CVaR) | ${(s.cvar_95 * 100).toFixed(2)}% | ${(bm.cvar_95 * 100).toFixed(2)}% | — |\n`
-  md += `| 校准夏普显著性 (DSR) | ${(s.dsr * 100).toFixed(1)}% | — | 扣除 25 次试验过拟合偏差 |\n\n`
+  md += `| 校准夏普显著性 (DSR) | ${s.dsr == null ? '未计算' : (s.dsr * 100).toFixed(1) + '%'} | — | 需要可比策略试验记录 |\n\n`
 
   md += `## 二、历史极端危机情景压力测试 (Crisis Stress Testing)\n\n`
   md += `| 危机情景 | 时间窗口 | 核心机制 | 策略收益 | 基准收益 | 超额 Alpha | 最大回撤 | 防御定级 |\n`
   md += `| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n`
   crises.forEach((c) => {
-    md += `| ${c.name} | ${c.start_date}~${c.end_date} | ${c.description} | ${(c.strategy_return * 100).toFixed(2)}% | ${(c.benchmark_return * 100).toFixed(2)}% | +${(c.excess_return * 100).toFixed(2)}% | ${(c.max_drawdown * 100).toFixed(2)}% | ${c.resilience} |\n`
+    md += `| ${c.name} | ${c.start_date}~${c.end_date} | ${c.description} | ${c.strategy_return == null ? '未评估' : (c.strategy_return * 100).toFixed(2) + '%'} | ${c.benchmark_return == null ? '未评估' : (c.benchmark_return * 100).toFixed(2) + '%'} | +${c.excess_return == null ? '未评估' : (c.excess_return * 100).toFixed(2) + '%'} | ${c.max_drawdown == null ? '未评估' : (c.max_drawdown * 100).toFixed(2) + '%'} | ${c.resilience} |\n`
   })
 
   md += `\n## 三、量化实盘微观摩擦与风控治理准则\n\n`
-  md += `1. **真实成本**: 买入总成本 0.076%（含 5 bps 执行滑点），卖出总成本 0.126%（含印花税与滑点）。\n`
-  md += `2. **涨停过滤**: 调仓信号日封板标的次日开盘无法正常买入，回测引擎自动剔除顺延，杜绝虚高假收益。\n`
-  md += `3. **风控熔断**: 单日亏损超过 -5.0% 或累计回撤触及 -25.0% 自动切断买入信号，状态闭锁需口令解除。\n`
+  md += `1. **费用假设**: 买入总成本 0.076%（含 5 bps 执行滑点），卖出总成本 0.126%（含印花税与滑点）。\n`
+  md += `2. **涨停过滤**: 信号日涨停仅用于候选筛选，不保证下一开盘可成交；尚未完整模拟停牌和卖出受限。\n`
+  md += `3. **风控熔断**: 当前提供进程级手动熔断和推荐等权集中度筛查，未接入真实持仓日亏损及回撤。\n`
 
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
   const url = URL.createObjectURL(blob)

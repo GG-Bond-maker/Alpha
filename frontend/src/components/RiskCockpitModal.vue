@@ -5,8 +5,8 @@
         <div class="header-left">
           <div class="modal-icon-shield">🛡️</div>
           <div>
-            <div class="modal-title">实时风控驾驶舱与熔断控制台</div>
-            <div class="modal-subtitle">ML4T 硬编码多维风险红线 · 自动闭锁熔断器 (Kill Switch)</div>
+            <div class="modal-title">推荐风险筛查与手动熔断</div>
+            <div class="modal-subtitle">推荐等权假设下的集中度筛查 · 未接入真实持仓风险</div>
           </div>
         </div>
         <button class="modal-close" @click="close">×</button>
@@ -18,10 +18,10 @@
           <div class="banner-icon">{{ isTriggered ? '🚨' : '🟢' }}</div>
           <div class="banner-content">
             <div class="banner-title">
-              {{ isTriggered ? '风控系统已触发熔断闭锁 (LATCHED)' : '风控系统运行健康 (HEALTHY)' }}
+              {{ isTriggered ? '风控系统已触发熔断闭锁 (LATCHED)' : '真实持仓风险未完整评估' }}
             </div>
             <div class="banner-desc">
-              {{ statusData?.reason || '所有组合持仓、回撤与行业暴露均在严格风控阈值内' }}
+              {{ statusData?.reason || '等待风险数据，不能判断真实持仓是否安全' }}
             </div>
             <div v-if="statusData?.trigger_time" class="banner-time">
               熔断触发时间: {{ statusData.trigger_time }}
@@ -79,7 +79,7 @@
                 background: '#16a34a'
               }"></div>
             </div>
-            <div class="gauge-hint">Top-10 等权分散 (单票 10% 远低于上限)</div>
+            <div class="gauge-hint">按当前查询推荐列表等权估算，不代表真实仓位</div>
           </div>
 
           <div class="cockpit-card">
@@ -96,7 +96,7 @@
                 background: '#16a34a'
               }"></div>
             </div>
-            <div class="gauge-hint">行业中性约束有效防范单一板块抱团</div>
+            <div class="gauge-hint">按当前推荐列表行业占比估算，未知行业需另行核验</div>
           </div>
         </div>
 
@@ -104,7 +104,7 @@
         <div class="action-card">
           <div class="action-header">
             <strong>熔断控制指令</strong>
-            <span class="badge badge-silver">双向操作需鉴权</span>
+            <span class="badge badge-silver">手动操作</span>
           </div>
 
           <div v-if="!isTriggered" class="halt-control">
@@ -118,9 +118,9 @@
           </div>
 
           <div v-else class="reset-control">
-            <p class="action-tip text-neg">当前处于熔断闭锁状态，需输入管理员口令确认风险解除方可恢复推荐：</p>
+            <p class="action-tip text-neg">当前为进程级手动熔断状态。需输入服务端 ALPHA_RISK_RESET_TOKEN 配置的口令后恢复推荐；重启会重置进程状态。</p>
             <div class="input-action-row">
-              <input v-model="resetToken" type="password" class="form-input" placeholder="输入解锁口令 (默认: ALPHA_SAFE_RESET_2026)" />
+              <input v-model="resetToken" type="password" class="form-input" placeholder="输入服务端配置的解锁口令" />
               <button class="btn btn-primary" @click="handleReset" :disabled="actionLoading">
                 {{ actionLoading ? '验证中...' : '🔓 鉴权解锁恢复' }}
               </button>
@@ -149,7 +149,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'refresh'])
 
 const haltReason = ref('管理员手动触发紧急避险熔断')
-const resetToken = ref('ALPHA_SAFE_RESET_2026')
+const resetToken = ref('')
 const resetError = ref('')
 const actionLoading = ref(false)
 
@@ -161,10 +161,10 @@ const thresholds = computed(() => props.statusData?.thresholds || {
   max_sector_concentration: 0.35,
 })
 const gauges = computed(() => props.statusData?.gauges || {
-  daily_loss: -0.012,
-  drawdown: -0.1917,
-  max_stock_weight: 0.10,
-  max_sector_concentration: 0.20,
+  daily_loss: null,
+  drawdown: null,
+  max_stock_weight: null,
+  max_sector_concentration: null,
 })
 
 const pct = (v) => (v == null ? '—' : (v * 100).toFixed(1) + '%')

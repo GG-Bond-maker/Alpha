@@ -58,11 +58,11 @@
           <button
             class="risk-capsule"
             :class="isRiskTriggered ? 'is-halted' : 'is-healthy'"
-            :title="isRiskTriggered ? '风控已熔断，点击打开风控驾驶舱' : '风控系统运行健康，点击打开风控驾驶舱'"
+            :title="isRiskTriggered ? '风控已熔断，点击打开风控驾驶舱' : '真实持仓风险未完整评估，点击查看筛查范围'"
             @click="showRiskCockpit = true"
           >
             <span class="risk-dot"></span>
-            <span class="risk-text">{{ isRiskTriggered ? '🚨 紧急风控熔断中' : '🛡️ 风控正常 · 0 熔断' }}</span>
+            <span class="risk-text">{{ isRiskTriggered ? '🚨 紧急风控熔断中' : '持仓风险未评估' }}</span>
           </button>
 
           <span class="source-tag" :class="dataSourceClass">
@@ -79,6 +79,14 @@
       </header>
 
       <main class="content">
+        <div v-if="experiment" class="experiment-status" :class="{ 'is-legacy': experiment.status !== 'complete' }" role="status">
+          <template v-if="experiment.status === 'complete'">
+            <strong>实验批次 {{ experiment.run_id }}</strong>
+            <span>标签样本截至 {{ experiment.panel?.date_range?.[1]?.slice(0, 10) }} · {{ experiment.panel?.stocks }} 只股票</span>
+            <span v-if="!experiment.panel?.point_in_time_universe">当前成分股回溯，存在幸存者偏差</span>
+          </template>
+          <template v-else>{{ experiment.message }}</template>
+        </div>
         <section v-if="currentTab === 'home'">
           <HomeDashboardView @switchTab="switchTab" @viewKline="viewKline" />
         </section>
@@ -355,6 +363,10 @@
           <AttributionView :key="'attribution-' + refreshKey" />
         </section>
 
+        <section v-else-if="currentTab === 'diagnostics'">
+          <ExperimentDiagnosticsView :key="'diagnostics-' + refreshKey" />
+        </section>
+
         <section v-else-if="currentTab === 'engineering'">
           <DataEngineeringView :key="'engineering-' + refreshKey" @switchTab="switchTab" />
         </section>
@@ -372,20 +384,27 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, defineAsyncComponent } from 'vue'
 import { api } from './api'
 import ExplainModal from './components/ExplainModal.vue'
 import RiskCockpitModal from './components/RiskCockpitModal.vue'
-import GlobalExplainView from './components/GlobalExplainView.vue'
-import MetricsView from './components/MetricsView.vue'
-import StockKlineView from './components/StockKlineView.vue'
-import HomeDashboardView from './components/HomeDashboardView.vue'
-import StockManageView from './components/StockManageView.vue'
-import DataEngineeringView from './components/DataEngineeringView.vue'
-import BacktestView from './components/BacktestView.vue'
-import FactorDiagnosisView from './components/FactorDiagnosisView.vue'
-import WalkForwardView from './components/WalkForwardView.vue'
-import AttributionView from './components/AttributionView.vue'
+const GlobalExplainView = defineAsyncComponent(() => import('./components/GlobalExplainView.vue'))
+const MetricsView = defineAsyncComponent(() => import('./components/MetricsView.vue'))
+const StockKlineView = defineAsyncComponent(() => import('./components/StockKlineView.vue'))
+const HomeDashboardView = defineAsyncComponent(() => import('./components/HomeDashboardView.vue'))
+const StockManageView = defineAsyncComponent(() => import('./components/StockManageView.vue'))
+const DataEngineeringView = defineAsyncComponent(() => import('./components/DataEngineeringView.vue'))
+const BacktestView = defineAsyncComponent(() => import('./components/BacktestView.vue'))
+const FactorDiagnosisView = defineAsyncComponent(() => import('./components/FactorDiagnosisView.vue'))
+const WalkForwardView = defineAsyncComponent(() => import('./components/WalkForwardView.vue'))
+const AttributionView = defineAsyncComponent(() => import('./components/AttributionView.vue'))
+
+const ExperimentDiagnosticsView = defineAsyncComponent(() => import('./components/ExperimentDiagnosticsView.vue'))
+const experiment = ref(null)
+const fetchExperiment = async () => {
+  try { experiment.value = (await api.getExperiment()).data }
+  catch { experiment.value = { status: 'unknown', message: '实验批次信息加载失败，请刷新重试。' } }
+}
 
 const collapsed = ref(false)
 const currentTab = ref('home')
@@ -442,6 +461,7 @@ const navGroups = [
       { key: 'metrics', label: '算法评测对比', icon: svg('<path d="M9 3h6v6H9z"/><path d="M3 21h18"/><path d="M6 21V9H3v12"/><path d="M21 21V9h-3v12"/>') },
       { key: 'backtest', label: '组合回测', icon: svg('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/>') },
       { key: 'walkforward', label: '滚动窗口验证', icon: svg('<path d="M3 3v18h18"/><path d="M6 15l4-5 4 3 5-7"/><circle cx="6" cy="15" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="14" cy="13" r="1.2"/><circle cx="19" cy="6" r="1.2"/>') },
+      { key: 'diagnostics', label: '实验诊断图表', icon: svg('<path d="M3 3v18h18"/><path d="M7 15l4-7 4 4 5-8"/>') },
       { key: 'attribution', label: '业绩归因', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/>') },
     ],
   },
@@ -464,6 +484,7 @@ const TAB_META = {
   backtest: { title: '组合回测', desc: 'Top-K 等权组合净值、超额收益与风险指标' },
   walkforward: { title: '滚动窗口验证', desc: '逐窗口 AUC 分布与因子跨窗口稳定性' },
   attribution: { title: '业绩归因', desc: 'Alpha / Beta 分解、显著性检验与分市场状态表现' },
+  diagnostics: { title: '实验诊断图表', desc: '概率可靠性、截面 Rank IC、平仓月收益与 SHAP 特征依赖' },
   engineering: { title: '数据与模型', desc: '数据更新、模型重训与运行日志' },
 }
 
@@ -503,6 +524,7 @@ const switchTab = (tab) => {
 }
 
 const refreshCurrent = async () => {
+  await fetchExperiment()
   loading.value = true
   try {
     if (currentTab.value === 'recommend') {
@@ -674,12 +696,16 @@ const showExplain = async (item) => {
 }
 
 onMounted(() => {
+  fetchExperiment()
   fetchRiskStatus()
   loadDates()
 })
 </script>
 
 <style scoped>
+.experiment-status { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0 0 18px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; color: #334155; font-size: 13px; line-height: 1.6; }
+.experiment-status.is-legacy { background: #fffbeb; border-color: #d97706; color: #78350f; }
+
 .text-warn {
   color: var(--warning);
   font-weight: 600;

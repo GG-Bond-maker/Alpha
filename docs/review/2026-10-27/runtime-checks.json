@@ -1,0 +1,42 @@
+{
+  "run_id": "20261027-004445-bb8d973e",
+  "hash_mismatches": [],
+  "shap": {
+    "space": "log_odds",
+    "max_abs_error": 0.0,
+    "mean_abs_error": 0.0,
+    "tolerance": 0.001,
+    "passed": true,
+    "n_samples": 200
+  },
+  "recommendation_count": 300,
+  "max_score_feature_error": 4.995197617174707e-05,
+  "test_metrics": {
+    "auc": 0.4985,
+    "section_auc": 0.4973,
+    "accuracy": 0.5474,
+    "n_rows": 127741,
+    "n_dates": 428,
+    "pos_rate": 0.4417
+  },
+  "backtest_periods": 86,
+  "api": {
+    "/api/health": 200,
+    "/api/v1/recommend/topk": 200,
+    "/api/v1/recommend/dates": 200,
+    "/api/v1/explain/global": 200,
+    "/api/v1/explain/global-summary": 200,
+    "/api/v1/evaluation/metrics": 200,
+    "/api/v1/evaluation/backtest": 200,
+    "/api/v1/evaluation/report": 200,
+    "/api/v1/evaluation/experiment": 200,
+    "/api/v1/evaluation/diagnostics": 200,
+    "/api/v1/evaluation/walk-forward": 200,
+    "/api/v1/evaluation/attribution": 200,
+    "/api/v1/evaluation/stress_test": 200,
+    "/api/v1/engineering/status": 200,
+    "/api/v1/engineering/drift_status": 200,
+    "local_explanation": 200,
+    "invalid_date": 422
+  }
+}

@@ -14,6 +14,9 @@ import json
 import shutil
 import threading
 import datetime
+import subprocess
+import sys
+from ml_pipeline.artifacts import artifact_dir, recommendation_path, experiment_status, live_dir
 from typing import Dict, Any, List, Optional
 import pandas as pd
 import numpy as np
@@ -48,7 +51,7 @@ from backend.app.services.recommend_service import service_instance as recommend
 
 class DataEngineeringService:
     def __init__(self):
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.task_state: Dict[str, Any] = {
             "status": "idle",  # idle | running | completed | failed
             "task_type": None,  # data_update | model_train | cache_clear
@@ -71,7 +74,7 @@ class DataEngineeringService:
     def _load_schedule_config(self) -> Dict[str, Any]:
         """加载定时调度配置"""
         default_config = {
-            "enabled": True,
+            "enabled": False,
             "cron_time": "15:35",
             "trading_days_only": True,
             "sync_prediction": True,
@@ -146,7 +149,7 @@ class DataEngineeringService:
         cache_mtime_str = datetime.datetime.fromtimestamp(latest_cache_mtime).strftime("%Y-%m-%d %H:%M:%S") if latest_cache_mtime > 0 else "无缓存"
 
         # 2. 预测结果缓存状态
-        realtime_csv = os.path.join(PROCESSED_DIR, "realtime_recommendations.csv")
+        realtime_csv = recommendation_path()
         rec_mtime_str = "未生成"
         rec_count = 0
         if os.path.exists(realtime_csv):
@@ -158,38 +161,20 @@ class DataEngineeringService:
                 pass
 
         # 3. LightGBM 市场模型状态
-        market_model_file = os.path.join(SAVED_MODELS_DIR, "lgbm_market_classifier.pkl")
+        market_model_file = os.path.join(artifact_dir(), "lgbm_market_classifier.pkl")
         model_exists = os.path.exists(market_model_file)
+        report = recommend_service_instance.get_training_report()
+        evaluation = recommend_service_instance.get_evaluation_metrics()
+        test_metrics = report.get("model_metrics", {}).get("test", {})
+        ranking = evaluation.get("comparison", {}).get("LightGBM (Ours)", {})
         model_info = {
-            "exists": model_exists,
-            "version": "LightGBM-MainBoard-v2.0",
+            "exists": model_exists, "version": "LightGBM-CSI300",
             "file_size_kb": round(os.path.getsize(market_model_file) / 1024, 1) if model_exists else 0,
-            "last_trained": datetime.datetime.fromtimestamp(os.path.getmtime(market_model_file)).strftime("%Y-%m-%d %H:%M:%S") if model_exists else "未训练",
-            "best_params": {
-                "n_estimators": 150,
-                "learning_rate": 0.05,
-                "max_depth": 5,
-                "subsample": 0.85,
-                "colsample_bytree": 0.85
-            },
-            "metrics": {
-                "auc": 0.7150,
-                "accuracy": 0.6850,
-                "ndcg_at_10": 0.7830
-            }
+            "last_trained": datetime.datetime.fromtimestamp(os.path.getmtime(market_model_file)).isoformat(timespec="seconds") if model_exists else None,
+            "best_params": report.get("best_params", {}),
+            "metrics": {**test_metrics, "ndcg_at_10": ranking.get("NDCG@10")},
+            "experiment": experiment_status(),
         }
-
-        if model_exists:
-            try:
-                import joblib
-                saved_obj = joblib.load(market_model_file)
-                if isinstance(saved_obj, dict):
-                    if "best_params" in saved_obj:
-                        model_info["best_params"] = saved_obj["best_params"]
-                    if "metrics" in saved_obj:
-                        model_info["metrics"].update(saved_obj["metrics"])
-            except Exception:
-                pass
 
         # 单股模型文件统计
         single_models = glob.glob(os.path.join(MODEL_DIR, "*_model.txt"))
@@ -203,7 +188,7 @@ class DataEngineeringService:
                 "cache_file_count": len(cache_files),
                 "total_cache_size_mb": round(total_cache_size / (1024 * 1024), 2),
                 "last_cache_update": cache_mtime_str,
-                "latest_trade_date": latest_trade_date or "2026-10-13",
+                "latest_trade_date": latest_trade_date,
                 "core_stocks_count": len(get_pool()),
                 "market_scope_compliance": f"当前研究范围：沪深300成分股（{len(get_pool())} 只）",
                 "realtime_recommendations_updated": rec_mtime_str,
@@ -217,7 +202,8 @@ class DataEngineeringService:
                 "optuna_bayes_supported": True,
                 "shap_explainer_ready": os.path.exists(os.path.join(SAVED_MODELS_DIR, "shap_explainer.pkl"))
             },
-            "schedule": self.schedule_config
+            "schedule": self.schedule_config,
+            "scheduler": getattr(self, 'scheduler_status', {'active': False, 'timezone': 'Asia/Shanghai'})
         }
 
     # =========================================================================
@@ -285,7 +271,7 @@ class DataEngineeringService:
                 self.task_state["current_step"] = "正在调用 LightGBM 预测引擎生成最新 Top-K 排序"
                 self.add_log("INFO", "▶ 正在触发 LightGBM 推荐引擎进行最新截面信号预测...")
 
-                df_res = self._refresh_recommendations()
+                df_res = self._refresh_recommendations(force_refresh=force_refresh)
                 if not df_res.empty:
                     self.add_log("SUCCESS", f"最新选股预测已生成并持久化 ({len(df_res)} 只标的)！")
 
@@ -334,182 +320,45 @@ class DataEngineeringService:
         thread.start()
         return {"status": "started", "task_type": "model_train"}
 
-    def _run_model_train_worker(
-        self,
-        force_retrain: bool,
-        use_optuna: bool,
-        n_trials: int,
-        retrain_single_models: bool
-    ):
+    def _run_model_train_worker(self, force_retrain, use_optuna, n_trials, retrain_single_models):
         try:
-            self.add_log("TRAIN", f"▶ 启动 LightGBM 推荐模型重训 (force_retrain={force_retrain}, optuna={use_optuna}, trials={n_trials})...")
-            self.task_state["current_step"] = "正在整合主板多周期特征矩阵"
-            self.task_state["progress"] = 15
+            if retrain_single_models:
+                self.add_log("WARNING", "主流程仅训练共享截面模型，不训练个股专属模型。")
+            if not force_retrain and experiment_status().get("status") == "complete":
+                self.add_log("INFO", "保留已验证的当前批次；需要重训时启用强制重训。")
+            else:
+                command = [sys.executable, "-m", "ml_pipeline.run_training",
+                           "--trials", str(n_trials if use_optuna else 1)]
+                self.add_log("TRAIN", "开始隔离训练，全部检查通过后才切换当前模型。")
+                environment = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"}
+                process = subprocess.Popen(
+                    command, cwd=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                    errors="replace", env=environment,
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+                )
+                for line in process.stdout:
+                    self.add_log("TRAIN", line.rstrip()[-1000:])
+                    if line.startswith("["):
+                        self.task_state["current_step"] = line.rstrip()[:160]
+                if process.wait() != 0:
+                    raise RuntimeError("训练失败，当前完整批次已保留；详情见训练日志")
+                recommend_service_instance.reload()
+            self.task_state.update(status="completed", progress=100,
+                                   current_step="实验批次已校验并激活", end_time=datetime.datetime.now().isoformat())
+            self.add_log("SUCCESS", "模型、归因和评测文件已作为同一批次加载。")
+        except Exception as exc:
+            self.task_state.update(status="failed", error_msg=str(exc), end_time=datetime.datetime.now().isoformat())
+            self.add_log("ERROR", str(exc))
 
-            # 1. 训练市场通用大模型
-            self.add_log("TRAIN", "正在运行 TimeSeriesSplit 时序切分与交叉验证，严防未来信息泄露...")
-            trials_count = n_trials if use_optuna else 1
-            if use_optuna:
-                self.add_log("TRAIN", f"启动 Optuna 贝叶斯超参数寻优引擎 (最大试验轮数: {trials_count})...")
-            
-            self.task_state["progress"] = 35
-            self.task_state["current_step"] = "正在拟合 LightGBM 分类器与搜索最优超参数"
-
-            # 1. 构建面板（截面超额收益标签在此生成）
-            self.task_state["current_step"] = "正在构建跨股票面板数据集"
-            panel = build_factor_panel(verbose=False)
-            self.add_log("INFO", f"面板构建完成：{panel['stock_code'].nunique()} 只标的 / "
-                                 f"{panel['date'].nunique()} 个截面 / {len(panel)} 行样本。")
-
-            # 因子筛选只使用训练期；之后的 CV 折内也会重新筛选，避免验证期标签泄漏。
-            candidate_factors = list(FEATURE_COLS) + PRICE_FACTORS + FUNDAMENTAL_FACTORS
-            train_period, _, _ = time_split(panel)
-            diagnosis = diagnose_all(train_period, candidate_factors)
-            selected_factors, selection_mode = factors_for_model(diagnosis)
-            save_diagnosis(diagnosis)
-            with open(SELECTED_FACTORS_PATH, "w", encoding="utf-8") as f:
-                json.dump({
-                    "factors": selected_factors,
-                    "model_features": [factor + "_neu" for factor in selected_factors],
-                    "criteria": diagnosis["criteria"],
-                    "rejected": diagnosis["rejected_factors"],
-                    "selection_mode": selection_mode,
-                    "selection_period": [str(train_period["date"].min()),
-                                         str(train_period["date"].max())],
-                }, f, ensure_ascii=False, indent=2)
-
-            # 2. 训练模型
-            self.task_state["progress"] = 45
-            self.task_state["current_step"] = "正在拟合 LightGBM 分类器"
-            bundle = train_market_model(
-                panel=panel, n_trials=trials_count, force_retrain=True,
-                candidate_factors=candidate_factors,
-            )
-            model = bundle["model"]
-            self.add_log("SUCCESS", f"模型训练完成，测试集 AUC={bundle['metrics']['test']['auc']}")
-
-            # 3. 基线评测
-            self.task_state["progress"] = 60
-            self.task_state["current_step"] = "正在运行基线对比评测"
-            eval_payload = run_baseline_comparison(bundle)
-
-            # 4. 组合回测：两种口径都保存，避免页面读取上次训练的对照结果。
-            self.task_state["progress"] = 70
-            self.task_state["current_step"] = "正在执行 Top-K 组合回测"
-            test = bundle["test"].copy()
-            test["score_lgb"] = model.predict_proba(test[get_model_features()])[:, 1]
-            bt_global = run_backtest(test, k=10, selection="global")
-            bt_neutral = run_backtest(test, k=10, selection="neutral")
-            save_backtest(bt_neutral)
-            comparison = {
-                key: {name: result[name] for name in (
-                    "strategy", "benchmark", "excess", "params", "avg_turnover",
-                    "avg_sectors_held",
-                )}
-                for key, result in (("global", bt_global), ("neutral", bt_neutral))
-                if "error" not in result
-            }
-            with open(os.path.join(SAVED_MODELS_DIR, "backtest_comparison.json"),
-                      "w", encoding="utf-8") as f:
-                json.dump(comparison, f, ensure_ascii=False, indent=2)
-
-            # 5. 滚动验证和跨窗口连续回测。
-            self.task_state["progress"] = 76
-            self.task_state["current_step"] = "正在运行滚动窗口验证与连续回测"
-            walk_forward = run_walk_forward(
-                panel, candidate_factors=candidate_factors,
-                backtest_k=10, backtest_selection="neutral",
-            )
-            save_walk_forward(walk_forward)
-            attribution = analyze_attribution(walk_forward.get("backtest_aggregated"))
-            save_attribution(attribution)
-
-            # 6. TreeSHAP 归因与加和校验
-            self.task_state["progress"] = 84
-            self.task_state["current_step"] = "正在构建 TreeSHAP 归因引擎"
-            explainer = build_explainer(model)
-            importance = compute_global_importance(bundle["test"], explainer)
-            additivity = verify_additivity(model, explainer, bundle["test"][get_model_features()])
-            with open(os.path.join(SAVED_MODELS_DIR, "shap_additivity.json"),
-                      "w", encoding="utf-8") as f:
-                json.dump(additivity, f, ensure_ascii=False, indent=2)
-            self.add_log("INFO", f"SHAP 加和一致性校验：最大误差 {additivity['max_abs_error']}，"
-                                 f"{'通过' if additivity['passed'] else '未通过'}")
-
-            # 7. 重新打分并刷新推荐
-            self.task_state["progress"] = 93
-            self.task_state["current_step"] = "正在刷新沪深300研究池推荐打分"
-            df_res = self._refresh_recommendations(model)
-            if not df_res.empty:
-                self.add_log("SUCCESS", f"推荐结果已刷新 ({len(df_res)} 只标的)。")
-
-            # 8. 汇总与本次模型对应的报告，避免界面混用旧训练结果。
-            split_period = [str(train_period["date"].min()), str(train_period["date"].max())]
-            training_report = {
-                "panel": {
-                    "stocks": int(panel["stock_code"].nunique()),
-                    "dates": int(panel["date"].nunique()),
-                    "rows": int(len(panel)),
-                    "date_range": [str(panel["date"].min()), str(panel["date"].max())],
-                    "label": "ret_5d_fwd minus same-date eligible-universe mean > 0",
-                    "features": get_model_features(),
-                    "selected_factors": _load_selected_factors(),
-                    "factor_selection_mode": selection_mode,
-                    "factor_selection_period": split_period,
-                    "point_in_time_universe": bool(panel.attrs.get("universe_point_in_time", False)),
-                    "universe_note": (
-                        "按历史成分股及行业有效期过滤。"
-                        if panel.attrs.get("universe_point_in_time", False)
-                        else "未提供历史成分股文件，当前成分股回溯存在幸存者偏差。"
-                    ),
-                },
-                "model_metrics": bundle["metrics"],
-                "best_params": bundle["params"],
-                "loss_history": bundle.get("loss_history", {}),
-                "baseline_comparison": eval_payload.get("comparison", {}),
-                "ranking_curve_meta": eval_payload.get("ranking_curve_meta", {}),
-                "baseline_errors": eval_payload.get("errors", {}),
-                "backtest": {
-                    "strategy": bt_neutral.get("strategy", {}),
-                    "benchmark": bt_neutral.get("benchmark", {}),
-                    "excess": bt_neutral.get("excess", {}),
-                    "avg_turnover": bt_neutral.get("avg_turnover"),
-                },
-                "shap_additivity": additivity,
-                "top_features": importance[:5],
-                "walk_forward": walk_forward.get("summary") if "error" not in walk_forward else None,
-                "walk_forward_factor_stability": walk_forward.get("factor_stability"),
-                "walk_forward_backtest": walk_forward.get("backtest_summary"),
-                "attribution": attribution if "error" not in attribution else None,
-            }
-            with open(os.path.join(SAVED_MODELS_DIR, "training_report.json"),
-                      "w", encoding="utf-8") as f:
-                json.dump(training_report, f, ensure_ascii=False, indent=2)
-            recommend_service_instance.reload()
-
-            self.task_state["progress"] = 100
-            self.task_state["current_step"] = "模型重训与热更新流程全部就绪"
-            self.task_state["status"] = "completed"
-            self.task_state["end_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.add_log("SUCCESS", "✔ LightGBM 模型重训已完成并实现零停机热加载！")
-
-        except Exception as e:
-            self.task_state["status"] = "failed"
-            self.task_state["error_msg"] = str(e)
-            self.task_state["end_time"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.add_log("ERROR", f"✖ 模型重训流水线异常: {str(e)}")
-
-    # =========================================================================
-    # 推荐刷新（供数据更新与模型重训共用）
-    # =========================================================================
-    def _refresh_recommendations(self, model=None) -> pd.DataFrame:
+    def _refresh_recommendations(self, model=None, force_refresh=False) -> pd.DataFrame:
         """用当前模型为全池打分并持久化推荐表。模型不可用时返回空表。"""
         import joblib
         from config.config import FEATURE_NAMES_CN
         from ml_pipeline.dataset import build_inference_panel
 
         if model is None:
-            bundle_path = os.path.join(SAVED_MODELS_DIR, "lgbm_market_classifier.pkl")
+            bundle_path = os.path.join(artifact_dir(), "lgbm_market_classifier.pkl")
             if not os.path.exists(bundle_path):
                 self.add_log("WARNING", "未找到已训练模型，跳过推荐刷新。")
                 return pd.DataFrame()
@@ -520,7 +369,7 @@ class DataEngineeringService:
 
         pool = get_pool()
         try:
-            panel = build_inference_panel([stock["code"] for stock in pool], verbose=False)
+            panel = build_inference_panel([stock["code"] for stock in pool], verbose=False, force_refresh=force_refresh)
         except Exception as exc:
             self.add_log("ERROR", f"构建推荐推理截面失败: {exc}")
             return pd.DataFrame()
@@ -562,13 +411,14 @@ class DataEngineeringService:
             np.where(rank <= max(1, int(np.ceil(len(df_res) * RATING_TOP_B_RATIO))), 'B', 'C'),
         )
 
-        os.makedirs(PROCESSED_DIR, exist_ok=True)
-        df_res.to_csv(os.path.join(PROCESSED_DIR, "realtime_recommendations.csv"),
+        output_dir = live_dir()
+        df_res["model_run_id"] = experiment_status().get("run_id")
+        df_res.to_csv(os.path.join(output_dir, "realtime_recommendations.csv"),
                       index=False, encoding='utf-8-sig')
 
         today_tag = datetime.date.today().strftime("%Y%m%d")
         try:
-            df_res.to_excel(os.path.join(PROCESSED_DIR, f"stock_recommend_{today_tag}.xlsx"),
+            df_res.to_excel(os.path.join(output_dir, f"stock_recommend_{today_tag}.xlsx"),
                             index=False, engine='openpyxl')
         except Exception as e:
             self.add_log("WARNING", f"Excel 导出失败: {e}")

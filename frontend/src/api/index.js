@@ -6,6 +6,12 @@ const apiClient = axios.create({
 })
 
 export const api = {
+  getExperiment() {
+    return apiClient.get('/evaluation/experiment')
+  },
+  getDiagnostics() {
+    return apiClient.get('/evaluation/diagnostics')
+  },
   // 获取截面日期列表
   getDates() {
     return apiClient.get('/recommend/dates')

@@ -197,11 +197,11 @@
           <div>
             <div class="card-title">历史极端危机情景压力测试 (Crisis Stress Testing)</div>
             <div class="card-subtitle">
-              遵循 ML4T 压力测试规范：对 A 股 2015 股灾、2016 熔断、2018 贸易战、2020 疫情等 6 大极端黑天鹅时期进行复盘检验
+              遵循 ML4T 压力测试规范：只使用对应模型训练截止之后的样本外预测；未覆盖的历史区间明确显示未评估
             </div>
           </div>
           <span class="badge badge-blue">
-            危机跑赢率: {{ (stressData.summary?.win_rate * 100).toFixed(0) }}% ({{ stressData.summary?.win_crises }}/{{ stressData.summary?.total_tested_crises }})
+            危机跑赢率: {{ stressData.summary?.win_rate == null ? '未评估' : (stressData.summary.win_rate * 100).toFixed(0) + '%' }} ({{ stressData.summary?.win_crises }}/{{ stressData.summary?.total_tested_crises }})
           </span>
         </div>
 
@@ -214,9 +214,9 @@
                 <th>核心市场机制</th>
                 <th>策略累计收益</th>
                 <th>基准同期收益</th>
-                <th>超额 Alpha</th>
+                <th>相对基准收益差</th>
                 <th>区间最大回撤</th>
-                <th>防御力评级</th>
+                <th>评估状态</th>
               </tr>
             </thead>
             <tbody>
@@ -226,7 +226,7 @@
                 <td style="font-size: 12px; color: var(--slate-600);">{{ c.description }}</td>
                 <td :class="signClass(c.strategy_return)">{{ pct(c.strategy_return) }}</td>
                 <td :class="signClass(c.benchmark_return)">{{ pct(c.benchmark_return) }}</td>
-                <td class="text-pos"><strong>+{{ pct(c.excess_return) }}</strong></td>
+                <td :class="signClass(c.excess_return)"><strong>{{ pct(c.excess_return) }}</strong></td>
                 <td class="text-neg">{{ pct(c.max_drawdown) }}</td>
                 <td><span class="badge" :class="c.badge_type">{{ c.resilience }}</span></td>
               </tr>

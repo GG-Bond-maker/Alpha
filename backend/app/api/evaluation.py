@@ -6,8 +6,25 @@ from typing import Any, Dict
 from fastapi import APIRouter
 
 from backend.app.services.recommend_service import service_instance
+from ml_pipeline.artifacts import artifact_dir, experiment_status
+import json
+import os
 
 router = APIRouter(prefix="/evaluation", tags=["评测与回测"])
+
+
+@router.get('/experiment', summary='当前实验批次及数据口径')
+def get_experiment():
+    return experiment_status()
+
+
+@router.get('/diagnostics', summary='样本外校准、Rank IC 与平仓月收益')
+def get_diagnostics():
+    path = os.path.join(artifact_dir(), 'diagnostics.json')
+    if not os.path.exists(path):
+        return {'error': '当前批次没有实验诊断，请完成一次训练'}
+    with open(path, encoding='utf-8') as handle:
+        return json.load(handle)
 
 
 @router.get("/metrics", summary="获取各模型推荐评估指标对比表")

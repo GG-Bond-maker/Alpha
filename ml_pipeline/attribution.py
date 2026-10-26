@@ -106,7 +106,7 @@ def _beta_neutral(rp: np.ndarray, rb: np.ndarray, beta: float,
     ann = float((1.0 + total) ** (periods_per_year / n) - 1.0) if n else 0.0
     std = float(np.std(adj, ddof=1)) if n > 1 else 0.0
     sharpe = float(np.mean(adj) / std * np.sqrt(periods_per_year)) if std > 0 else 0.0
-    peak = np.maximum.accumulate(nav)
+    peak = np.maximum.accumulate(np.r_[1.0, nav])[1:]
     dd = (nav - peak) / peak
     return {
         'annualized_return': round(float(ann), 4),
@@ -159,7 +159,7 @@ def analyze_attribution(backtest_aggregated: dict = None) -> dict:
     if not backtest_aggregated.get('strategy'):
         return {'error': '缺少拼接净值数据'}
 
-    periods_per_year = float(backtest_aggregated.get('periods_per_year', PERIODS_PER_YEAR))
+    periods_per_year = float(backtest_aggregated.get('params', {}).get('periods_per_year', PERIODS_PER_YEAR))
 
     rs = _nav_to_returns(backtest_aggregated['strategy']['nav'])
     rb = _nav_to_returns(backtest_aggregated['benchmark']['nav'])

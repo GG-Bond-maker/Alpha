@@ -86,9 +86,9 @@
         </div>
         <div class="m-content">
           <div class="m-label">离线验证集精度</div>
-          <div class="m-val">AUC {{ modelInfo.market_model?.metrics?.auc || '0.715' }}</div>
+          <div class="m-val">AUC {{ formatMetric(modelInfo.market_model?.metrics?.auc) }}</div>
           <div class="m-sub">
-            NDCG@10: {{ modelInfo.market_model?.metrics?.ndcg_at_10 || '0.783' }} | 准确率: {{ ((modelInfo.market_model?.metrics?.accuracy || 0.685) * 100).toFixed(1) }}%
+            NDCG@10: {{ formatMetric(modelInfo.market_model?.metrics?.ndcg_at_10) }} | 准确率: {{ formatPercent(modelInfo.market_model?.metrics?.accuracy) }}%
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@
         </div>
         <div class="m-content">
           <div class="m-label">盘后自动更新策略</div>
-          <div class="m-val">{{ scheduleConfig.enabled ? '已开启' : '已暂停' }}</div>
+          <div class="m-val">{{ scheduleConfig.enabled ? (schedulerStatus.active ? '执行器运行中' : '执行器未启动') : '已暂停' }}</div>
           <div class="m-sub">
             {{ scheduleConfig.cron_time }} 交易日执行 ({{ scheduleConfig.sync_prediction ? '同步预测' : '仅拉取' }})
           </div>
@@ -156,7 +156,9 @@
 
           <!-- 定时调度快捷设置 -->
           <div class="sub-schedule-section">
-            <div class="sub-title">盘后自动化更新调度：</div>
+            <div class="sub-title">盘后自动化更新调度（北京时间）：</div>
+            <p v-if="scheduleError" role="alert" class="text-neg">{{ scheduleError }}</p>
+            <p v-if="schedulerStatus.error" role="status">{{ schedulerStatus.error }}</p>
             <div class="schedule-inputs">
               <label class="switch-label">
                 <input type="checkbox" v-model="scheduleConfig.enabled" @change="handleSaveSchedule" />
@@ -249,11 +251,11 @@
           <div class="sub-schedule-section">
             <div class="sub-title">当前在用最优超参数：</div>
             <div class="param-tags">
-              <span class="param-tag">树数量: {{ modelInfo.market_model?.best_params?.n_estimators || 150 }}</span>
-              <span class="param-tag">学习率: {{ modelInfo.market_model?.best_params?.learning_rate || 0.05 }}</span>
-              <span class="param-tag">最大深度: {{ modelInfo.market_model?.best_params?.max_depth || 5 }}</span>
-              <span class="param-tag">样本采样: {{ modelInfo.market_model?.best_params?.subsample || 0.85 }}</span>
-              <span class="param-tag">特征采样: {{ modelInfo.market_model?.best_params?.colsample_bytree || 0.85 }}</span>
+              <span class="param-tag">树数量: {{ modelInfo.market_model?.best_params?.n_estimators ?? '—' }}</span>
+              <span class="param-tag">学习率: {{ modelInfo.market_model?.best_params?.learning_rate ?? '—' }}</span>
+              <span class="param-tag">最大深度: {{ modelInfo.market_model?.best_params?.max_depth ?? '—' }}</span>
+              <span class="param-tag">样本采样: {{ modelInfo.market_model?.best_params?.subsample ?? '—' }}</span>
+              <span class="param-tag">特征采样: {{ modelInfo.market_model?.best_params?.colsample_bytree ?? '—' }}</span>
             </div>
           </div>
         </div>
@@ -451,8 +453,12 @@ const taskState = ref({
 
 const dataInfo = ref({})
 const modelInfo = ref({})
+const schedulerStatus = ref({})
+const formatMetric = (v) => v == null ? '—' : Number(v).toFixed(4)
+const formatPercent = (v) => v == null ? '—' : (v * 100).toFixed(1)
+const scheduleError = ref('')
 const scheduleConfig = ref({
-  enabled: true,
+  enabled: false,
   cron_time: '15:35',
   sync_prediction: true
 })
@@ -496,6 +502,7 @@ const fetchStatus = async () => {
     dataInfo.value = res.data.data_engineering || {}
     modelInfo.value = res.data.model_lifecycle || {}
     scheduleConfig.value = res.data.schedule || {}
+    schedulerStatus.value = res.data.scheduler || {}
   } catch (err) {
     console.error('获取数据工程状态失败:', err)
   } finally {
@@ -550,9 +557,12 @@ const handleTriggerModelTrain = async () => {
 // 保存自动调度设置
 const handleSaveSchedule = async () => {
   try {
+    scheduleError.value = ''
     await api.updateScheduleConfig(scheduleConfig.value)
+    await fetchStatus()
   } catch (err) {
-    console.error('保存调度配置失败:', err)
+    scheduleError.value = '保存失败，请检查时间格式或服务连接。'
+    await fetchStatus()
   }
 }
 

@@ -1,0 +1,138 @@
+[Experiment] 开始批次 20261027-004445-bb8d973e
+======================================================================
+ LightGBM 推荐系统 · 离线重训
+======================================================================
+
+[1/7] 构建面板数据集（300 只标的，含基本面因子）...
+[Panel] 25/300 已处理，有效 25 只
+[Panel] 50/300 已处理，有效 50 只
+[Panel] 75/300 已处理，有效 75 只
+[Panel] 100/300 已处理，有效 100 只
+[Panel] 125/300 已处理，有效 125 只
+[Panel] 150/300 已处理，有效 150 只
+[Panel] 175/300 已处理，有效 175 只
+[Panel] 200/300 已处理，有效 200 只
+[Panel] 225/300 已处理，有效 225 只
+[Panel] 250/300 已处理，有效 250 只
+[Panel] 275/300 已处理，有效 275 只
+[Panel] 300/300 已处理，有效 300 只
+[Panel] 300 只标的 / 2847 个截面 / 739390 行（跳过 0 只）
+
+[2/7] 因子有效性诊断（IC / ICIR / t 值）...
+[Factor] 因子诊断结果已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\factor_diagnosis.json
+[Factor] 入选 3 个因子并写入模型口径: ['MACD_norm', 'debt_ratio', 'OBV_zscore']
+
+[3/7] 训练模型（Optuna 5 轮，3 维因子）...
+[Train] 训练集 483658 行 / 验证集 125031 行 / 测试集 127741 行
+[Train] 正样本占比 — 训练 0.442 / 验证 0.467
+[Optuna] 最优验证 AUC: 0.5045（5 轮）
+[Train] 采用超参: {'n_estimators': 212, 'learning_rate': 0.17254716573280354, 'max_depth': 7, 'num_leaves': 41, 'subsample': 0.6624074561769746, 'colsample_bytree': 0.662397808134481, 'reg_alpha': 0.00018747059221802545, 'reg_lambda': 1.1752647960576206, 'random_state': 42, 'verbose': -1, 'subsample_freq': 1, 'n_jobs': 4}
+[Train] 验证 AUC=0.4999  测试 AUC=0.4985
+[Train] 模型已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\lgbm_market_classifier.pkl
+
+[4/7] 基线对比评测...
+[Metrics] 基线对比已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\evaluation_metrics.json
+
+[5/7] 组合回测（全市场 vs 行业中性）...
+  全市场排序 k=10 年化=24.99% 夏普=1.0284 回撤=-17.74% 超额=11.88% 行业数=None
+  行业中性   k=10 年化=9.52% 夏普=0.6114 回撤=-21.99% 超额=-1.97% 行业数=10.0
+[Backtest] 结果已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\backtest_result.json
+
+[5.5/7] 滚动窗口验证（walk-forward）...
+  2020-04-27 ~ 2020-10-19  AUC=0.5108  截面AUC均值=0.5132  超额=-8.06%
+  2020-10-27 ~ 2021-04-14  AUC=0.5211  截面AUC均值=0.5225  超额=13.03%
+  2021-04-22 ~ 2021-10-14  AUC=0.5190  截面AUC均值=0.5196  超额=-17.17%
+  2021-10-22 ~ 2022-04-12  AUC=0.4891  截面AUC均值=0.4893  超额=-10.04%
+  2022-04-20 ~ 2022-10-11  AUC=0.5070  截面AUC均值=0.5063  超额=-3.58%
+  2022-10-19 ~ 2023-04-06  AUC=0.5116  截面AUC均值=0.5101  超额=-5.55%
+  2023-04-14 ~ 2023-09-28  AUC=0.4814  截面AUC均值=0.4837  超额=6.68%
+  2023-10-16 ~ 2024-04-02  AUC=0.5105  截面AUC均值=0.5093  超额=-3.34%
+  2024-04-12 ~ 2024-09-27  AUC=0.5028  截面AUC均值=0.5025  超额=1.65%
+  2024-10-14 ~ 2025-04-01  AUC=0.5054  截面AUC均值=0.5067  超额=15.40%
+  2025-04-10 ~ 2025-09-23  AUC=0.5266  截面AUC均值=0.5254  超额=25.18%
+  2025-10-09 ~ 2026-03-30  AUC=0.5245  截面AUC均值=0.5261  超额=45.27%
+  2026-04-08 ~ 2026-09-21  AUC=0.4971  截面AUC均值=0.4975  超额=-20.72%
+  窗口数=13  AUC均值=0.5082 中位数=0.5105 标准差=0.0134 低于随机的窗口占比=23.1%
+  回测跨窗口: 超额年化均值=2.98% 中位数=-3.34% 正超额窗口占比=46.2% 最差回撤=-25.43%
+  拼接净值: 年化=10.18% 夏普=0.5286 最大回撤=-36.26%
+[WalkForward] 结果已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\walk_forward.json
+  正在做 Alpha/Beta 归因...
+  Alpha 年化=1.62% (t=0.365, p=0.7156)  Beta=1.0879  R2=0.7854
+  结论: alpha 不显著，收益主要来自 beta 暴露
+[Attribution] 归因结果已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\attribution.json
+
+[6/7] TreeSHAP 归因...
+[SHAP] 解释器已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\shap_explainer.pkl
+[SHAP] 全局重要性已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\global_importance.json
+[SHAP] beeswarm 样本已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\shap_summary.json (1200 行)
+[SHAP] 加和一致性: max_err=0.0, 通过=True
+
+[7/7] 生成最新截面推荐...
+[Panel] 25/300 已处理，有效 25 只
+[Panel] 50/300 已处理，有效 50 只
+[Panel] 75/300 已处理，有效 75 只
+[Panel] 100/300 已处理，有效 100 只
+[Panel] 125/300 已处理，有效 125 只
+[Panel] 150/300 已处理，有效 150 只
+[Panel] 175/300 已处理，有效 175 只
+[Panel] 200/300 已处理，有效 200 只
+[Panel] 225/300 已处理，有效 225 只
+[Panel] 250/300 已处理，有效 250 只
+[Panel] 275/300 已处理，有效 275 只
+[Panel] 300/300 已处理，有效 300 只
+[Panel] 300 只标的 / 2852 个截面 / 743282 行（跳过 0 只）
+[Rec] 300 条推荐已写入 D:\Python_Project\Alpha\saved_models\runs\20261027-004445-bb8d973e\processed\realtime_recommendations.csv
+ 推荐排名     代码   名称 推荐评级  跑赢候选池均值概率
+    1 301165 锐捷网络    A     0.6305
+    2 603993 洛阳钼业    A     0.6280
+    3 600115 中国东航    A     0.6098
+    4 300502  新易盛    A     0.5952
+    5 002074 国轩高科    A     0.5843
+    6 688521 芯原股份    A     0.5488
+    7 301308  江波龙    A     0.5459
+    8 300661 圣邦股份    A     0.5426
+    9 002837  英维克    A     0.5389
+   10 600118 中国卫星    A     0.5358
+warning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/api/data_engineering.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/api/evaluation.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/api/recommend.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/services/data_engineering_service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/services/recommend_service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'config/config.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'data/factor_fetcher.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'features/feature_engineering.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/App.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/api/index.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/AttributionView.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/BacktestView.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/DataEngineeringView.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/RiskCockpitModal.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/TearsheetModal.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/style.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/attribution.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/backtest.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/dataset.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/drift_monitor.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/factor_diagnosis.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/risk_guard.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/run_training.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/stress_test.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/walk_forward.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'models/model_trainer.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/make_figures.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/make_report_docx.py', LF will be replaced by CRLF the next time Git touches it
+[Experiment] 已激活完整实验批次 20261027-004445-bb8d973e
+
+======================================================================
+ 完成。训练集/验证集/测试集指标：
+   train  AUC=0.5911  n=483658  dates=1987
+   val    AUC=0.4999  n=125031  dates=422
+   test   AUC=0.4985  n=127741  dates=428
+ 回测超额年化: -0.0197
+ 滚动窗口 AUC: 均值=0.5082 中位数=0.5105 低于随机=23.1%（13 个窗口）
+ 滚动窗口超额年化: 均值=2.98% 正超额窗口占比=46.2%
+======================================================================

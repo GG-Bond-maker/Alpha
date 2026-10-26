@@ -76,151 +76,98 @@ CRISIS_SCENARIOS = [
     },
 ]
 
-# 3 大极端假设情景测试 (Hypothetical Stress Shocks)
+# 未计算的情景保持空值，不用示例数字代替实验。
 HYPOTHETICAL_SHOCKS = [
-    {
-        "id": "hypo_crash",
-        "name": "大盘单日闪崩 -15% (Flash Crash)",
-        "scenario_type": "系统性暴跌冲击",
-        "assumption": "市场基准单日下挫 15%，测试组合极端净值冲击与止损响应",
-        "estimated_impact": -0.128,
-        "max_tolerated_loss": -0.20,
-        "pass_status": "PASS",
-        "verdict": "Beta=0.85 行业中性配置有效抵消 2.2% 的极端跌幅",
-    },
-    {
-        "id": "hypo_liquidity",
-        "name": "流动性冰冻与滑点 10 倍膨胀 (Liquidity Freeze)",
-        "assumption": "买卖价差与冲击滑点飙升至 50 bps，30% 的候选股票因无量无法成交",
-        "scenario_type": "交易成本与摩擦冲击",
-        "estimated_impact": -0.045,
-        "max_tolerated_loss": -0.08,
-        "pass_status": "PASS",
-        "verdict": "持仓分散于 10 个行业并保留次优补位，组合仍能维持稳定调仓",
-    },
-    {
-        "id": "hypo_factor_reversal",
-        "name": "动量因子极端踩踏反转 (Momentum Crash)",
-        "assumption": "过去高动量股票月度回撤 -20%，低估值价值因子反弹 +5%",
-        "scenario_type": "因子风格逆转冲击",
-        "estimated_impact": -0.062,
-        "max_tolerated_loss": -0.10,
-        "pass_status": "PASS",
-        "verdict": "估值因子 (PE/PB) 与财务因子对动量形成对冲，未发生单因子穿透",
-    },
+    {"id": "hypo_crash", "name": "市场冲击 -15%", "scenario_type": "历史 Beta 线性近似",
+     "assumption": "历史样本外组合 Beta 保持不变；不包含非线性与无法成交风险",
+     "max_tolerated_loss": -0.20},
+    {"id": "hypo_liquidity", "name": "滑点提高至 50 bps", "scenario_type": "单周期成本冲击",
+     "assumption": "比较每个已完成持有期的成本差异，其余成交假设不变；不模拟流动性冻结",
+     "max_tolerated_loss": -0.02},
+    {"id": "hypo_factor_reversal", "name": "因子风格反转", "scenario_type": "待定义的因子冲击",
+     "assumption": "需要因子收益情景与持仓因子暴露；SHAP 不能代替因果收益敏感度",
+     "max_tolerated_loss": None},
 ]
 
 
-def run_stress_test(panel: pd.DataFrame = None, model = None) -> Dict[str, Any]:
-    """运行全套极端历史情景与假设压力测试。"""
-    import joblib
-
-    if model is None:
-        model_path = os.path.join(SAVED_MODELS_DIR, 'lgbm_market_classifier.pkl')
-        if not os.path.exists(model_path):
-            return {"error": "未找到已保存的模型"}
-        bundle = joblib.load(model_path)
-        model = bundle['model']
-
-    if panel is None:
-        panel_path = os.path.join('data', 'processed', 'panel_dataset.csv')
-        if not os.path.exists(panel_path):
-            return {"error": "未找到 panel_dataset.csv"}
-        panel = pd.read_csv(panel_path)
-
-    work = panel.copy()
-    work['date'] = pd.to_datetime(work['date'])
-    feats = get_model_features()
-
-    historical_results = []
-    for sc in CRISIS_SCENARIOS:
-        s_date = pd.to_datetime(sc["start_date"])
-        e_date = pd.to_datetime(sc["end_date"])
-        sub = work[(work['date'] >= s_date) & (work['date'] <= e_date)].copy()
-        if sub.empty or sub['date'].nunique() < 6:
-            continue
-
-        # 评分并执行行业中性回测
-        sub['score_lgb'] = model.predict_proba(sub[feats])[:, 1]
-        bt = run_backtest(sub, k=10, selection='neutral')
-        if 'error' in bt:
-            continue
-
-        strat_m = bt['strategy']
-        bench_m = bt['benchmark']
-        excess_ret = strat_m['total_return'] - bench_m['total_return']
-
-        # 韧性与防御力定级
-        if excess_ret >= 0.10:
-            resilience = "卓越防御 (Strong Alpha)"
-            badge_type = "is-real"
-        elif excess_ret >= 0.02:
-            resilience = "抗跌韧性 (Resilient)"
-            badge_type = "is-real"
-        elif excess_ret >= -0.03:
-            resilience = "中性同步 (Neutral)"
-            badge_type = "is-neutral"
-        else:
-            resilience = "承压回调 (Under Pressure)"
-            badge_type = "is-synthetic"
-
-        historical_results.append({
-            "id": sc["id"],
-            "name": sc["name"],
-            "start_date": sc["start_date"],
-            "end_date": sc["end_date"],
-            "description": sc["description"],
-            "key_feature": sc["key_feature"],
-            "market_regime": sc["market_regime"],
-            "trading_days": int(sub['date'].nunique()),
-            "strategy_return": round(strat_m['total_return'], 4),
-            "benchmark_return": round(bench_m['total_return'], 4),
-            "excess_return": round(excess_ret, 4),
-            "max_drawdown": round(strat_m['max_drawdown'], 4),
-            "resilience": resilience,
-            "badge_type": badge_type,
-        })
-
-    # 统计总体危机期胜率与平均超额
-    if historical_results:
-        avg_excess = float(np.mean([r['excess_return'] for r in historical_results]))
-        win_crises = sum(1 for r in historical_results if r['excess_return'] > 0)
-        overall_assessment = (
-            f"在历史 6 大严峻危机中，策略在 {win_crises}/{len(historical_results)} 个情景下跑赢基准，"
-            f"危机期平均超额收益达 {avg_excess:.2%}，展现了行业中性化与多因子防守的显著韧性。"
-        )
+def run_stress_test(panel=None, model=None, train_end=None, scored_panel=None, backtest=None):
+    """Historical evaluation uses only predictions made after their model's training end."""
+    from ml_pipeline.artifacts import artifact_dir
+    from ml_pipeline.backtest import COMMISSION_RATE, TRANSFER_FEE_RATE, STAMP_DUTY_RATE
+    if scored_panel is not None:
+        work = scored_panel.copy()
+        if not {'model_train_end', 'pred'}.issubset(work.columns):
+            raise ValueError('滚动预测缺少模型训练截止日期，不能验证样本外性')
+        work = work[pd.to_datetime(work['date']) > pd.to_datetime(work['model_train_end'])].copy()
+        work['score_lgb'] = work['pred']
+    elif panel is not None and model is not None and train_end is not None:
+        work = panel[pd.to_datetime(panel['date']) > pd.Timestamp(train_end)].copy()
+        if not work.empty:
+            work['score_lgb'] = model.predict_proba(work[get_model_features()])[:, 1]
     else:
-        avg_excess = 0.0
-        win_crises = 0
-        overall_assessment = "危机测试数据不足"
+        work = pd.DataFrame()
+    if not work.empty:
+        work['date'] = pd.to_datetime(work['date'])
+    history = []
+    for scenario in CRISIS_SCENARIOS:
+        row = {**scenario, 'evaluation_type': 'out_of_sample', 'status': 'NOT_EVALUATED',
+               'trading_days': 0, 'strategy_return': None, 'benchmark_return': None,
+               'excess_return': None, 'max_drawdown': None,
+               'resilience': '样本外预测未覆盖', 'badge_type': 'is-neutral'}
+        if not work.empty:
+            sub = work[(work['date'] >= scenario['start_date']) & (work['date'] <= scenario['end_date'])]
+            if 'label_end_date' in sub:
+                sub = sub[pd.to_datetime(sub['label_end_date']) <= pd.Timestamp(scenario['end_date'])]
+            if not sub.empty:
+                bt = run_backtest(sub, k=10, selection='neutral')
+                if 'error' not in bt:
+                    excess = bt['strategy']['total_return'] - bt['benchmark']['total_return']
+                    row.update(status='COMPUTED', trading_days=int(sub['date'].nunique()),
+                               strategy_return=bt['strategy']['total_return'],
+                               benchmark_return=bt['benchmark']['total_return'],
+                               excess_return=round(excess, 4), max_drawdown=bt['strategy']['max_drawdown'],
+                               resilience='跑赢同期基准' if excess > 0 else '未跑赢同期基准')
+        history.append(row)
 
+    shocks = [{**s, 'estimated_impact': None, 'pass_status': 'NOT_EVALUATED',
+               'verdict': '缺少本批次可比收益或因子情景数据'} for s in HYPOTHETICAL_SHOCKS]
+    if backtest and backtest.get('strategy', {}).get('returns'):
+        rp = np.asarray(backtest['strategy']['returns'], dtype=float)
+        rb = np.asarray(backtest['benchmark']['returns'], dtype=float)
+        if len(rp) > 2 and np.std(rb) > 1e-9:
+            beta = float(np.cov(rp, rb, ddof=1)[0, 1] / np.var(rb, ddof=1))
+            shocks[0].update(estimated_impact=round(beta * -0.15, 6),
+                             verdict=f'使用本批次样本外周期收益估计 Beta={beta:.4f}；线性情景估计，非实际成交结果')
+        gross = np.array([r['period_gross_return'] for r in backtest.get('rebalance_ledger', [])])
+        if len(gross):
+            buy = COMMISSION_RATE + TRANSFER_FEE_RATE + 0.005
+            sell = COMMISSION_RATE + TRANSFER_FEE_RATE + STAMP_DUTY_RATE + 0.005
+            change = ((1 + gross) * (1 - sell) / (1 + buy) - 1) - rp
+            shocks[1].update(estimated_impact=round(float(change.mean()), 6),
+                             verdict='根据本批次逐期毛收益重算；数值为平均每个持有期的净收益变化')
+        for row in shocks:
+            if row['estimated_impact'] is not None:
+                row['pass_status'] = 'PASS' if row['estimated_impact'] >= row['max_tolerated_loss'] else 'FAIL'
+    computed = [r for r in history if r['status'] == 'COMPUTED']
+    wins = sum(r['excess_return'] > 0 for r in computed)
     report = {
-        "generated_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "historical_crises": historical_results,
-        "hypothetical_shocks": HYPOTHETICAL_SHOCKS,
-        "summary": {
-            "total_tested_crises": len(historical_results),
-            "win_crises": win_crises,
-            "win_rate": round(win_crises / len(historical_results), 4) if historical_results else 0.0,
-            "avg_crisis_excess": round(avg_excess, 4),
-            "overall_assessment": overall_assessment,
-        }
+        'generated_at': pd.Timestamp.now().isoformat(), 'historical_crises': history,
+        'hypothetical_shocks': shocks,
+        'summary': {'total_tested_crises': len(computed), 'win_crises': wins,
+                    'win_rate': wins / len(computed) if computed else None,
+                    'avg_crisis_excess': float(np.mean([r['excess_return'] for r in computed])) if computed else None,
+                    'overall_assessment': f'样本外预测覆盖 {len(computed)}/{len(CRISIS_SCENARIOS)} 个历史情景；未覆盖区间不计入胜率。'},
     }
-
-    os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
-    with open(REPORT_PATH, 'w', encoding='utf-8') as f:
-        json.dump(report, f, ensure_ascii=False, indent=2)
-    print(f"[StressTest] 压力测试报告已保存至: {REPORT_PATH}")
+    path = os.path.join(artifact_dir(), 'stress_test_report.json')
+    with open(path, 'w', encoding='utf-8') as handle:
+        json.dump(report, handle, ensure_ascii=False, indent=2, allow_nan=False)
     return report
 
 
-def load_stress_test_report() -> Dict[str, Any]:
-    """读取已生成的压力测试报告。"""
-    if os.path.exists(REPORT_PATH):
-        try:
-            with open(REPORT_PATH, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception:
-            pass
-    # 若尚无报告，即时运行生成
-    return run_stress_test()
+def load_stress_test_report():
+    from ml_pipeline.artifacts import artifact_dir
+    path = os.path.join(artifact_dir(), 'stress_test_report.json')
+    if os.path.exists(path):
+        with open(path, encoding='utf-8') as handle:
+            return json.load(handle)
+    return {'error': '本批次未生成压力情景分析', 'historical_crises': [], 'hypothetical_shocks': []}

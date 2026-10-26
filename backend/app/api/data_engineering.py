@@ -19,6 +19,7 @@ from fastapi import APIRouter, HTTPException, Body
 from pydantic import BaseModel, Field
 
 from config.config import SAVED_MODELS_DIR
+from ml_pipeline.artifacts import artifact_dir, live_dir
 from backend.app.services.data_engineering_service import engineering_service_instance
 
 router = APIRouter(prefix="/engineering", tags=["数据工程与模型生命周期管理"])
@@ -38,7 +39,7 @@ class ModelTrainRequest(BaseModel):
 
 class ScheduleConfigRequest(BaseModel):
     enabled: bool = Field(True, description="是否启用自动定时更新任务")
-    cron_time: str = Field("15:35", description="每日执行时间 (HH:MM)")
+    cron_time: str = Field("15:35", pattern=r"^(?:[01]\d|2[0-3]):[0-5]\d$", description="每日执行时间 (HH:MM)，Asia/Shanghai")
     trading_days_only: bool = Field(True, description="是否仅在交易日执行")
     sync_prediction: bool = Field(True, description="是否在更新后自动运行选股打分")
     auto_retrain_model_weekly: bool = Field(False, description="每周是否自动重训模型")
@@ -143,7 +144,9 @@ def get_drift_status():
     """基于《Machine Learning for Algorithmic Trading》规范：
     监控核心特征、预测概率与目标收益在训练集与测试集间的群体稳定性指数 (PSI) 与双样本 KS 检验
     """
-    report_path = os.path.join(SAVED_MODELS_DIR, "feature_drift_report.json")
+    report_path = os.path.join(live_dir(), "feature_drift_report.json")
+    if not os.path.exists(report_path):
+        report_path = os.path.join(artifact_dir(), "feature_drift_report.json")
     if not os.path.exists(report_path):
         from ml_pipeline.drift_monitor import generate_drift_report
         return generate_drift_report()

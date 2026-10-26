@@ -10,6 +10,7 @@ import joblib
 import pandas as pd
 
 from config.config import PROCESSED_DIR, SAVED_MODELS_DIR, get_pool
+from ml_pipeline.artifacts import live_dir, experiment_status
 from ml_pipeline.dataset import build_inference_panel
 from ml_pipeline.run_training import generate_recommendations
 
@@ -57,12 +58,14 @@ def main():
         print("没有生成有效推荐，请检查行情、因子和模型输入是否齐全")
         return
 
-    os.makedirs(PROCESSED_DIR, exist_ok=True)
+    output_dir = live_dir()
+    all_recommendations["model_run_id"] = experiment_status().get("run_id")
+    os.makedirs(output_dir, exist_ok=True)
     today = datetime.today().strftime("%Y%m%d")
     if args.limit:
-        csv_path = os.path.join(PROCESSED_DIR, f"recommendation_preview_{today}.csv")
+        csv_path = os.path.join(output_dir, f"recommendation_preview_{today}.csv")
     else:
-        csv_path = os.path.join(PROCESSED_DIR, "realtime_recommendations.csv")
+        csv_path = os.path.join(output_dir, "realtime_recommendations.csv")
         all_recommendations.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
     recommendations = all_recommendations.copy()
@@ -72,7 +75,7 @@ def main():
         print(f"当前候选池没有可展示的 {args.board} 标的")
         return
 
-    xlsx_path = os.path.join(PROCESSED_DIR, f"stock_recommend_{today}.xlsx")
+    xlsx_path = os.path.join(output_dir, f"recommendation_preview_{today}.xlsx" if args.limit else f"stock_recommend_{today}.xlsx")
     recommendations.to_excel(xlsx_path, index=False, engine="openpyxl")
 
     display_col = "跑赢候选池均值概率"

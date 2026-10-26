@@ -773,3 +773,16 @@ dialog::backdrop {
     padding: 0 16px;
   }
 }
+
+@media (max-width: 600px) {
+  :root { --sidebar-width: 52px; --sidebar-width-collapsed: 52px; }
+  .sidebar-brand { padding: 0 8px; }
+  .sidebar-brand-icon { flex-shrink: 0; }
+  .sidebar-toggle span { display: none; }
+  .topbar { height: auto; min-height: 72px; padding: 10px 12px; flex-wrap: wrap; gap: 6px; }
+  .topbar > div:first-child { min-width: 0; flex-basis: 100%; }
+  .topbar-desc { display: none; }
+  .topbar-actions { flex-wrap: wrap; min-width: 0; gap: 6px; }
+  .topbar-actions > .source-tag { display: none; }
+  .content { padding: 14px 12px 32px; }
+}

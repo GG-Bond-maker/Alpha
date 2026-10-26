@@ -20,6 +20,24 @@ from config.config import FEATURE_COLS, TARGET_DAYS, get_stock_board, get_pool
 
 MIN_FEATURE_COVERAGE = 0.8
 
+
+def align_forward_returns(panel: pd.DataFrame) -> pd.DataFrame:
+    """按全市场交易日对齐可执行标签；缺失入场/出场价格不伪造成交。"""
+    panel = panel.copy()
+    panel['date'] = pd.to_datetime(panel['date'])
+    dates = pd.Series(sorted(panel['date'].unique()))
+    calendar = pd.DataFrame({'date': dates, 'entry_date': dates.shift(-1),
+                             'label_end_date': dates.shift(-TARGET_DAYS)})
+    panel = panel.drop(columns=['entry_date', 'label_end_date'], errors='ignore').merge(calendar, on='date', how='left')
+    prices = panel[['stock_code', 'date', 'open', 'close']].drop_duplicates(['stock_code', 'date'])
+    entry = prices[['stock_code', 'date', 'open']].rename(columns={'date': 'entry_date', 'open': '_entry_open'})
+    exit_ = prices[['stock_code', 'date', 'close']].rename(columns={'date': 'label_end_date', 'close': '_exit_close'})
+    panel = panel.merge(entry, on=['stock_code', 'entry_date'], how='left')
+    panel = panel.merge(exit_, on=['stock_code', 'label_end_date'], how='left')
+    valid = (panel['_entry_open'] > 0) & (panel['_exit_close'] > 0)
+    panel['ret_5d_fwd'] = (panel['_exit_close'] / panel['_entry_open'] - 1).where(valid)
+    return panel.drop(columns=['_entry_open', '_exit_close'])
+
 # 估值与财务因子（来自 data/factor_fetcher.py）
 FUNDAMENTAL_FACTORS = [
     'pe_ttm', 'pb', 'roe', 'gross_margin', 'debt_ratio',
@@ -132,38 +150,34 @@ def neutralize_and_standardize(panel: pd.DataFrame, factor_cols: list,
     """
     panel = panel.copy()
 
+    dates = panel['date']
     for f in factor_cols:
-        if f not in panel.columns:
+        if f not in panel:
             panel[f + '_neu'] = np.nan
             continue
-
-        def _transform(group: pd.Series) -> pd.Series:
-            x = _winsorize(group)
-            demeaned = x - x.mean()  # 兜底：全截面中性化
-
-            if industry_col in panel.columns:
-                ind = panel.loc[group.index, industry_col]
-                sizes = ind.value_counts()
-
-                # 两个条件同时满足才做组内去均值：
-                #   1. 该行业当日样本数充足（否则去均值等于减去自身）；
-                #   2. 该行业不是「未分类」集合——未分类是一个人为聚成的杂类，
-                #      对它去均值会把不同真实行业的股票混在一起，扭曲因子。
-                rich = (ind.map(sizes) >= MIN_STOCKS_PER_INDUSTRY) & (ind != UNCLASSIFIED_INDUSTRY)
-                if rich.any():
-                    group_mean = x.groupby(ind).transform('mean')
-                    demeaned = demeaned.where(~rich, x - group_mean)
-
-            std = demeaned.std()
-            return demeaned / std if std and np.isfinite(std) and std > 1e-9 else demeaned * 0.0
-
-        panel[f + '_neu'] = panel.groupby('date', group_keys=False)[f].apply(_transform)
+        values = panel[f]
+        grouped = values.groupby(dates)
+        count = grouped.transform('count')
+        lower = dates.map(grouped.quantile(0.01))
+        upper = dates.map(grouped.quantile(0.99))
+        x = values.clip(lower=lower, upper=upper).where(count >= 10, values)
+        demeaned = x - x.groupby(dates).transform('mean')
+        if industry_col in panel:
+            industry = panel[industry_col].fillna(UNCLASSIFIED_INDUSTRY)
+            sizes = industry.groupby([dates, industry]).transform('size')
+            rich = (sizes >= MIN_STOCKS_PER_INDUSTRY) & (industry != UNCLASSIFIED_INDUSTRY)
+            mean = x.groupby([dates, industry]).transform('mean')
+            demeaned = demeaned.where(~rich, x - mean)
+        std = demeaned.groupby(dates).transform('std')
+        valid = std.notna() & np.isfinite(std) & (std > 1e-9)
+        panel[f + '_neu'] = (demeaned / std.where(valid)).where(valid, demeaned * 0.0)
 
     return panel
 
 
 def _build_panel(codes: list = None, include_fundamental: bool = True,
-                 require_target: bool = True, verbose: bool = True) -> pd.DataFrame:
+                 require_target: bool = True, verbose: bool = True,
+                 force_refresh: bool = False) -> pd.DataFrame:
     """构建训练面板或最新推理面板。
 
     Args:
@@ -191,10 +205,15 @@ def _build_panel(codes: list = None, include_fundamental: bool = True,
     frames, skipped = [], 0
     for i, code in enumerate(codes, 1):
         clean = str(code).zfill(6)
-        df = build_single(clean) if include_fundamental else _fallback_local(clean)
+        df = build_single(clean, force=force_refresh) if include_fundamental else _fallback_local(clean)
         if df is None:
             skipped += 1
             continue
+
+        price_columns = [c for c in ('open', 'high', 'low', 'close') if c in df]
+        if price_columns:
+            valid_prices = df[price_columns].apply(pd.to_numeric, errors='coerce').gt(0).all(axis=1)
+            df = df.loc[valid_prices].copy()
 
         df = df.set_index('date') if 'date' in df.columns else df
         df = _add_price_factors(df)
@@ -215,6 +234,7 @@ def _build_panel(codes: list = None, include_fundamental: bool = True,
         raise RuntimeError("未能构建任何有效样本，请检查数据源连通性")
 
     panel = pd.concat(frames, ignore_index=True)
+    panel = align_forward_returns(panel)
 
     if require_target:
         from data.universe import apply_point_in_time_universe
@@ -256,9 +276,9 @@ def build_factor_panel(codes: list = None, include_fundamental: bool = True,
 
 
 def build_inference_panel(codes: list = None, include_fundamental: bool = True,
-                          verbose: bool = True) -> pd.DataFrame:
+                           verbose: bool = True, force_refresh: bool = False) -> pd.DataFrame:
     """构建不依赖未来收益标签的推理面板，包含最新可用行情与收盘价。"""
-    return _build_panel(codes, include_fundamental, require_target=False, verbose=verbose)
+    return _build_panel(codes, include_fundamental, require_target=False, verbose=verbose, force_refresh=force_refresh)
 
 
 def _fallback_local(code: str) -> pd.DataFrame:
@@ -287,6 +307,9 @@ def time_split(panel: pd.DataFrame, train_ratio: float = 0.7, val_ratio: float =
     train = panel[panel['date'] < dates[train_end]]
     val = panel[(panel['date'] >= dates[train_start]) & (panel['date'] < dates[val_end])]
     test = panel[panel['date'] >= dates[val_start]]
+    if 'label_end_date' in panel:
+        train = train[pd.to_datetime(train['label_end_date']) < pd.Timestamp(dates[train_start])]
+        val = val[pd.to_datetime(val['label_end_date']) < pd.Timestamp(dates[val_start])]
 
     if len(train) == 0 or len(val) == 0 or len(test) == 0:
         raise RuntimeError("时序切分后存在空集合")

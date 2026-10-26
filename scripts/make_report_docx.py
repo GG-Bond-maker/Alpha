@@ -16,7 +16,11 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Pt, RGBColor
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SM = os.path.join(BASE, "saved_models")
+import sys
+sys.path.insert(0, BASE)
+from ml_pipeline.artifacts import artifact_dir
+SM = artifact_dir()
+SM = artifact_dir()
 FIGS = os.path.join(BASE, "docs", "figures")
 OUT = os.path.join(BASE, "docs", "论文写作参考_实验结果与分析.docx")
 

@@ -1,0 +1,163 @@
+{
+  "review_date": "2026-10-26",
+  "root": "D:\\Python_Project\\Alpha",
+  "versions": {
+    "lightgbm": "4.7.0",
+    "shap": "0.51.0",
+    "pandas": "3.0.6",
+    "numpy": "2.4.6",
+    "scikit-learn": "1.9.1",
+    "optuna": "5.0.0",
+    "fastapi": "0.143.0"
+  },
+  "syntax": {
+    "files": 41,
+    "errors": []
+  },
+  "initial_drawdown": {
+    "reported": 0.0,
+    "correct_including_initial_capital": -0.50076,
+    "nav": [
+      0.49924,
+      0.49924
+    ]
+  },
+  "holding_gap": {
+    "reported_total_return": -0.0008,
+    "continuous_holding_gross_return": 1.0,
+    "actions": [
+      "BUY",
+      "HOLD"
+    ],
+    "period_costs": [
+      0.00076,
+      0.0
+    ]
+  },
+  "service_deadlocks": {
+    "save_schedule_config": {
+      "still_running": true,
+      "lock_held": true
+    },
+    "clear_logs": {
+      "still_running": true,
+      "lock_held": true
+    }
+  },
+  "risk_filter": {
+    "actual_single_stock_weight": 0.5,
+    "actual_sector_weight": 1.0,
+    "returned_statuses": [
+      "PASSED",
+      "PASSED"
+    ],
+    "reported_gauges": {
+      "daily_loss": -0.012,
+      "drawdown": -0.1917,
+      "max_stock_weight": 0.1,
+      "max_sector_concentration": 0.2,
+      "unbuyable_ratio": 0.0
+    }
+  },
+  "recommendation_dates": {
+    "latest_candidates": 2,
+    "latest_codes": [
+      "000001",
+      "600519"
+    ],
+    "latest_returned_date": "2026-10-21",
+    "invalid_requested_date": "1900-01-01",
+    "invalid_returned_date": "2026-10-21",
+    "invalid_returned_candidates": 2
+  },
+  "shap_additivity": {
+    "space": "log_odds",
+    "max_abs_error": 0.0,
+    "mean_abs_error": 0.0,
+    "tolerance": 0.001,
+    "passed": true,
+    "n_samples": 200
+  },
+  "artifact_consistency": {
+    "training_report_has_loss": false,
+    "bundle_has_loss": false,
+    "train_dates_saved": 1999,
+    "train_dates_expected_with_current_purge": 1994,
+    "first_walk_forward_train_end": "2020-04-27",
+    "first_walk_forward_validation_start": "2020-04-27",
+    "aggregated_periods": 1547,
+    "aggregated_has_execution_params": false,
+    "aggregate_dates": 0,
+    "report_backtest_periods": 428,
+    "standalone_backtest_periods": 86,
+    "point_in_time_history_exists": false,
+    "subsample_freq": 0
+  },
+  "lifecycle_metadata": {
+    "displayed_auc": 0.715,
+    "actual_test_auc": 0.5132,
+    "displayed_n_estimators": 150,
+    "actual_n_estimators": 332
+  },
+  "inactive_subsample": {
+    "max_prediction_difference": 0.0,
+    "subsample_freq": 0
+  },
+  "stress_test": {
+    "model_train_end": "2023-04-04",
+    "crises_entirely_before_train_end": [
+      "crisis_2015",
+      "circuit_2016",
+      "trade_war_2018",
+      "covid_2020",
+      "core_deflation_2021"
+    ],
+    "constant_impacts": [
+      -0.128,
+      -0.045,
+      -0.062
+    ],
+    "constant_statuses": [
+      "PASS",
+      "PASS",
+      "PASS"
+    ],
+    "saved_beta": 1.1424
+  },
+  "optional_candidate_factors": {
+    "exception": "TypeError",
+    "message": "'NoneType' object is not iterable"
+  },
+  "api_smoke": {
+    "/api/health": {
+      "status": 200,
+      "size": 118
+    },
+    "/api/v1/recommend/topk": {
+      "status": 200,
+      "size": 6247,
+      "recommendations": 10
+    },
+    "local_explanation": {
+      "status": 200,
+      "space": "log_odds",
+      "rounded_additivity_error": 5.551115123125783e-17
+    },
+    "/api/v1/explain/global": {
+      "status": 200,
+      "size": 442
+    },
+    "/api/v1/evaluation/metrics": {
+      "status": 200,
+      "size": 2093
+    },
+    "/api/v1/evaluation/backtest": {
+      "status": 200,
+      "size": 233022
+    },
+    "/api/v1/engineering/status": {
+      "status": 200,
+      "size": 1786
+    }
+  }
+}

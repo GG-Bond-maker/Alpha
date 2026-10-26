@@ -56,41 +56,33 @@ def hac_t_stat(values: np.ndarray, max_lag: int = TARGET_DAYS - 1) -> float:
 def compute_ic_series(panel: pd.DataFrame, factor: str,
                       ret_col: str = 'ret_5d_fwd') -> pd.Series:
     """逐截面计算因子与前瞻收益的 Spearman 相关。"""
-    ics = {}
-    for date, group in panel.groupby('date'):
-        sub = group[[factor, ret_col]].dropna()
-        if len(sub) < MIN_STOCKS_PER_SECTION:
-            continue
-        if sub[factor].nunique() < 3:
-            continue
-        ic = sub[factor].corr(sub[ret_col], method='spearman')
-        if pd.notna(ic):
-            ics[date] = ic
-    return pd.Series(ics, dtype=float)
+    sub = panel[['date', factor, ret_col]].dropna().copy()
+    grouped = sub.groupby('date', sort=True)
+    ranks = grouped[[factor, ret_col]].rank(method='average')
+    centered = ranks - ranks.groupby(sub['date']).transform('mean')
+    cross = (centered[factor] * centered[ret_col]).groupby(sub['date']).sum()
+    variance = centered.pow(2).groupby(sub['date']).sum()
+    denominator = np.sqrt(variance[factor] * variance[ret_col])
+    valid = (grouped.size() >= MIN_STOCKS_PER_SECTION) & (grouped[factor].nunique() >= 3)
+    return (cross / denominator.where(denominator > 0)).where(valid).dropna()
+
 
 
 def layered_returns(panel: pd.DataFrame, factor: str,
                     ret_col: str = 'ret_5d_fwd', n_groups: int = N_QUANTILES) -> list:
     """按因子值分层，返回各层平均前瞻收益（从低到高）。"""
-    layer_rets = {i: [] for i in range(n_groups)}
+    sub = panel[['date', factor, ret_col]].dropna().copy()
+    grouped = sub.groupby('date')
+    counts = grouped[factor].transform('size')
+    sub = sub[counts >= MIN_STOCKS_PER_SECTION].copy()
+    if sub.empty:
+        return [None] * n_groups
+    counts = sub.groupby('date')[factor].transform('size')
+    rank = sub.groupby('date')[factor].rank(method='first')
+    sub['_layer'] = (np.ceil((rank - 1) / (counts - 1) * n_groups).clip(lower=1) - 1).astype(int)
+    means = sub.groupby(['date', '_layer'])[ret_col].mean().groupby('_layer').mean()
+    return [round(float(means[i]), 6) if i in means else None for i in range(n_groups)]
 
-    for _date, group in panel.groupby('date'):
-        sub = group[[factor, ret_col]].dropna()
-        if len(sub) < MIN_STOCKS_PER_SECTION:
-            continue
-        # 分组数不能超过该截面股票数，否则 qcut 报错
-        groups = min(n_groups, len(sub))
-        if groups < 2:
-            continue
-        try:
-            sub = sub.assign(layer=pd.qcut(sub[factor].rank(method='first'),
-                                           groups, labels=False))
-        except ValueError:
-            continue
-        for layer, g in sub.groupby('layer'):
-            layer_rets[int(layer)].append(float(g[ret_col].mean()))
-
-    return [round(float(np.mean(v)), 6) if v else None for v in layer_rets.values()]
 
 
 def diagnose_factor(panel: pd.DataFrame, factor: str,

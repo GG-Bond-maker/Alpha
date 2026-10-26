@@ -1,0 +1,40 @@
+
+> stock-topk-recsys-frontend@1.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+✓ 652 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         0.60 kB │ gzip:   0.46 kB
+dist/assets/GlobalExplainView-BToGkqeZ.css              0.17 kB │ gzip:   0.14 kB
+dist/assets/FactorDiagnosisView-CUQTBFVH.css            0.61 kB │ gzip:   0.29 kB
+dist/assets/WalkForwardView-B3JyR5oV.css                0.90 kB │ gzip:   0.40 kB
+dist/assets/MetricsView-CzKaV9R8.css                    0.98 kB │ gzip:   0.40 kB
+dist/assets/AttributionView-BK_FwQTL.css                1.20 kB │ gzip:   0.47 kB
+dist/assets/ExperimentDiagnosticsView-1h813R3m.css      1.49 kB │ gzip:   0.55 kB
+dist/assets/HomeDashboardView-B5k_YGGA.css              2.05 kB │ gzip:   0.67 kB
+dist/assets/StockManageView-KzQnwykj.css                3.82 kB │ gzip:   1.11 kB
+dist/assets/StockKlineView-CPf-fYHi.css                 6.38 kB │ gzip:   1.64 kB
+dist/assets/BacktestView-CxVwaKYk.css                  10.10 kB │ gzip:   2.33 kB
+dist/assets/DataEngineeringView-BIuu1GW8.css           12.61 kB │ gzip:   2.65 kB
+dist/assets/index-BPUDwOcw.css                         22.38 kB │ gzip:   5.13 kB
+dist/assets/GlobalExplainView-bTVelgYW.js               6.05 kB │ gzip:   3.40 kB
+dist/assets/HomeDashboardView-3hwfIy-8.js               6.22 kB │ gzip:   3.17 kB
+dist/assets/FactorDiagnosisView-BfFvDLaD.js             6.95 kB │ gzip:   3.64 kB
+dist/assets/StockManageView-uwsXKp0m.js                 7.38 kB │ gzip:   3.70 kB
+dist/assets/ExperimentDiagnosticsView-C87CRaA8.js       8.06 kB │ gzip:   4.02 kB
+dist/assets/MetricsView-CYRcg424.js                     8.68 kB │ gzip:   3.86 kB
+dist/assets/AttributionView-BpLauMrt.js                10.45 kB │ gzip:   4.42 kB
+dist/assets/WalkForwardView-DDGNIj4M.js                10.76 kB │ gzip:   4.37 kB
+dist/assets/StockKlineView-C-FYTgFx.js                 18.41 kB │ gzip:   7.19 kB
+dist/assets/DataEngineeringView-BfxmbKVT.js            19.64 kB │ gzip:   8.16 kB
+dist/assets/BacktestView-BxkzcQr-.js                   37.05 kB │ gzip:  15.19 kB
+dist/assets/index-BTZs1V1D.js                       1,196.09 kB │ gzip: 405.71 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.76s

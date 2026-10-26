@@ -1,33 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Top-K 组合回测（支持全市场排序与行业中性两种选股模式）
+"""Top-K 周期回测，支持池内排序和行业配额筛选。
 
-两种选股模式的差异
-------------------
-global    全市场按打分排序取 Top-K。简单，但容易把仓位集中在当期最热的
-          少数行业上，行业暴露失控会放大回撤。
-
-neutral   行业中性：每个行业内按打分取 Top-N，再合并。行业暴露被限制在
-          可控范围内，代价是可能选入得分并非全市场最高的标的。
-
-行业稀疏时的处理
-----------------
-沪深300 中有部分标的在现有行业分类里查不到（标记为「未分类」）。若把
-「未分类」当成一个行业，它会在组内选股时占用大量名额，但组内成分来自
-互不相关的真实行业，等于没有中性化。因此：
-  - 「未分类」不参与组内选股，而是并入「剩余候选池」，按打分补位；
-  - 行业内股票数不足时同样降级到剩余池，保证每期持仓数量稳定。
-
-净值口径与市场微观结构约束 (ML4T 真实性)
----------------------------------------
-1. 每个调仓周期等权持有选中标的，周期内收益取该组下一期实际收益均值，扣除换手成本；
-2. A 股涨停限制（Limit-Up Filter）：若某标的在信号日已封涨停（主板 >= 9.85%、创业板/科创板 >= 19.85%），
-   次日开盘无法正常买入，回测引擎自动剔除该买入标的并顺延选取次优标的（已持有标的除外）；
-3. 交易成本与摩擦冲击：
-   - 买入：佣金 0.025% + 过户费 0.001% + 冲击滑点 0.05% = 0.076%
-   - 卖出：佣金 0.025% + 过户费 0.001% + 印花税 0.05% + 冲击滑点 0.05% = 0.126%
-4. 多重检验修正与极端风险：
-   - 计算 Deflated Sharpe Ratio (DSR, Bailey & de Prado 2014) 惩罚超参搜索偏差；
-   - 纳入 Sortino、Calmar、最大回撤持续期（MDD Duration）、95% 历史 VaR 与 CVaR (Expected Shortfall)。
+每期在下一交易日开盘买入，第五个交易日收盘全额卖出；
+两期之间持有现金，重复入选也重新承担双边费用。策略与等权基准
+使用相同费率。回撤包含初始本金；净值仅在周期末估值。
+信号日涨停仅为候选筛选，不保证下一开盘成交。
+DSR 需要真实可比试验的数量与 Sharpe 分布，缺失时不计算。
 """
 
 import json
@@ -93,9 +71,9 @@ def _filter_unbuyable(df: pd.DataFrame, prev_holdings: set,
 
 def max_drawdown_duration(nav: np.ndarray) -> int:
     """计算最长水下持续周期数（从净值峰值回落至创出新高所经历的最长周期）。"""
-    if len(nav) <= 1:
+    if len(nav) == 0:
         return 0
-    peak = np.maximum.accumulate(nav)
+    peak = np.maximum.accumulate(np.r_[1.0, nav])[1:]
     in_dd = nav < peak
     max_duration = 0
     current_duration = 0
@@ -109,9 +87,9 @@ def max_drawdown_duration(nav: np.ndarray) -> int:
     return int(max_duration)
 
 
-def deflated_sharpe_ratio(observed_sr: float, n_trials: int = 25,
-                          sr_std: float = 0.072, n_obs: int = 100,
-                          skew: float = 0.0, kurtosis: float = 3.0) -> float:
+def deflated_sharpe_ratio(observed_sr: float, n_trials: int,
+                          sr_std: float, n_obs: int,
+                          skew: float = 0.0, kurtosis: float = 3.0) -> float | None:
     """Bailey & López de Prado (2014) Deflated Sharpe Ratio (DSR).
 
     对多次试验/超参搜索下的选择偏差进行统计惩罚，检验夏普比率是否反映真实 Alpha。
@@ -128,7 +106,7 @@ def deflated_sharpe_ratio(observed_sr: float, n_trials: int = 25,
         DSR 概率值 [0, 1]：>0.95 表示具备高度统计显著性的真实技能。
     """
     if n_trials <= 1 or n_obs <= 2 or sr_std <= 1e-9:
-        return 1.0 if observed_sr > 0 else 0.0
+        return None
 
     euler_mascheroni = 0.57721566490153286
     # 零假设下 N 次独立试验期望最大单期夏普
@@ -237,7 +215,8 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
                  industry_col: str = 'industry',
                  slippage_rate: float = DEFAULT_SLIPPAGE_RATE,
                  filter_limit_up: bool = True,
-                 n_trials: int = 25) -> dict:
+                 n_trials: int | None = None,
+                 trial_sharpe_std: float | None = None) -> dict:
     """执行 Top-K 组合回测。
 
     Args:
@@ -264,6 +243,10 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
     if len(dates) < TARGET_DAYS + 1:
         return {'error': f'有效交易日仅 {len(dates)} 个，不足以进行 {TARGET_DAYS} 日持有期回测'}
 
+    if k < 1 or slippage_rate < 0:
+        raise ValueError('持仓数量必须为正，滑点不能为负')
+    panel = panel.copy()
+    panel['stock_code'] = panel['stock_code'].astype(str).str.zfill(6)
     buy_cost = COMMISSION_RATE + TRANSFER_FEE_RATE + slippage_rate
     sell_cost = COMMISSION_RATE + TRANSFER_FEE_RATE + STAMP_DUTY_RATE + slippage_rate
 
@@ -274,8 +257,11 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
     rebalance_ledger = []
 
     rebalance_dates = []
+    last_exit = None
     for i in range(0, len(dates), TARGET_DAYS):
         date = dates[i]
+        if last_exit is not None and pd.Timestamp(date) < last_exit:
+            continue
         current = panel[panel['date'] == date]
         current = current[current[ret_col].notna() & current[score_col].notna()]
         if len(current) < k:
@@ -284,20 +270,20 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
         if selection == 'neutral':
             holdings, counts = _sector_neutral_pick(
                 current, k, score_col, industry_col=industry_col,
-                prev_holdings=prev_holdings, filter_limit_up=filter_limit_up,
+                prev_holdings=set(), filter_limit_up=filter_limit_up,
             )
         else:
             holdings, counts = _global_pick(
                 current, k, score_col,
-                prev_holdings=prev_holdings, filter_limit_up=filter_limit_up,
+                prev_holdings=set(), filter_limit_up=filter_limit_up,
             )
 
         if not holdings:
             continue
 
         holdings_set = set(str(c).zfill(6) for c in holdings)
-        buy_turnover = len(holdings_set - prev_holdings) / len(holdings)
-        sell_turnover = len(prev_holdings - holdings_set) / len(holdings) if prev_holdings else 0.0
+        # 每期末全部平仓。相邻周期的隔夜资金为空仓，重复入选也必须重新买入。
+        buy_turnover = sell_turnover = 1.0
         turnovers.append(max(buy_turnover, sell_turnover))
         if counts:
             sector_counts.append(counts)
@@ -307,9 +293,15 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
         strategy_ret = _period_return(current, holdings, ret_col)
         benchmark_ret = float(current[ret_col].mean())
 
-        cost = buy_turnover * buy_cost + sell_turnover * sell_cost
-        strategy_returns.append(strategy_ret - cost)
-        benchmark_returns.append(benchmark_ret)
+        net_return = (1.0 + strategy_ret) * (1.0 - sell_cost) / (1.0 + buy_cost) - 1.0
+        benchmark_net = (1.0 + benchmark_ret) * (1.0 - sell_cost) / (1.0 + buy_cost) - 1.0
+        cost = strategy_ret - net_return
+        strategy_returns.append(net_return)
+        benchmark_returns.append(benchmark_net)
+        exit_date = (pd.to_datetime(current['label_end_date']).max()
+                     if 'label_end_date' in current else None)
+        if exit_date is not None and pd.notna(exit_date):
+            last_exit = exit_date
 
         # 记录当期持仓标的明细与收益 (Rebalance Ledger)
         period_holdings = []
@@ -335,13 +327,15 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
                 'weight': weight_per_stock,
                 'score': round(score_val, 4),
                 'return_5d': round(ret_val, 4),
-                'action': 'BUY' if is_new else 'HOLD',
+                'action': 'BUY',
+                'previously_selected': not is_new,
+                'exit_action': 'SELL',
                 'beat_benchmark': bool(ret_val > benchmark_ret),
             })
 
         exited_list = []
         if prev_holdings:
-            exited_codes = prev_holdings - holdings_set
+            exited_codes = prev_holdings
             for code in exited_codes:
                 c_str = str(code).zfill(6)
                 exited_list.append({
@@ -355,10 +349,11 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
             'period_index': len(rebalance_ledger) + 1,
             'date': str(date)[:10],
             'holdings_count': len(holdings),
-            'period_net_return': round(strategy_ret - cost, 4),
+            'exit_date': str(exit_date)[:10] if exit_date is not None else None,
+            'period_net_return': round(net_return, 6),
             'period_gross_return': round(strategy_ret, 4),
-            'benchmark_return': round(benchmark_ret, 4),
-            'excess_return': round(strategy_ret - cost - benchmark_ret, 4),
+            'benchmark_return': round(benchmark_net, 6),
+            'excess_return': round(net_return - benchmark_net, 6),
             'turnover': round(max(buy_turnover, sell_turnover), 4),
             'cost': round(cost, 5),
             'win_rate': round(win_count / len(period_holdings), 4) if period_holdings else 0.0,
@@ -392,7 +387,7 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
         sortino = float((np.mean(returns) / downside_dev) * np.sqrt(periods_per_year)) if downside_dev > 1e-9 else 0.0
 
         # 最大回撤与 Calmar 比率
-        peak = np.maximum.accumulate(nav)
+        peak = np.maximum.accumulate(np.r_[1.0, nav])[1:]
         drawdown = (nav - peak) / peak
         max_dd = float(drawdown.min()) if len(drawdown) > 0 else 0.0
         calmar = float(ann / abs(max_dd)) if abs(max_dd) > 1e-6 else 0.0
@@ -408,15 +403,14 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
         kurtosis = float(stats.kurtosis(returns, fisher=False)) if n > 3 else 3.0
 
         # Deflated Sharpe Ratio (DSR) 扣除多次测试偏差
-        sr_std_period = 0.5 / np.sqrt(periods_per_year)
         dsr = deflated_sharpe_ratio(
             observed_sr=obs_sr,
             n_trials=n_trials,
-            sr_std=sr_std_period,
+            sr_std=trial_sharpe_std,
             n_obs=n,
             skew=skewness,
             kurtosis=kurtosis,
-        )
+        ) if n_trials is not None and n_trials > 1 and trial_sharpe_std is not None and trial_sharpe_std > 0 else None
 
         return {
             'total_return': round(total, 4),
@@ -433,10 +427,13 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
             'periods': int(n),
             'skewness': round(skewness, 4),
             'kurtosis': round(kurtosis, 4),
-            'dsr': round(dsr, 4),
-            'dsr_p_value': round(1.0 - dsr, 4),
-            'n_trials': int(n_trials),
+            'dsr': round(dsr, 4) if dsr is not None else None,
+            'dsr_p_value': round(1.0 - dsr, 4) if dsr is not None else None,
+            'dsr_status': 'computed' if dsr is not None else 'missing_comparable_trial_sharpes',
+            'n_trials': n_trials,
             'nav': [round(float(x), 6) for x in nav],
+            'drawdown': [round(float(x), 6) for x in drawdown],
+            'returns': [round(float(x), 8) for x in returns],
         }
 
     strat_m = _metrics(strat)
@@ -460,6 +457,9 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
             'entry': 'next_session_open',
             'exit': f'close_after_{TARGET_DAYS}_sessions',
             'rebalance_every_sessions': TARGET_DAYS,
+            'position_policy': 'liquidate_at_period_close',
+            'benchmark_cost_policy': 'same_round_trip_rates',
+            'execution_note': '期末全额平仓，隔夜持有现金；信号日涨停仅作筛选，不保证下一开盘可成交。',
             'return_column': ret_col,
             'commission_rate': COMMISSION_RATE,
             'stamp_duty_rate': STAMP_DUTY_RATE,
@@ -492,7 +492,8 @@ def run_backtest(panel: pd.DataFrame, k: int = 10, ret_col: str = 'ret_5d_fwd',
         },
         'avg_turnover': round(float(np.mean(turnovers)), 4) if turnovers else 0.0,
         'avg_sectors_held': avg_sectors,
-        'final_holdings': sorted(prev_holdings),
+        'final_holdings': [],
+        'last_selected': sorted(prev_holdings),
         'dates': rebalance_dates,
         'rebalance_ledger': rebalance_ledger,
     }

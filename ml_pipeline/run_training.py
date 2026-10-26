@@ -20,6 +20,11 @@
 import argparse
 import json
 import os
+import sys
+
+if __name__ == '__main__' and os.environ.get('ALPHA_TRAIN_WORKER') != '1':
+    from ml_pipeline.artifacts import launch_training
+    raise SystemExit(launch_training(sys.argv[1:]))
 
 import numpy as np
 import pandas as pd
@@ -98,7 +103,14 @@ def main():
                         help='滚动窗口每次前进的交易日数（默认 120，约半年）')
     parser.add_argument('--wf-no-backtest', action='store_true',
                         help='滚动窗口内跳过回测（仅算 AUC 与因子稳定性）')
+    parser.add_argument('--cached', action='store_true', help='仅使用本地原始因子缓存，离线重建标签与特征')
     args = parser.parse_args()
+    if args.trials < 1 or args.k < 1:
+        parser.error('trials 和 k 必须大于 0')
+    if args.cached:
+        os.environ['ALPHA_OFFLINE'] = '1'
+    run_id = os.environ['ALPHA_RUN_ID']
+    print(f'[Experiment] 开始批次 {run_id}', flush=True)
 
     print("=" * 70)
     print(" LightGBM 推荐系统 · 离线重训")
@@ -112,7 +124,7 @@ def main():
 
     print(f"\n[1/7] 构建面板数据集（{len(codes)} 只标的，含基本面因子）...")
     panel = build_factor_panel(codes if args.limit else None, include_fundamental=True)
-    panel.to_csv(os.path.join(PROCESSED_DIR, 'panel_dataset.csv'), index=False, encoding='utf-8-sig')
+    panel.to_pickle(os.path.join(PROCESSED_DIR, 'panel_dataset.pkl'), compression='gzip')
 
     # 因子诊断：产出论文所需的因子有效性检验表
     print("\n[2/7] 因子有效性诊断（IC / ICIR / t 值）...")
@@ -248,7 +260,11 @@ def main():
 
     # 7. 汇总报告
     report = {
+        'run_id': run_id,
         'panel': {
+            'cached_only': args.cached,
+            'feature_engine': 'pandas',
+            'label_calendar': 'union_of_observed_market_sessions',
             'stocks': int(panel['stock_code'].nunique()),
             'dates': int(panel['date'].nunique()),
             'rows': int(len(panel)),
@@ -291,8 +307,23 @@ def main():
         'walk_forward_backtest': (wf.get('backtest_summary') if wf else None),
         'attribution': attribution_result,
     }
+    from ml_pipeline.diagnostics import build_diagnostics
+    build_diagnostics(test, bt)
+    from ml_pipeline.stress_test import run_stress_test
+    prediction_path = os.path.join(PROCESSED_DIR, 'walk_forward_predictions.csv')
+    scored = pd.read_csv(prediction_path, dtype={'stock_code': str}) if os.path.exists(prediction_path) else None
+    run_stress_test(panel=test, model=model, train_end=result['train']['date'].max(), scored_panel=scored, backtest=bt)
+    from ml_pipeline.sensitivity_analysis import run_parameter_sensitivity
+    run_parameter_sensitivity()
+    from ml_pipeline.drift_monitor import generate_drift_report
+    generate_drift_report()
+    if rec_df.empty:
+        raise RuntimeError('推荐截面为空，不能激活本批次')
     with open(os.path.join(SAVED_MODELS_DIR, 'training_report.json'), 'w', encoding='utf-8') as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
+
+    from ml_pipeline.artifacts import finalize_run
+    finalize_run(report)
 
     print("\n" + "=" * 70)
     print(" 完成。训练集/验证集/测试集指标：")

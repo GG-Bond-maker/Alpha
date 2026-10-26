@@ -12,6 +12,7 @@
 """
 
 import os
+from ml_pipeline.artifacts import artifact_dir, processed_dir
 
 # ---------------------------------------------------------------------------
 # 路径
@@ -21,9 +22,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 CACHE_DIR = os.path.join(DATA_DIR, 'cache')
 MODEL_DIR = os.path.join(DATA_DIR, 'stock_models')
-PROCESSED_DIR = os.path.join(DATA_DIR, 'processed')
+PROCESSED_DIR = processed_dir()
 FACTOR_DIR = os.path.join(DATA_DIR, 'factors')
-SAVED_MODELS_DIR = os.path.join(BASE_DIR, 'saved_models')
+SAVED_MODELS_DIR = artifact_dir()
 
 for _d in (DATA_DIR, CACHE_DIR, MODEL_DIR, PROCESSED_DIR, FACTOR_DIR, SAVED_MODELS_DIR):
     os.makedirs(_d, exist_ok=True)
@@ -69,8 +70,9 @@ def _load_selected_factors() -> list:
     """优先读取诊断产出的因子列表，缺失时用默认值。"""
     try:
         import json
-        if os.path.exists(SELECTED_FACTORS_PATH):
-            with open(SELECTED_FACTORS_PATH, 'r', encoding='utf-8') as f:
+        selected_path = os.path.join(artifact_dir(), 'selected_factors.json')
+        if os.path.exists(selected_path):
+            with open(selected_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             factors = data.get('factors') or []
             if factors:
