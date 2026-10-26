@@ -23,7 +23,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">入选因子数</div>
-          <div class="stat-value text-pos">{{ usable.length }}</div>
+          <div class="stat-value">{{ usable.length }}</div>
           <div class="stat-hint">|IC| ≥ {{ criteria.min_abs_ic }} 且 |t| ≥ {{ criteria.min_abs_t }}</div>
         </div>
         <div class="stat-card">
@@ -66,13 +66,19 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(r, idx) in results" :key="r.factor" :class="{ 'row-in': r.usable }">
+              <tr v-for="(r, idx) in results" :key="r.factor"
+                  :class="{ 'row-selected': r.factor === selectedFactor, 'row-in': r.usable }"
+                  class="clickable-row"
+                  @click="selectFactor(r.factor)">
                 <td><span class="badge badge-silver">{{ idx + 1 }}</span></td>
-                <td><strong>{{ r.name_cn || r.factor }}</strong></td>
+                <td>
+                  <strong>{{ r.name_cn || r.factor }}</strong>
+                  <span v-if="r.factor === selectedFactor" class="badge badge-blue" style="margin-left: 6px;">查看中</span>
+                </td>
                 <td>
                   <span class="badge" :class="categoryClass(r.factor)">{{ categoryOf(r.factor) }}</span>
                 </td>
-                <td :class="r.ic_mean >= 0 ? 'text-pos' : 'text-neg'">{{ r.ic_mean.toFixed(4) }}</td>
+                <td :class="r.ic_mean > 0 ? 'text-pos' : r.ic_mean < 0 ? 'text-neg' : 'text-muted'">{{ r.ic_mean.toFixed(4) }}</td>
                 <td>{{ r.icir.toFixed(3) }}</td>
                 <td :class="Math.abs(r.t_stat) >= 2 ? 'cell-strong' : ''">
                   {{ r.t_stat.toFixed(2) }}
@@ -95,11 +101,16 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" ref="chartCardRef">
         <div class="card-header">
           <div>
-            <div class="card-title">分层收益单调性</div>
-            <div class="card-subtitle">按因子值分 5 组，观察各组平均前瞻收益是否随因子值单调变化</div>
+            <div class="card-title">
+              分层收益单调性
+              <span v-if="currentFactor" class="badge badge-blue" style="font-size: 13px; margin-left: 8px;">
+                {{ currentFactor.name_cn || currentFactor.factor }}
+              </span>
+            </div>
+            <div class="card-subtitle">按因子值分 5 组，观察各组平均前瞻收益是否随因子值单调变化（点击上方表格行可直接切换）</div>
           </div>
           <select v-model="selectedFactor" class="form-select">
             <option v-for="r in results" :key="r.factor" :value="r.factor">
@@ -138,9 +149,15 @@ const nStocks = ref(0)
 const message = ref('')
 const selectedFactor = ref('')
 const layerRef = ref(null)
+const chartCardRef = ref(null)
 let chart = null
 
 const topFactor = computed(() => results.value[0] || null)
+const currentFactor = computed(() => results.value.find((r) => r.factor === selectedFactor.value) || null)
+
+const selectFactor = (factor) => {
+  selectedFactor.value = factor
+}
 
 const FUNDAMENTAL = ['pe_ttm', 'pb', 'roe', 'roa', 'gross_margin', 'net_margin',
   'debt_ratio', 'revenue_growth', 'profit_growth']
@@ -220,7 +237,7 @@ const renderLayer = () => {
       data: values,
       barWidth: '52%',
       itemStyle: {
-        color: (p) => (p.value >= 0 ? '#2563eb' : '#ef4444'),
+        color: (p) => (p.value >= 0 ? '#dc2626' : '#16a34a'),
         borderRadius: [3, 3, 0, 0],
       },
       label: {
@@ -250,6 +267,24 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clickable-row:hover {
+  background-color: var(--slate-100) !important;
+}
+
+.row-selected {
+  background: #eff6ff !important;
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.row-selected td strong {
+  color: var(--primary);
+}
+
 .row-in {
   background: #f0fdf4;
 }

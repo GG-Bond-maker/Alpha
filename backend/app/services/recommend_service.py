@@ -35,6 +35,8 @@ class RecommendationService:
         self.backtest_cmp_path = os.path.join(SAVED_MODELS_DIR, "backtest_comparison.json")
         self.walk_forward_path = os.path.join(SAVED_MODELS_DIR, "walk_forward.json")
         self.attribution_path = os.path.join(SAVED_MODELS_DIR, "attribution.json")
+        self.stress_test_path = os.path.join(SAVED_MODELS_DIR, "stress_test_report.json")
+        self.sensitivity_path = os.path.join(SAVED_MODELS_DIR, "sensitivity_analysis.json")
         self._asset_signatures = {}
         self._model_file_signature = None
         self._model_loaded_signature = None
@@ -65,6 +67,10 @@ class RecommendationService:
         self._load_asset_if_changed("walk_forward", self.walk_forward_path,
                                     lambda path: self._read_json(path, {}), dict)
         self._load_asset_if_changed("attribution", self.attribution_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("stress_test", self.stress_test_path,
+                                    lambda path: self._read_json(path, {}), dict)
+        self._load_asset_if_changed("sensitivity", self.sensitivity_path,
                                     lambda path: self._read_json(path, {}), dict)
 
         # 首页、评测和推荐接口不需要模型对象。模型包含训练面板数据，体积很大，延迟到局部解释时加载。
@@ -177,19 +183,118 @@ class RecommendationService:
         items = [self._to_item(row, idx + 1, current_date)
                  for idx, (_, row) in enumerate(df.head(k).iterrows())]
 
+        from ml_pipeline.risk_guard import risk_guard_instance
+        guarded_items = risk_guard_instance.filter_recommendations(items)
+
         return {
             "date": current_date,
             "k": k,
             "total_candidates": total,
-            "recommendations": items,
+            "risk_guard": risk_guard_instance.status_report,
+            "recommendations": guarded_items,
         }
+
+    def get_risk_status(self) -> Dict[str, Any]:
+        from ml_pipeline.risk_guard import risk_guard_instance
+        return risk_guard_instance.status_report
+
+    def _get_market_indicator_cache(self) -> Dict[str, Any]:
+        if hasattr(self, "_market_indicator_cache") and self._market_indicator_cache:
+            return self._market_indicator_cache
+
+        cache = {}
+        import glob
+        cache_dir = os.path.join(os.path.dirname(self.realtime_path), "..", "cache")
+        for p in glob.glob(os.path.join(cache_dir, "*_hist.csv")):
+            code = os.path.basename(p).split("_")[0].zfill(6)
+            try:
+                df = pd.read_csv(p)
+                if not df.empty:
+                    last = df.iloc[-1]
+                    cache[code] = {
+                        "close": round(float(last.get("close", 0.0)), 2),
+                        "pct_chg": round(float(last.get("pct_chg", 0.0)), 2),
+                        "macd": round(float(last.get("MACD", 0.0)), 3) if pd.notna(last.get("MACD")) else None,
+                        "rsi14": round(float(last.get("RSI14", 0.0)), 2) if pd.notna(last.get("RSI14")) else None,
+                    }
+            except Exception:
+                pass
+
+        panel_path = os.path.join(os.path.dirname(self.realtime_path), "panel_dataset.csv")
+        if os.path.exists(panel_path):
+            try:
+                panel_df = pd.read_csv(panel_path)
+                latest_date = panel_df["date"].max()
+                panel_sub = panel_df[panel_df["date"] == latest_date]
+                for _, p_row in panel_sub.iterrows():
+                    c = str(p_row["stock_code"]).zfill(6)
+                    if c not in cache:
+                        cache[c] = {
+                            "close": None,
+                            "pct_chg": round(float(p_row.get("pct_chg", 0.0)), 2) if pd.notna(p_row.get("pct_chg")) else None,
+                            "macd": round(float(p_row.get("MACD_norm", 0.0)), 3) if pd.notna(p_row.get("MACD_norm")) else None,
+                            "rsi14": round(float(p_row.get("RSI14", 0.0)), 2) if pd.notna(p_row.get("RSI14")) else None,
+                        }
+            except Exception:
+                pass
+
+        self._market_indicator_cache = cache
+        return cache
 
     def _to_item(self, row: pd.Series, rank: int, date: str) -> Dict[str, Any]:
         code = str(row.get("代码", "")).zfill(6)
         score = self._row_score(row)
         rating = row.get("推荐评级")
-        if not isinstance(rating, str):
-            rating = "A" if score >= 0.75 else ("B" if score >= 0.60 else "C")
+        if not isinstance(rating, str) or rating not in ("A", "B", "C"):
+            # 依据全市场截面相对百分位排名 (前 10% A 级，随后 20% B 级，其余 C 级)
+            if rank <= 30:
+                rating = "A"
+            elif rank <= 90:
+                rating = "B"
+            else:
+                rating = "C"
+
+        try:
+            from backend.app.api.stock import favorite_stocks
+            is_fav = code in favorite_stocks
+        except Exception:
+            is_fav = False
+
+        mkt = self._get_market_indicator_cache().get(code, {})
+
+        close_price = self._num(row.get("最新收盘价"), None)
+        if (close_price is None or close_price == 0.0) and mkt.get("close"):
+            close_price = mkt["close"]
+        if close_price is None:
+            close_price = 0.0
+
+        pct_chg = self._num(row.get("当日涨幅(%)"), None)
+        if (pct_chg is None or pct_chg == 0.0) and mkt.get("pct_chg") is not None:
+            pct_chg = mkt["pct_chg"]
+        if pct_chg is None:
+            pct_chg = 0.0
+
+        macd_val = self._num(
+            row.get("归一化异同移动平均线(MACD)")
+            or row.get("MACD_norm_neu")
+            or row.get("MACD_norm")
+            or row.get("MACD")
+            or row.get("macd"),
+            None
+        )
+        if macd_val is None and mkt.get("macd") is not None:
+            macd_val = mkt["macd"]
+
+        rsi_val = self._num(
+            row.get("14日相对强弱指标(RSI)")
+            or row.get("RSI14_neu")
+            or row.get("RSI14")
+            or row.get("rsi14")
+            or row.get("RSI"),
+            None
+        )
+        if rsi_val is None and mkt.get("rsi14") is not None:
+            rsi_val = mkt["rsi14"]
 
         return {
             "stock_code": code,
@@ -200,12 +305,13 @@ class RecommendationService:
             "predicted_score": round(score, 4),
             "probability": round(score, 4),
             "recommend_rating": rating,
+            "is_favorite": is_fav,
             "is_limit_up": str(row.get("是否涨停", "否")),
-            "close_price": self._num(row.get("最新收盘价"), 0.0),
-            "pct_chg": self._num(row.get("当日涨幅(%)"), 0.0),
+            "close_price": close_price,
+            "pct_chg": pct_chg,
             "ema20_ratio": self._num(row.get("价格/20日均线比率"), None),
-            "rsi14": self._num(row.get("14日相对强弱指标(RSI)"), None),
-            "macd": self._num(row.get("归一化异同移动平均线(MACD)"), None),
+            "rsi14": rsi_val,
+            "macd": macd_val,
             "obv": self._num(row.get("能量潮标准分(OBV-Z)"), None),
             "cci": self._num(row.get("顺势指标(CCI)"), None),
             "atr": self._num(row.get("相对真实波幅(ATR/价格)"), None),
@@ -325,6 +431,13 @@ class RecommendationService:
             return {"error": "尚未生成归因结果，请先运行训练脚本"}
         return self.attribution
 
+    def get_stress_test(self) -> Dict[str, Any]:
+        self.reload()
+        if not getattr(self, "stress_test", None):
+            from ml_pipeline.stress_test import load_stress_test_report
+            return load_stress_test_report()
+        return self.stress_test
+
     def get_walk_forward(self) -> Dict[str, Any]:
         self.reload()
         if not self.walk_forward:
@@ -344,6 +457,12 @@ class RecommendationService:
             return {"results": [], "usable_factors": [],
                     "message": "尚未生成因子诊断，请先运行 python -m ml_pipeline.run_training"}
         return self.factor_diagnosis
+
+    def get_sensitivity_analysis(self) -> Dict[str, Any]:
+        self.reload()
+        if not getattr(self, "sensitivity", None):
+            return {"error": "尚未生成策略敏感性分析，请先运行 python -m ml_pipeline.sensitivity_analysis"}
+        return self.sensitivity
 
     # ------------------------------------------------------------------
     # 导出

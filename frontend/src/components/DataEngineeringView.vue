@@ -8,9 +8,9 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
           </div>
           <div>
-            <h2>数据工程与模型生命周期管理中心</h2>
+            <div class="banner-engine-title">实时任务调度与执行引擎</div>
             <p class="banner-sub">
-              专为中国 A 股打造 | 实时行情数据摄取与清洗 | LightGBM 模型零停机重训与 Optuna 贝叶斯寻优 | 盘后自动调度管理
+              支持日频行情自动化摄取、LightGBM 推荐模型重训与 Optuna 贝叶斯寻优调度
             </p>
           </div>
         </div>
@@ -284,6 +284,120 @@
       </div>
     </div>
 
+    <!-- 模块 3.5: 特征与模型稳定性监控 (ML4T PSI Drift Monitor) -->
+    <div class="card drift-card">
+      <div class="drift-header">
+        <div class="drift-title-group">
+          <div class="drift-title">
+            <span class="drift-icon">🔬</span>
+            <h3>特征与模型漂移监控 (ML4T Population Stability Index, PSI)</h3>
+          </div>
+          <p class="drift-sub">
+            依据《Machine Learning for Algorithmic Trading》第 9、26 章规范：以模型训练集分布为基准，量化检验测试集/近期窗口的群体稳定性指数 (PSI) 与双样本 KS 检验，防范非平稳性数据漂移造成实盘下行风险。
+          </p>
+        </div>
+        <div class="drift-actions">
+          <div v-if="driftReport" class="drift-badge" :class="'drift-' + (driftReport.overall_status || 'HEALTHY').toLowerCase()">
+            {{ driftReport.overall_label }}
+          </div>
+          <button class="btn btn-outline btn-sm" :disabled="loadingDrift" @click="handleRefreshDrift">
+            {{ loadingDrift ? '检测计算中...' : '重新检测 PSI' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="loadingDrift && !driftReport" class="drift-loading">
+        <div class="spinner"></div>
+        <span>正在执行双样本 KS 检验与分箱 PSI 积分计算...</span>
+      </div>
+
+      <div v-else-if="driftReport" class="drift-body">
+        <!-- 核心统计概览条 -->
+        <div class="drift-stats-grid">
+          <div class="drift-stat-pill">
+            <span class="lbl">训练集基准样本</span>
+            <strong class="val">{{ driftReport.train_samples?.toLocaleString() }} 条</strong>
+          </div>
+          <div class="drift-stat-pill">
+            <span class="lbl">测试监控样本</span>
+            <strong class="val">{{ driftReport.test_samples?.toLocaleString() }} 条</strong>
+          </div>
+          <div class="drift-stat-pill">
+            <span class="lbl">特征最大 PSI</span>
+            <strong class="val" :class="driftReport.max_feature_psi < 0.10 ? 'text-pos' : 'text-neg'">
+              {{ driftReport.max_feature_psi }}
+            </strong>
+          </div>
+          <div class="drift-stat-pill" v-if="driftReport.prediction_drift">
+            <span class="lbl">预测概率分布 PSI</span>
+            <strong class="val text-pos">{{ driftReport.prediction_drift.psi }} ({{ driftReport.prediction_drift.status_label }})</strong>
+          </div>
+          <div class="drift-stat-pill" v-if="driftReport.target_drift">
+            <span class="lbl">目标收益分布 PSI</span>
+            <strong class="val text-pos">{{ driftReport.target_drift.psi }} ({{ driftReport.target_drift.status_label }})</strong>
+          </div>
+        </div>
+
+        <div class="drift-summary-text">
+          <span class="summary-prefix">监控结论：</span>{{ driftReport.summary_desc }}
+        </div>
+
+        <!-- 详细特征稳定性矩阵表 -->
+        <div class="table-wrap" style="margin-top: 14px;">
+          <table>
+            <thead>
+              <tr>
+                <th>特征指标</th>
+                <th>业务维度</th>
+                <th>入模状态</th>
+                <th>基准均值 ± 标准差</th>
+                <th>当前均值 ± 标准差</th>
+                <th>群体稳定性指数 (PSI)</th>
+                <th>双样本 KS 检验</th>
+                <th style="text-align: center;">漂移诊断</th>
+                <th>运维建议</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="feat in (driftReport.features || [])" :key="feat.feature">
+                <td>
+                  <strong>{{ feat.name_cn }}</strong>
+                  <div class="feat-code">{{ feat.feature }}</div>
+                </td>
+                <td><span class="badge-subtle">{{ feat.category }}</span></td>
+                <td>
+                  <span v-if="feat.is_model_input" class="tag-input-feat">核心特征</span>
+                  <span v-else class="tag-pool-feat">池级指标</span>
+                </td>
+                <td>{{ feat.ref_mean.toFixed(3) }} <span class="sub-std">±{{ feat.ref_std.toFixed(3) }}</span></td>
+                <td>{{ feat.cur_mean.toFixed(3) }} <span class="sub-std">±{{ feat.cur_std.toFixed(3) }}</span></td>
+                <td>
+                  <strong :class="feat.psi < 0.10 ? 'text-pos' : feat.psi < 0.20 ? 'text-warn' : 'text-neg'">
+                    {{ feat.psi.toFixed(4) }}
+                  </strong>
+                </td>
+                <td>
+                  <div class="ks-val">D = {{ feat.ks_stat.toFixed(3) }}</div>
+                  <div class="ks-p">p = {{ feat.ks_pvalue_fmt }}</div>
+                </td>
+                <td style="text-align: center;">
+                  <span class="status-pill" :class="'pill-' + feat.status.toLowerCase()">
+                    {{ feat.status_label }}
+                  </span>
+                </td>
+                <td><span class="action-desc">{{ feat.action }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="drift-footnote">
+          <strong>PSI 判定标准：</strong>
+          PSI &lt; 0.10（稳定，无需调整）；0.10 ~ 0.20（轻度漂移，建议增加监控频次并关注因子衰减）；&ge; 0.20（显著漂移，代表宏观市场结构已变异，建议重新运行训练管道）。
+        </div>
+      </div>
+    </div>
+
     <!-- 模块 4: 实时工程执行终端 (Terminal Console) -->
     <div class="terminal-card">
       <div class="terminal-header">
@@ -484,9 +598,40 @@ const stopPolling = () => {
   }
 }
 
+// 特征与模型漂移监控 (ML4T PSI Drift)
+const driftReport = ref(null)
+const loadingDrift = ref(false)
+
+const fetchDrift = async () => {
+  loadingDrift.value = true
+  try {
+    const res = await api.getDriftStatus()
+    driftReport.value = res.data
+  } catch (err) {
+    console.error('获取特征漂移监控报告失败:', err)
+  } finally {
+    loadingDrift.value = false
+  }
+}
+
+const handleRefreshDrift = async () => {
+  loadingDrift.value = true
+  try {
+    const res = await api.refreshDriftStatus()
+    driftReport.value = res.data.report || res.data
+  } catch (err) {
+    alert('刷新漂移监控失败: ' + (err.response?.data?.detail || err.message))
+  } finally {
+    loadingDrift.value = false
+  }
+}
+
 onMounted(async () => {
-  await fetchStatus()
-  await fetchLogs()
+  await Promise.all([
+    fetchStatus(),
+    fetchLogs(),
+    fetchDrift()
+  ])
   if (taskState.value.status === 'running') {
     startPolling()
   }
@@ -541,8 +686,8 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
-.banner-title-box h2 {
-  font-size: 20px;
+.banner-engine-title {
+  font-size: 16px;
   font-weight: 700;
   color: var(--slate-900);
 }
@@ -1111,5 +1256,214 @@ onBeforeUnmount(() => {
 
 .term-msg {
   color: #e2e8f0;
+}
+
+/* 特征与模型漂移监控卡片 (ML4T PSI Drift) */
+.drift-card {
+  padding: 20px 24px;
+  background: #ffffff;
+  border-radius: var(--radius-lg, 8px);
+  border: 1px solid var(--slate-200, #e2e8f0);
+}
+
+.drift-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.drift-title-group {
+  flex: 1;
+}
+
+.drift-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drift-title h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--slate-800, #1e293b);
+  margin: 0;
+}
+
+.drift-icon {
+  font-size: 18px;
+}
+
+.drift-sub {
+  font-size: 13px;
+  color: var(--slate-500, #64748b);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.drift-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.drift-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.drift-badge.drift-healthy {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.drift-badge.drift-warning {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.drift-badge.drift-critical {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.drift-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  color: var(--slate-500);
+  font-size: 13px;
+  justify-content: center;
+}
+
+.drift-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.drift-stat-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drift-stat-pill .lbl {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.drift-stat-pill .val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.drift-summary-text {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-top: 14px;
+  line-height: 1.5;
+}
+
+.summary-prefix {
+  font-weight: 700;
+}
+
+.feat-code {
+  font-family: monospace;
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.tag-input-feat {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tag-pool-feat {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.sub-std {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ks-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.ks-p {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-pill.pill-stable {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.status-pill.pill-moderate {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.status-pill.pill-significant {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.action-desc {
+  font-size: 12px;
+  color: #334155;
+}
+
+.drift-footnote {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  line-height: 1.5;
 }
 </style>

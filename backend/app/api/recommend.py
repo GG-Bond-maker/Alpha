@@ -6,10 +6,19 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 
 from backend.app.services.recommend_service import service_instance
 
 router = APIRouter(prefix="/recommend", tags=["Top-K 选股推荐"])
+
+
+class ResetRiskRequest(BaseModel):
+    auth_token: str
+
+
+class TriggerRiskRequest(BaseModel):
+    reason: Optional[str] = "管理员手动触发紧急避险熔断"
 
 
 @router.get("/dates", summary="获取可选截面日期列表")
@@ -25,6 +34,27 @@ def get_topk(
     board: Optional[str] = Query(None, description="板块筛选"),
 ):
     return service_instance.get_topk(date=date, k=k, industry=industry, board=board)
+
+
+@router.get("/risk_status", summary="获取风控熔断器状态 (ML4T Risk Guard)")
+def get_risk_status():
+    return service_instance.get_risk_status()
+
+
+@router.post("/risk_trigger", summary="手动触发风控熔断 (ML4T Kill Switch)")
+def trigger_risk(req: Optional[TriggerRiskRequest] = None):
+    reason = req.reason if req and req.reason else "管理员手动触发紧急避险熔断"
+    from ml_pipeline.risk_guard import risk_guard_instance
+    return risk_guard_instance.manual_trigger(reason)
+
+
+@router.post("/risk_reset", summary="重置解除风控熔断 (ML4T Kill Switch)")
+def reset_risk(req: ResetRiskRequest):
+    from ml_pipeline.risk_guard import risk_guard_instance
+    success = risk_guard_instance.reset(req.auth_token)
+    if not success:
+        raise HTTPException(status_code=403, detail="口令鉴权失败，无法解除风控熔断（默认口令: ALPHA_SAFE_RESET_2026）")
+    return risk_guard_instance.status_report
 
 
 @router.get("/export_excel", summary="导出推荐结果为 Excel")

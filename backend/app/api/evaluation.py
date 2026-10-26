@@ -43,3 +43,14 @@ def get_walk_forward() -> Dict[str, Any]:
 @router.get("/attribution", summary="Alpha/Beta 业绩归因与显著性检验")
 def get_attribution() -> Dict[str, Any]:
     return service_instance.get_attribution()
+
+
+@router.get("/stress_test", summary="历史极端危机情景与假设压力测试 (ML4T Crisis Stress Testing)")
+def get_stress_test() -> Dict[str, Any]:
+    return service_instance.get_stress_test()
+
+
+@router.get("/sensitivity", summary="策略多维参数敏感性与断崖检测 (ML4T Sensitivity Analysis)")
+def get_sensitivity() -> Dict[str, Any]:
+    return service_instance.get_sensitivity_analysis()
+

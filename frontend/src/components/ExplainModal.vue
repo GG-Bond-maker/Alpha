@@ -77,12 +77,12 @@
               <tr v-for="feat in sortedFeatures" :key="feat.feature_key">
                 <td><strong>{{ feat.name_cn }}</strong></td>
                 <td>{{ feat.feature_value }}</td>
-                <td :class="feat.shap_value >= 0 ? 'text-pos' : 'text-neg'">
+                <td :class="feat.shap_value > 0 ? 'text-pos' : feat.shap_value < 0 ? 'text-neg' : 'text-muted'">
                   {{ feat.shap_value >= 0 ? '+' + feat.shap_value : feat.shap_value }}
                 </td>
                 <td>
-                  <span v-if="feat.shap_value > 0" class="badge badge-green">正向驱动</span>
-                  <span v-else-if="feat.shap_value < 0" class="badge badge-red">负向压制</span>
+                  <span v-if="feat.shap_value > 0" class="badge badge-stock-up">正向驱动</span>
+                  <span v-else-if="feat.shap_value < 0" class="badge badge-stock-down">负向压制</span>
                   <span v-else class="badge badge-silver">中性</span>
                 </td>
               </tr>
@@ -212,14 +212,14 @@ const initWaterfallChart = () => {
         name: '正向贡献 (+)',
         type: 'bar',
         stack: '总量',
-        itemStyle: { color: '#10b981', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: '#dc2626', borderRadius: [4, 4, 0, 0] },
         data: posData
       },
       {
         name: '负向扣减 (-)',
         type: 'bar',
         stack: '总量',
-        itemStyle: { color: '#ef4444', borderRadius: [4, 4, 0, 0] },
+        itemStyle: { color: '#16a34a', borderRadius: [4, 4, 0, 0] },
         data: negData
       }
     ]
@@ -357,8 +357,8 @@ defineExpose({ openModal })
   color: var(--slate-800);
 }
 
-.score-pill.plus .value { color: #10b981; }
-.score-pill.minus .value { color: #ef4444; }
+.score-pill.plus .value { color: var(--stock-up, #dc2626); }
+.score-pill.minus .value { color: var(--stock-down, #16a34a); }
 .score-pill.total { background: #eff6ff; border-color: #bfdbfe; }
 .score-pill.total .value { color: #1d4ed8; font-size: 20px; }
 
@@ -384,8 +384,8 @@ defineExpose({ openModal })
   height: 320px;
 }
 
-.text-pos { color: #10b981; font-weight: 600; }
-.text-neg { color: #ef4444; font-weight: 600; }
+.text-pos { color: var(--stock-up, #dc2626); font-weight: 600; }
+.text-neg { color: var(--stock-down, #16a34a); font-weight: 600; }
 
 .dialog-footer {
   padding: 16px 24px;

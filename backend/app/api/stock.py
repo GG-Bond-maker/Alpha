@@ -120,6 +120,7 @@ def get_manage_list(
             "rating": r_val,
             "is_limit_up": pred["is_limit_up"] if pred else None,
             "rsi14": pred["rsi14"] if pred else None,
+            "macd": pred["macd"] if pred else None,
             "predicted_rank": pred["predicted_rank"] if pred else None,
             "has_prediction": pred is not None,
             "is_favorite": is_fav,

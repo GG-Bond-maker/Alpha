@@ -1,0 +1,140 @@
+{
+  "generated_at": "2026-10-25 21:30:05",
+  "historical_crises": [
+    {
+      "id": "crisis_2015",
+      "name": "2015 股灾与去杠杆踩踏",
+      "start_date": "2015-06-12",
+      "end_date": "2015-09-30",
+      "description": "场外配资去杠杆引发千股跌停，流动性枯竭与恐慌抛售",
+      "key_feature": "极端连续跌停潮与流动性踩踏",
+      "market_regime": "流动性危机 / 恐慌熊市",
+      "trading_days": 76,
+      "strategy_return": -0.2688,
+      "benchmark_return": -0.3402,
+      "excess_return": 0.0714,
+      "max_drawdown": -0.2949,
+      "resilience": "抗跌韧性 (Resilient)",
+      "badge_type": "is-real"
+    },
+    {
+      "id": "circuit_2016",
+      "name": "2016 熔断机制流动性休克",
+      "start_date": "2016-01-04",
+      "end_date": "2016-02-29",
+      "description": "开年 4 个交易日触发 2 次提前收盘，流动性自强化枯竭",
+      "key_feature": "磁吸效应导致的被动卖盘挤兑",
+      "market_regime": "微观机制失灵 / 急速阴跌",
+      "trading_days": 36,
+      "strategy_return": -0.0798,
+      "benchmark_return": -0.1125,
+      "excess_return": 0.0327,
+      "max_drawdown": -0.1285,
+      "resilience": "抗跌韧性 (Resilient)",
+      "badge_type": "is-real"
+    },
+    {
+      "id": "trade_war_2018",
+      "name": "2018 中美贸易战单边阴跌",
+      "start_date": "2018-01-29",
+      "end_date": "2018-12-28",
+      "description": "关税升级与国内去杠杆共振，指数经历长达近一年的漫长估值压缩",
+      "key_feature": "基本面预期压制与宏观熊市",
+      "market_regime": "宏观逆风 / 慢熊持续阴跌",
+      "trading_days": 224,
+      "strategy_return": -0.0945,
+      "benchmark_return": -0.2451,
+      "excess_return": 0.1506,
+      "max_drawdown": -0.2131,
+      "resilience": "卓越防御 (Strong Alpha)",
+      "badge_type": "is-real"
+    },
+    {
+      "id": "covid_2020",
+      "name": "2020 疫情黑天鹅脉冲与修复",
+      "start_date": "2020-01-20",
+      "end_date": "2020-03-31",
+      "description": "春节后开盘超 3000 只股票跌停，随后流动性宽松推动科技与医药 V 型反转",
+      "key_feature": "突发外生事件冲击与极端剧烈波动",
+      "market_regime": "突发黑天鹅 / V 型宽幅震荡",
+      "trading_days": 46,
+      "strategy_return": 0.0571,
+      "benchmark_return": -0.0652,
+      "excess_return": 0.1223,
+      "max_drawdown": -0.0744,
+      "resilience": "卓越防御 (Strong Alpha)",
+      "badge_type": "is-real"
+    },
+    {
+      "id": "core_deflation_2021",
+      "name": "2021 核心资产“抱团瓦解”",
+      "start_date": "2021-02-18",
+      "end_date": "2021-12-31",
+      "description": "白酒、医药蓝筹高估值泡沫破裂，市场风格急剧转向新能源与周期资源股",
+      "key_feature": "风格剧烈漂移与抱团赛道挤兑",
+      "market_regime": "极致风格轮动 / 结构分化",
+      "trading_days": 215,
+      "strategy_return": 0.4216,
+      "benchmark_return": 0.1219,
+      "excess_return": 0.2997,
+      "max_drawdown": -0.0983,
+      "resilience": "卓越防御 (Strong Alpha)",
+      "badge_type": "is-real"
+    },
+    {
+      "id": "microcap_squeeze_2024",
+      "name": "2024 微盘股流动性挤兑",
+      "start_date": "2024-01-02",
+      "end_date": "2024-02-08",
+      "description": "量化 DMA 降杠杆引发微盘股踩踏，大盘权重护盘，大小盘剪刀差拉大",
+      "key_feature": "筹码集中与衍生品对冲平仓挤兑",
+      "market_regime": "微盘踩踏 / 大小盘分化",
+      "trading_days": 28,
+      "strategy_return": -0.0622,
+      "benchmark_return": 0.0063,
+      "excess_return": -0.0685,
+      "max_drawdown": -0.0561,
+      "resilience": "承压回调 (Under Pressure)",
+      "badge_type": "is-synthetic"
+    }
+  ],
+  "hypothetical_shocks": [
+    {
+      "id": "hypo_crash",
+      "name": "大盘单日闪崩 -15% (Flash Crash)",
+      "scenario_type": "系统性暴跌冲击",
+      "assumption": "市场基准单日下挫 15%，测试组合极端净值冲击与止损响应",
+      "estimated_impact": -0.128,
+      "max_tolerated_loss": -0.2,
+      "pass_status": "PASS",
+      "verdict": "Beta=0.85 行业中性配置有效抵消 2.2% 的极端跌幅"
+    },
+    {
+      "id": "hypo_liquidity",
+      "name": "流动性冰冻与滑点 10 倍膨胀 (Liquidity Freeze)",
+      "assumption": "买卖价差与冲击滑点飙升至 50 bps，30% 的候选股票因无量无法成交",
+      "scenario_type": "交易成本与摩擦冲击",
+      "estimated_impact": -0.045,
+      "max_tolerated_loss": -0.08,
+      "pass_status": "PASS",
+      "verdict": "持仓分散于 10 个行业并保留次优补位，组合仍能维持稳定调仓"
+    },
+    {
+      "id": "hypo_factor_reversal",
+      "name": "动量因子极端踩踏反转 (Momentum Crash)",
+      "assumption": "过去高动量股票月度回撤 -20%，低估值价值因子反弹 +5%",
+      "scenario_type": "因子风格逆转冲击",
+      "estimated_impact": -0.062,
+      "max_tolerated_loss": -0.1,
+      "pass_status": "PASS",
+      "verdict": "估值因子 (PE/PB) 与财务因子对动量形成对冲，未发生单因子穿透"
+    }
+  ],
+  "summary": {
+    "total_tested_crises": 6,
+    "win_crises": 5,
+    "win_rate": 0.8333,
+    "avg_crisis_excess": 0.1014,
+    "overall_assessment": "在历史 6 大严峻危机中，策略在 5/6 个情景下跑赢基准，危机期平均超额收益达 10.14%，展现了行业中性化与多因子防守的显著韧性。"
+  }
+}

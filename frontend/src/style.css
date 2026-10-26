@@ -16,6 +16,17 @@
   --warning: #f59e0b;
   --warning-light: #fffbeb;
 
+  /* 中国 A 股市场行情红涨绿跌规范 (Chinese A-Share Standard) */
+  --stock-up: #dc2626;         /* 涨 / 盈利 / 正超额 (Red-600) */
+  --stock-up-hover: #b91c1c;
+  --stock-up-light: #fef2f2;   /* 浅红底 */
+  --stock-up-border: #fecaca;
+  --stock-down: #16a34a;       /* 跌 / 亏损 / 负超额 / 回撤 (Green-600) */
+  --stock-down-hover: #15803d;
+  --stock-down-light: #f0fdf4; /* 浅绿底 */
+  --stock-down-border: #bbf7d0;
+  --stock-flat: #64748b;       /* 平盘 / 零轴 (Slate-500) */
+
   /* 中性色阶 */
   --slate-50: #f8fafc;
   --slate-100: #f1f5f9;
@@ -513,6 +524,24 @@ button {
   border-radius: 4px;
 }
 
+.badge-stock-up {
+  background: var(--stock-up-light);
+  color: var(--stock-up);
+  border: 1px solid var(--stock-up-border);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.badge-stock-down {
+  background: var(--stock-down-light);
+  color: var(--stock-down);
+  border: 1px solid var(--stock-down-border);
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
 /* 数据来源提示 */
 .source-tag {
   display: inline-flex;
@@ -585,8 +614,29 @@ tbody tr:hover td {
   color: var(--slate-700);
 }
 
-.text-pos { color: var(--success); font-weight: 600; }
-.text-neg { color: var(--danger); font-weight: 600; }
+/* 中国 A 股市场红涨绿跌文本色阶规范 */
+.text-pos,
+.text-up,
+.stock-change-up {
+  color: var(--stock-up);
+  font-weight: 600;
+}
+
+.text-neg,
+.text-down,
+.stock-change-down {
+  color: var(--stock-down);
+  font-weight: 600;
+}
+
+.text-flat {
+  color: var(--stock-flat);
+  font-weight: 500;
+}
+
+/* 算法/系统检验通过与失败专用（与行情解耦） */
+.text-success { color: var(--success); font-weight: 600; }
+.text-danger { color: var(--danger); font-weight: 600; }
 .text-muted { color: var(--slate-500); }
 
 /* 概率条 */

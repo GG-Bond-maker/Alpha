@@ -3,13 +3,12 @@
     <!-- 控制与筛选面板 -->
     <div class="card filter-panel">
       <div class="filter-header">
-        <div>
-          <h2>沪深300成分股池与推荐状态管理</h2>
-          <p class="sub-text">展示 LightGBM 对未来 5 个交易日跑赢候选池平均收益的概率估计与排序，支持标记重点跟踪标的</p>
-        </div>
         <div class="stats-badge-box">
           <span class="badge badge-blue">沪深300研究池: {{ totalCount }} 只</span>
           <span class="badge badge-gold">重点关注: {{ favoriteCount }} 只</span>
+        </div>
+        <div class="sub-text">
+          预测目标：未来 5 个交易日跑赢候选池平均收益 · 支持按当日涨幅快速排序
         </div>
       </div>
 
@@ -164,7 +163,7 @@
                       class="prob-bar-fill" 
                       :style="{ 
                         width: Math.min(100, Math.max(0, ((item.probability ?? 0) * 100))) + '%',
-                        background: item.rating === 'A' ? '#10b981' : (item.rating === 'B' ? '#f59e0b' : '#3b82f6')
+                        background: (item.probability ?? 0) >= 0.5 ? '#dc2626' : '#16a34a'
                       }"
                     ></div>
                   </div>
@@ -172,14 +171,16 @@
               </td>
               <td>
                 <span v-if="item.is_limit_up === '是'" class="badge-limit-up">涨停</span>
-                <span v-else style="color: #64748b;">否</span>
+                <span v-else class="text-muted">—</span>
               </td>
-              <td>¥{{ item.price ?? '--' }}</td>
-              <td :class="(item.change_pct ?? 0) > 0 ? 'stock-change-up' : (item.change_pct ?? 0) < 0 ? 'stock-change-down' : 'text-muted'">
-                {{ (item.change_pct ?? 0) >= 0 ? '+' : '' }}{{ item.change_pct ?? 0 }}%
+              <td>{{ item.price != null && item.price > 0 ? '¥' + Number(item.price).toFixed(2) : '—' }}</td>
+              <td :class="(item.change_pct || 0) > 0 ? 'text-pos' : (item.change_pct || 0) < 0 ? 'text-neg' : 'text-muted'">
+                {{ item.change_pct != null ? ((item.change_pct > 0 ? '+' : '') + item.change_pct + '%') : '—' }}
               </td>
-              <td>{{ item.rsi14 ?? 50.0 }}</td>
-              <td :class="(item.macd ?? 0) >= 0 ? 'text-pos' : 'text-neg'">{{ item.macd ?? 0.0 }}</td>
+              <td>{{ item.rsi14 != null ? Number(item.rsi14).toFixed(1) : '—' }}</td>
+              <td :class="(item.macd || 0) > 0 ? 'text-pos' : (item.macd || 0) < 0 ? 'text-neg' : 'text-muted'">
+                {{ item.macd != null ? Number(item.macd).toFixed(3) : '—' }}
+              </td>
               <!-- 操作联动 -->
               <td style="text-align: center;">
                 <div style="display: flex; gap: 6px; justify-content: center;">
@@ -359,12 +360,12 @@ onMounted(() => {
 }
 
 .stock-change-up {
-  color: #dc2626;
+  color: var(--stock-up);
   font-weight: 600;
 }
 
 .stock-change-down {
-  color: #16a34a;
+  color: var(--stock-down);
   font-weight: 600;
 }
 

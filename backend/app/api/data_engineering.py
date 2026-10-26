@@ -11,10 +11,14 @@
 8. POST /api/v1/engineering/cache/clear: 清理本地缓存
 """
 
-from fastapi import APIRouter, HTTPException, Body
-from pydantic import BaseModel, Field
+import json
+import os
 from typing import Optional, Dict, Any, List
 
+from fastapi import APIRouter, HTTPException, Body
+from pydantic import BaseModel, Field
+
+from config.config import SAVED_MODELS_DIR
 from backend.app.services.data_engineering_service import engineering_service_instance
 
 router = APIRouter(prefix="/engineering", tags=["数据工程与模型生命周期管理"])
@@ -132,3 +136,31 @@ def clear_cache(req: ClearCacheRequest = Body(...)):
         "message": f"成功清理 {res['cleared_files_count']} 个缓存文件",
         "details": res
     }
+
+
+@router.get("/drift_status", summary="获取特征分布与模型预测稳定性监控报告 (ML4T PSI Drift)")
+def get_drift_status():
+    """基于《Machine Learning for Algorithmic Trading》规范：
+    监控核心特征、预测概率与目标收益在训练集与测试集间的群体稳定性指数 (PSI) 与双样本 KS 检验
+    """
+    report_path = os.path.join(SAVED_MODELS_DIR, "feature_drift_report.json")
+    if not os.path.exists(report_path):
+        from ml_pipeline.drift_monitor import generate_drift_report
+        return generate_drift_report()
+    try:
+        with open(report_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"读取漂移监控报告失败: {e}")
+
+
+@router.post("/drift/refresh", summary="重新执行特征与模型漂移检测")
+def refresh_drift_status():
+    """重新计算并刷新 PSI 漂移指标"""
+    try:
+        from ml_pipeline.drift_monitor import generate_drift_report
+        res = generate_drift_report()
+        return {"status": "success", "message": "特征与预测稳定性监控已刷新", "report": res}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"刷新漂移报告失败: {e}")
+

@@ -29,6 +29,9 @@ from features.feature_engineering import calculate_technical_indicators
 # 单只标的最少可用交易日数，低于此值不参与训练
 MIN_VALID_ROWS = 120
 
+# 本地行情缓存超过该自然日数且没有新数据时，重新检查因子行情缓存和主数据源。
+MAX_CACHE_STALE_DAYS = 7
+
 # 价格下限：低于此值的行视为复权异常，直接剔除
 MIN_VALID_PRICE = 0.01
 
@@ -68,8 +71,46 @@ def _clean_price_rows(df: pd.DataFrame) -> tuple:
     return cleaned, report
 
 
+def _has_recent_market_data(df: pd.DataFrame, max_stale_days: int = MAX_CACHE_STALE_DAYS) -> bool:
+    """按最后一个交易日判断行情是否仍可视为近期数据。"""
+    if df is None or df.empty:
+        return False
+    dates = df.index if isinstance(df.index, pd.DatetimeIndex) else df.get('date')
+    if dates is None:
+        return False
+    latest = pd.to_datetime(dates, errors='coerce').max()
+    if pd.isna(latest):
+        return False
+    age_days = (datetime.date.today() - latest.date()).days
+    return age_days <= max_stale_days
+
+
+def _factor_cache_extends_history(code: str, existing_df: pd.DataFrame) -> bool:
+    """检查近期因子行情是否覆盖了本地 K 线缓存未包含的日期。"""
+    path = os.path.join(FACTOR_DIR, f"price_{code}.csv")
+    if not os.path.exists(path):
+        return False
+    try:
+        if (datetime.datetime.now().timestamp() - os.path.getmtime(path)) > 7 * 86400:
+            return False
+        factor_dates = pd.to_datetime(
+            pd.read_csv(path, usecols=['date'])['date'], errors='coerce',
+        ).dropna()
+        existing_dates = (existing_df.index if isinstance(existing_df.index, pd.DatetimeIndex)
+                          else existing_df.get('date'))
+        existing_dates = pd.to_datetime(existing_dates, errors='coerce')
+        existing_dates = pd.Series(existing_dates).dropna()
+        if factor_dates.empty or existing_dates.empty:
+            return False
+        return (factor_dates.min() < existing_dates.min() or
+                factor_dates.max() > existing_dates.max())
+    except Exception:
+        return False
+
+
 def _load_recent_factor_price_cache(code: str, cache_file: str,
-                                    use_cache: bool = True) -> pd.DataFrame:
+                                    use_cache: bool = True,
+                                    existing_df: pd.DataFrame = None) -> pd.DataFrame:
     """读取因子流水线保存的真实 OHLCV，作为主行情接口不可用时的本地数据源。"""
     path = os.path.join(FACTOR_DIR, f"price_{code}.csv")
     if not os.path.exists(path):
@@ -104,6 +145,73 @@ def _load_recent_factor_price_cache(code: str, cache_file: str,
             return None
         if report.get('removed', 0):
             print(f"[DataFetcher] {code} 因子行情缓存剔除 {report['removed']} 行异常价格")
+
+        # 因子行情可能比 K 线缓存覆盖更早或更新。用它补齐缺失区间；若需要
+        # 拼接两个来源的历史，则先校验重叠价格口径，避免制造价格跳变。
+        if existing_df is not None and not existing_df.empty:
+            existing = existing_df.reset_index()
+            if 'date' not in existing.columns:
+                existing = existing.rename(columns={existing.columns[0]: 'date'})
+            required = {'date', 'open', 'high', 'low', 'close', 'volume'}
+            if not required.issubset(existing.columns):
+                return None
+
+            existing['date'] = pd.to_datetime(existing['date'], errors='coerce')
+            for column in required - {'date'}:
+                existing[column] = pd.to_numeric(existing[column], errors='coerce')
+            existing = (existing.dropna(subset=list(required))
+                        .sort_values('date')
+                        .drop_duplicates('date', keep='last'))
+            latest_cached = existing['date'].max()
+            earliest_cached = existing['date'].min()
+            latest_factor = df['date'].max()
+            earliest_factor = df['date'].min()
+            if (pd.isna(latest_cached) or pd.isna(earliest_cached) or
+                    (earliest_factor >= earliest_cached and latest_factor <= latest_cached)):
+                return None
+
+            price_cols = ('open', 'high', 'low', 'close')
+            old_prices = existing[['date', *price_cols]]
+            new_prices = df[['date', *price_cols]]
+            overlap = (old_prices.merge(new_prices, on='date', suffixes=('_old', '_new'))
+                       .sort_values('date').tail(20))
+            if len(overlap) < 5:
+                print(f"[DataFetcher] {code} 新旧行情重叠不足，跳过缓存拼接")
+                return None
+
+            keep_cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+            if 'pct_chg' in existing.columns:
+                keep_cols.append('pct_chg')
+
+            # 因子行情更早且已覆盖旧缓存：整段采用同一来源，扩展历史而不混源。
+            if earliest_factor < earliest_cached and latest_factor >= latest_cached:
+                df = df[keep_cols].copy()
+                print(f"[DataFetcher] {code} 使用因子行情补齐历史至 {earliest_factor.date()}")
+            else:
+                # 仅需追加最新行情时，用最近 20 个重叠交易日估算前复权缩放比例。
+                ratios = np.concatenate([
+                    (overlap[f'{column}_old'] / overlap[f'{column}_new']).to_numpy(dtype=float)
+                    for column in price_cols
+                ])
+                ratios = ratios[np.isfinite(ratios) & (ratios > 0)]
+                scale = float(np.median(ratios)) if len(ratios) else np.nan
+                if (not np.isfinite(scale) or
+                        np.max(np.abs(ratios / scale - 1.0)) > 0.02):
+                    print(f"[DataFetcher] {code} 新旧行情复权口径差异过大，保留旧缓存")
+                    return None
+
+                new_tail = df[df['date'] > latest_cached].copy()
+                if new_tail.empty:
+                    return None
+                new_tail.loc[:, list(price_cols)] = new_tail.loc[:, list(price_cols)] * scale
+                old_history = existing[keep_cols].copy()
+                new_history = new_tail[keep_cols].copy()
+                df = (pd.concat([old_history, new_history], ignore_index=True)
+                        .sort_values('date')
+                        .drop_duplicates('date', keep='last')
+                        .reset_index(drop=True))
+                print(f"[DataFetcher] {code} 已通过重叠行情校验，补入 {len(new_tail)} 个交易日")
+            df['pct_chg'] = df['close'].pct_change() * 100.0
 
         df = calculate_technical_indicators(df)
         if use_cache:
@@ -143,11 +251,12 @@ def get_stock_data(code: str, use_cache: bool = True, force_refresh: bool = Fals
                 raw = raw.sort_values('date')
                 cached_df = raw.set_index('date')
 
-                # 缓存已含新特征：直接复用
-                if _has_new_features(cached_df):
+                # 新特征缓存只有在最后交易日足够新时才直接复用。
+                if (_has_new_features(cached_df) and _has_recent_market_data(cached_df)
+                        and not _factor_cache_extends_history(clean_code, cached_df)):
                     return cached_df
 
-                # 缓存只有 OHLCV：本地重算指标，避免依赖网络
+                # 旧版缓存只有 OHLCV 时，仅对近期数据本地重算后复用。
                 if {'open', 'high', 'low', 'volume'}.issubset(raw.columns):
                     clean, report = _clean_price_rows(raw.copy())
                     if report.get('removed', 0) > 0:
@@ -156,19 +265,24 @@ def get_stock_data(code: str, use_cache: bool = True, force_refresh: bool = Fals
                     if len(clean) < MIN_VALID_ROWS:
                         print(f"[DataFetcher] {clean_code} 清洗后仅 {len(clean)} 行，数据不可用")
                         return None
-                    recalc = calculate_technical_indicators(clean)
-                    if use_cache:
-                        try:
-                            recalc.to_csv(cache_file, index=False, encoding='utf-8-sig')
-                        except Exception:
-                            pass
-                    return recalc.set_index('date')
+                    cached_df = clean.set_index('date')
+                    if (_has_recent_market_data(cached_df) and
+                            not _factor_cache_extends_history(clean_code, cached_df)):
+                        recalc = calculate_technical_indicators(clean)
+                        if use_cache:
+                            try:
+                                recalc.to_csv(cache_file, index=False, encoding='utf-8-sig')
+                            except Exception:
+                                pass
+                        return recalc.set_index('date')
         except Exception as e:
             print(f"[DataFetcher] 读取 {clean_code} 缓存失败，转为网络拉取: {e}")
 
-    # 1.5 复用近期的真实因子 OHLCV，避免主行情源失效时落到模拟曲线。
-    if cached_df is None and not force_refresh:
-        factor_cached = _load_recent_factor_price_cache(clean_code, cache_file, use_cache)
+    # 1.5 复用近期真实因子 OHLCV；缓存陈旧时通过重叠价格校验后追加新交易日。
+    if not force_refresh:
+        factor_cached = _load_recent_factor_price_cache(
+            clean_code, cache_file, use_cache, existing_df=cached_df,
+        )
         if factor_cached is not None:
             return factor_cached
 

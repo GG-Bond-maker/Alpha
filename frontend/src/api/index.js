@@ -71,6 +71,31 @@ export const api = {
     return apiClient.get('/evaluation/attribution')
   },
 
+  // 获取历史极端情景压力测试 (ML4T Crisis Stress Testing)
+  getStressTest() {
+    return apiClient.get('/evaluation/stress_test')
+  },
+
+  // 获取策略多维参数敏感性与断崖检测 (ML4T Sensitivity Analysis)
+  getSensitivityAnalysis() {
+    return apiClient.get('/evaluation/sensitivity')
+  },
+
+  // 获取风控熔断器状态 (ML4T Risk Guard)
+  getRiskStatus() {
+    return apiClient.get('/recommend/risk_status')
+  },
+
+  // 手动触发紧急熔断
+  triggerRisk(reason = '管理员手动触发紧急避险熔断') {
+    return apiClient.post('/recommend/risk_trigger', { reason })
+  },
+
+  // 口令重置解除熔断
+  resetRisk(authToken) {
+    return apiClient.post('/recommend/risk_reset', { auth_token: authToken })
+  },
+
   // 导出 Excel 选股推荐报表
   exportExcel() {
     window.open('/api/v1/recommend/export_excel', '_blank')
@@ -151,5 +176,15 @@ export const api = {
   // 清理缓存
   clearEngineeringCache(target = 'data') {
     return apiClient.post('/engineering/cache/clear', { target })
+  },
+
+  // 获取特征与模型漂移监控 (ML4T PSI Drift)
+  getDriftStatus() {
+    return apiClient.get('/engineering/drift_status')
+  },
+
+  // 刷新特征与模型漂移监控
+  refreshDriftStatus() {
+    return apiClient.post('/engineering/drift/refresh')
   }
 }

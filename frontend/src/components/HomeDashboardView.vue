@@ -159,9 +159,9 @@ const shortcuts = [
 
 const formatInt = (v) => (v == null ? '—' : Number(v).toLocaleString())
 const pct = (v) => (v == null ? '—' : (v * 100).toFixed(2) + '%')
-const signClass = (v) => (v == null ? '' : v >= 0 ? 'text-pos' : 'text-neg')
-const aucClass = (v) => (v == null ? '' : v >= 0.55 ? 'text-pos' : v >= 0.52 ? '' : 'text-muted')
-const probColor = (p) => (p >= 0.5 ? '#10b981' : '#ef4444')
+const signClass = (v) => (v == null ? '' : v > 0 ? 'text-pos' : v < 0 ? 'text-neg' : 'text-muted')
+const aucClass = (v) => (v == null ? '' : v >= 0.55 ? 'text-primary' : v >= 0.52 ? '' : 'text-muted')
+const probColor = (p) => (p >= 0.5 ? '#dc2626' : '#16a34a')
 const probClass = (p) => (p >= 0.5 ? 'text-pos' : 'text-neg')
 
 const renderChart = (items) => {

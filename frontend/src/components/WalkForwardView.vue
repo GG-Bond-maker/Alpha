@@ -40,7 +40,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">低于随机的窗口</div>
-          <div class="stat-value" :class="summary.pct_below_random > 0.3 ? 'text-neg' : 'text-pos'">
+          <div class="stat-value" :class="summary.pct_below_random > 0.3 ? 'text-danger' : 'text-success'">
             {{ summary.pct_below_random != null ? (summary.pct_below_random * 100).toFixed(1) + '%' : '—' }}
           </div>
           <div class="stat-hint">该比例越低越好</div>
@@ -282,7 +282,7 @@ const NAMES = {
 
 const featureName = (k) => NAMES[k] || k
 const formatInt = (v) => (v == null ? '—' : Number(v).toLocaleString())
-const signClass = (v) => (v == null ? '' : v >= 0 ? 'text-pos' : 'text-neg')
+const signClass = (v) => (v == null ? '' : v > 0 ? 'text-pos' : v < 0 ? 'text-neg' : 'text-muted')
 
 const renderChart = () => {
   if (!chartRef.value || !data.value?.windows?.length) return

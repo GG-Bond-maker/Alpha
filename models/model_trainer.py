@@ -256,7 +256,27 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
     }
 
     os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
-    joblib.dump(result, model_file)
+    # 为轻量持久化与 Git 提交，裁剪保存包中的冗余大体积全量面板，压缩存储
+    cols_to_keep = list(set(['date', 'stock_code', 'ret_5d_fwd', 'excess_ret_5d', 'industry', 'score_lgb', 'target_up'] + get_model_features() + [c for c in candidate_factors if c in train.columns]))
+    train_sub = train[[c for c in cols_to_keep if c in train.columns]].copy()
+    test_sub = test[[c for c in cols_to_keep if c in test.columns]].copy()
+    for c in train_sub.select_dtypes(include=[np.float64]).columns:
+        train_sub[c] = train_sub[c].astype(np.float32)
+    for c in test_sub.select_dtypes(include=[np.float64]).columns:
+        test_sub[c] = test_sub[c].astype(np.float32)
+
+    saved_payload = {
+        'model': model,
+        'train': train_sub,
+        'test': test_sub,
+        'metrics': metrics,
+        'params': params,
+        'loss_history': loss_history,
+        'feature_cols': get_model_features(),
+        'label_mode': 'excess',
+        'label_definition': 'probability of exceeding the same-date candidate-universe mean over the next five sessions',
+    }
+    joblib.dump(saved_payload, model_file, compress=3)
     print(f"[Train] 模型已保存: {model_file}")
     return result
 
@@ -284,9 +304,10 @@ def predict_signal(code: str, model, df: pd.DataFrame = None, panel: pd.DataFram
         return None
     prob = float(model.predict_proba(X)[0, 1])
 
-    if prob >= 0.75:
+    # 截面胜率校准阈值 (50% 以上为看涨 A 级，46%~50% 为中性多头 B 级，其余为 C 级)
+    if prob >= 0.50:
         rating = 'A'
-    elif prob >= 0.60:
+    elif prob >= 0.46:
         rating = 'B'
     else:
         rating = 'C'

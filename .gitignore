@@ -12,11 +12,93 @@ frontend/node_modules/
 frontend/dist/
 .DS_Store
 
-# IDE
+# IDE & Editor caches
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# AI & Agent Framework directories
+.agents/
+.adal/
+.aider-desk/
+.augment/
+.autohand/
+.bob/
+.claude/
+.codeartsdoer/
+.codebuddy/
+.codemaker/
+.codestudio/
+.commandcode/
+.continue/
+.cortex/
+.crush/
+.devin/
+.forge/
+.goose/
+.grok/
+.hermes/
+.iflow/
+.inferencesh/
+.jazz/
+.junie/
+.kimchi/
+.kiro/
+.kode/
+.lingma/
+.mcpjam/
+.minimax/
+.moxby/
+.mux/
+.neovate/
+.ona/
+.openhands/
+.pochi/
+.posit/
+.qoder/
+.qwen/
+.reasonix/
+.roo/
+.rovodev/
+.tabnine/
+.terramind/
+.tinycloud/
+.trae/
+.vibe/
+.windsurf/
+.zcode/
+.zencoder/
+agent/
+skills/
+skills-lock.json
+data/skills/
+
+# Large Datasets (>100MB, cannot be pushed to GitHub)
+data/processed/panel_dataset.csv
+data/factors/
+
+# Temporary root inspection scripts & logs
+/*.txt
+!requirements.txt
+/*.log
+/*.pdf
+check_*.py
+inspect_*.py
+dump_*.py
+find_*.py
+print_*.py
+compare_content.py
+examine_tables_exact.py
+search_docx.py
+test_helpers.py
+apply_final_formatting.py
+generate_thesis_materials.py
+*_template.json
+*_template.pdf
+*_template_dump.txt
+report_docx_dump.txt
+logs_server.txt
 
 # Environment
 .env

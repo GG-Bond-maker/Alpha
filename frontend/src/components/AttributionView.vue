@@ -191,6 +191,54 @@
         </div>
       </div>
 
+      <!-- 历史极端危机情景压力测试 (Crisis Stress Testing) -->
+      <div v-if="stressData && stressData.historical_crises" class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">历史极端危机情景压力测试 (Crisis Stress Testing)</div>
+            <div class="card-subtitle">
+              遵循 ML4T 压力测试规范：对 A 股 2015 股灾、2016 熔断、2018 贸易战、2020 疫情等 6 大极端黑天鹅时期进行复盘检验
+            </div>
+          </div>
+          <span class="badge badge-blue">
+            危机跑赢率: {{ (stressData.summary?.win_rate * 100).toFixed(0) }}% ({{ stressData.summary?.win_crises }}/{{ stressData.summary?.total_tested_crises }})
+          </span>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>极端危机情景</th>
+                <th>时间窗口</th>
+                <th>核心市场机制</th>
+                <th>策略累计收益</th>
+                <th>基准同期收益</th>
+                <th>超额 Alpha</th>
+                <th>区间最大回撤</th>
+                <th>防御力评级</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in stressData.historical_crises" :key="c.id">
+                <td><strong>{{ c.name }}</strong></td>
+                <td style="font-size: 11px;">{{ c.start_date }} ~ {{ c.end_date }}</td>
+                <td style="font-size: 12px; color: var(--slate-600);">{{ c.description }}</td>
+                <td :class="signClass(c.strategy_return)">{{ pct(c.strategy_return) }}</td>
+                <td :class="signClass(c.benchmark_return)">{{ pct(c.benchmark_return) }}</td>
+                <td class="text-pos"><strong>+{{ pct(c.excess_return) }}</strong></td>
+                <td class="text-neg">{{ pct(c.max_drawdown) }}</td>
+                <td><span class="badge" :class="c.badge_type">{{ c.resilience }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="stress-summary-bar">
+          <strong>压力测试综合实证结论：</strong> {{ stressData.summary?.overall_assessment }}
+        </div>
+      </div>
+
       <div class="card note-card">
         <div class="card-title" style="margin-bottom: 8px;">方法说明</div>
         <ul class="note-list">
@@ -212,6 +260,7 @@ import { api } from '../api'
 
 const loading = ref(true)
 const data = ref(null)
+const stressData = ref(null)
 const regimeRef = ref(null)
 let chart = null
 
@@ -219,7 +268,7 @@ const reg = computed(() => data.value?.regression || {})
 
 const pct = (v) => (v == null ? '—' : (v * 100).toFixed(2) + '%')
 const fmt = (v) => (v == null ? '—' : Number(v).toFixed(4))
-const signClass = (v) => (v == null ? '' : v >= 0 ? 'text-pos' : 'text-neg')
+const signClass = (v) => (v == null ? '' : v > 0 ? 'text-pos' : v < 0 ? 'text-neg' : 'text-muted')
 
 const renderChart = () => {
   if (!regimeRef.value || !data.value?.regime?.length) return
@@ -269,8 +318,12 @@ const handleResize = () => chart?.resize()
 
 onMounted(async () => {
   try {
-    const res = await api.getAttribution()
+    const [res, stress] = await Promise.all([
+      api.getAttribution(),
+      api.getStressTest().catch(() => ({ data: null })),
+    ])
     data.value = res.data
+    stressData.value = stress.data && !stress.data.error ? stress.data : null
   } catch (err) {
     data.value = { error: '加载失败：' + err.message }
   } finally {
@@ -289,8 +342,20 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.stress-summary-bar {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--slate-700);
+  line-height: 1.7;
+}
+
 .verdict-card {
-  border-left: 4px solid var(--primary);
+  background: linear-gradient(180deg, #ffffff 0%, var(--slate-50) 100%);
+  border: 1px solid var(--slate-200);
 }
 
 .verdict-head {

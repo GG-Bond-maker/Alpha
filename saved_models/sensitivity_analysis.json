@@ -1,0 +1,234 @@
+{
+  "updated_at": "2026-10-26 00:19:21",
+  "grid_size": 16,
+  "k_range": [
+    5,
+    10,
+    15,
+    20
+  ],
+  "slippage_bps_range": [
+    0,
+    5,
+    10,
+    15
+  ],
+  "robustness_ratio": 1.0,
+  "mean_sharpe": 0.5863,
+  "std_sharpe": 0.2394,
+  "is_robust": false,
+  "assessment": "⚠️ 策略在不同参数邻域存在一定收益波动，需持续关注高摩擦场景下的抗压能力。",
+  "cliff_count": 1,
+  "cliffs": [
+    {
+      "param": "k",
+      "transition": "K=5 -> K=10 (滑点0bps)",
+      "delta_sharpe": 0.4861,
+      "severity": "MEDIUM"
+    }
+  ],
+  "sharpe_matrix": {
+    "5": {
+      "0": 0.5079,
+      "5": 0.3763,
+      "10": 0.2448,
+      "15": 0.1132
+    },
+    "10": {
+      "0": 0.994,
+      "5": 0.8469,
+      "10": 0.6996,
+      "15": 0.5522
+    },
+    "15": {
+      "0": 0.8595,
+      "5": 0.6907,
+      "10": 0.5218,
+      "15": 0.3526
+    },
+    "20": {
+      "0": 0.8823,
+      "5": 0.7311,
+      "10": 0.5797,
+      "15": 0.4283
+    }
+  },
+  "grid_results": [
+    {
+      "k": 5,
+      "slippage_bps": 0,
+      "slippage_rate": 0.0,
+      "annualized_return": 0.1036,
+      "sharpe": 0.5079,
+      "max_drawdown": -0.1955,
+      "win_rate": 0.4651,
+      "calmar": 0.5302,
+      "excess_annualized_return": -0.0326
+    },
+    {
+      "k": 5,
+      "slippage_bps": 5,
+      "slippage_rate": 0.0005,
+      "annualized_return": 0.0666,
+      "sharpe": 0.3763,
+      "max_drawdown": -0.2033,
+      "win_rate": 0.4419,
+      "calmar": 0.3277,
+      "excess_annualized_return": -0.0651
+    },
+    {
+      "k": 5,
+      "slippage_bps": 10,
+      "slippage_rate": 0.001,
+      "annualized_return": 0.0308,
+      "sharpe": 0.2448,
+      "max_drawdown": -0.211,
+      "win_rate": 0.4419,
+      "calmar": 0.1461,
+      "excess_annualized_return": -0.0964
+    },
+    {
+      "k": 5,
+      "slippage_bps": 15,
+      "slippage_rate": 0.0015,
+      "annualized_return": -0.0038,
+      "sharpe": 0.1132,
+      "max_drawdown": -0.2187,
+      "win_rate": 0.4419,
+      "calmar": -0.0174,
+      "excess_annualized_return": -0.1268
+    },
+    {
+      "k": 10,
+      "slippage_bps": 0,
+      "slippage_rate": 0.0,
+      "annualized_return": 0.2149,
+      "sharpe": 0.994,
+      "max_drawdown": -0.1872,
+      "win_rate": 0.5349,
+      "calmar": 1.1478,
+      "excess_annualized_return": 0.0649
+    },
+    {
+      "k": 10,
+      "slippage_bps": 5,
+      "slippage_rate": 0.0005,
+      "annualized_return": 0.1763,
+      "sharpe": 0.8469,
+      "max_drawdown": -0.1917,
+      "win_rate": 0.5233,
+      "calmar": 0.9193,
+      "excess_annualized_return": 0.031
+    },
+    {
+      "k": 10,
+      "slippage_bps": 10,
+      "slippage_rate": 0.001,
+      "annualized_return": 0.1388,
+      "sharpe": 0.6996,
+      "max_drawdown": -0.1962,
+      "win_rate": 0.5116,
+      "calmar": 0.7074,
+      "excess_annualized_return": -0.0018
+    },
+    {
+      "k": 10,
+      "slippage_bps": 15,
+      "slippage_rate": 0.0015,
+      "annualized_return": 0.1025,
+      "sharpe": 0.5522,
+      "max_drawdown": -0.2006,
+      "win_rate": 0.5,
+      "calmar": 0.5108,
+      "excess_annualized_return": -0.0336
+    },
+    {
+      "k": 15,
+      "slippage_bps": 0,
+      "slippage_rate": 0.0,
+      "annualized_return": 0.1543,
+      "sharpe": 0.8595,
+      "max_drawdown": -0.1561,
+      "win_rate": 0.5116,
+      "calmar": 0.9886,
+      "excess_annualized_return": 0.0118
+    },
+    {
+      "k": 15,
+      "slippage_bps": 5,
+      "slippage_rate": 0.0005,
+      "annualized_return": 0.1184,
+      "sharpe": 0.6907,
+      "max_drawdown": -0.1604,
+      "win_rate": 0.5116,
+      "calmar": 0.738,
+      "excess_annualized_return": -0.0197
+    },
+    {
+      "k": 15,
+      "slippage_bps": 10,
+      "slippage_rate": 0.001,
+      "annualized_return": 0.0836,
+      "sharpe": 0.5218,
+      "max_drawdown": -0.1672,
+      "win_rate": 0.5,
+      "calmar": 0.4999,
+      "excess_annualized_return": -0.0502
+    },
+    {
+      "k": 15,
+      "slippage_bps": 15,
+      "slippage_rate": 0.0015,
+      "annualized_return": 0.0499,
+      "sharpe": 0.3526,
+      "max_drawdown": -0.1847,
+      "win_rate": 0.4884,
+      "calmar": 0.27,
+      "excess_annualized_return": -0.0798
+    },
+    {
+      "k": 20,
+      "slippage_bps": 0,
+      "slippage_rate": 0.0,
+      "annualized_return": 0.1665,
+      "sharpe": 0.8823,
+      "max_drawdown": -0.1335,
+      "win_rate": 0.5581,
+      "calmar": 1.247,
+      "excess_annualized_return": 0.0225
+    },
+    {
+      "k": 20,
+      "slippage_bps": 5,
+      "slippage_rate": 0.0005,
+      "annualized_return": 0.1324,
+      "sharpe": 0.7311,
+      "max_drawdown": -0.1433,
+      "win_rate": 0.5581,
+      "calmar": 0.9239,
+      "excess_annualized_return": -0.0074
+    },
+    {
+      "k": 20,
+      "slippage_bps": 10,
+      "slippage_rate": 0.001,
+      "annualized_return": 0.0992,
+      "sharpe": 0.5797,
+      "max_drawdown": -0.1545,
+      "win_rate": 0.5581,
+      "calmar": 0.6423,
+      "excess_annualized_return": -0.0365
+    },
+    {
+      "k": 20,
+      "slippage_bps": 15,
+      "slippage_rate": 0.0015,
+      "annualized_return": 0.0671,
+      "sharpe": 0.4283,
+      "max_drawdown": -0.1656,
+      "win_rate": 0.5581,
+      "calmar": 0.4049,
+      "excess_annualized_return": -0.0647
+    }
+  ]
+}

@@ -33,7 +33,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">加和一致性</div>
-          <div class="stat-value" :class="additivity?.passed ? 'text-pos' : 'text-neg'">
+          <div class="stat-value" :class="additivity?.passed ? 'text-success' : 'text-danger'">
             {{ additivity ? (additivity.passed ? '通过' : '未通过') : '—' }}
           </div>
           <div class="stat-hint">
