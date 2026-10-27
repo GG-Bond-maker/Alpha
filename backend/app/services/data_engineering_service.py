@@ -374,47 +374,19 @@ class DataEngineeringService:
             self.add_log("ERROR", f"构建推荐推理截面失败: {exc}")
             return pd.DataFrame()
 
-        results = []
-        for stock in pool:
-            code = stock["code"]
-            try:
-                sig = predict_signal(code, model, panel=panel)
-                if not sig:
-                    continue
-                results.append({
-                    '代码': sig['code'],
-                    '名称': stock['name'],
-                    '行业': stock.get('industry', '未分类'),
-                    '板块': stock.get('board', get_stock_board(code)),
-                    '推荐评级': sig['rating'],
-                    '跑赢候选池均值概率': sig['probability'],
-                    '是否涨停': sig['is_limit_up'],
-                    '最新收盘价': sig['close'],
-                    '当日涨幅(%)': sig['pct_chg'],
-                    '更新日期': sig['update_date'],
-                    **{FEATURE_NAMES_CN.get(c, c): sig['features'][c] for c in get_model_features()},
-                    **{FEATURE_NAMES_CN.get(c, c): value
-                       for c, value in sig['raw_features'].items()},
-                })
-            except Exception:
-                continue
-
-        if not results:
-            self.add_log("WARNING", "所有标的预测均失败，推荐表未更新。")
-            return pd.DataFrame()
-
-        df_res = pd.DataFrame(results).sort_values('跑赢候选池均值概率', ascending=False).reset_index(drop=True)
-        df_res.insert(0, '推荐排名', range(1, len(df_res) + 1))
-        rank = np.arange(1, len(df_res) + 1)
-        df_res['推荐评级'] = np.where(
-            rank <= max(1, int(np.ceil(len(df_res) * RATING_TOP_A_RATIO))), 'A',
-            np.where(rank <= max(1, int(np.ceil(len(df_res) * RATING_TOP_B_RATIO))), 'B', 'C'),
-        )
+        from ml_pipeline.run_training import generate_recommendations
+        scoring_bundle = bundle if model is not None and 'bundle' in locals() and isinstance(bundle, dict) else {'model': model}
+        df_res = generate_recommendations(model, [stock['code'] for stock in pool], panel, bundle=scoring_bundle)
+        if df_res.empty:
+            self.add_log("WARNING", "没有生成有效推荐，保留当前快照。")
+            return df_res
 
         output_dir = live_dir()
         df_res["model_run_id"] = experiment_status().get("run_id")
-        df_res.to_csv(os.path.join(output_dir, "realtime_recommendations.csv"),
-                      index=False, encoding='utf-8-sig')
+        snapshot_path = os.path.join(output_dir, "realtime_recommendations.csv")
+        temporary = snapshot_path + ".tmp"
+        df_res.to_csv(temporary, index=False, encoding='utf-8-sig')
+        os.replace(temporary, snapshot_path)
 
         today_tag = datetime.date.today().strftime("%Y%m%d")
         try:

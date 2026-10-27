@@ -6,6 +6,9 @@ const apiClient = axios.create({
 })
 
 export const api = {
+  getSelection(params = {}) {
+    return apiClient.get('/recommend/topk', { params })
+  },
   getExperiment() {
     return apiClient.get('/evaluation/experiment')
   },

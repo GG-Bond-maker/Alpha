@@ -1,7 +1,7 @@
 D:\Python_Project\Alpha\venv\Lib\site-packages\shap\explainers\_tree.py:620: UserWarning: LightGBM binary classifier with TreeExplainer shap values output has changed to a list of ndarray
   warnings.warn(
 {
-  "run_id": "20261027-004445-bb8d973e",
+  "run_id": "20261027-023632-b575a153",
   "hash_mismatches": [],
   "shap": {
     "space": "log_odds",
@@ -12,7 +12,7 @@ D:\Python_Project\Alpha\venv\Lib\site-packages\shap\explainers\_tree.py:620: Use
     "n_samples": 200
   },
   "recommendation_count": 300,
-  "max_score_feature_error": 4.995197617174707e-05,
+  "max_score_feature_error": 5.551115123125783e-17,
   "test_metrics": {
     "auc": 0.4985,
     "section_auc": 0.4973,
@@ -20,6 +20,61 @@ D:\Python_Project\Alpha\venv\Lib\site-packages\shap\explainers\_tree.py:620: Use
     "n_rows": 127741,
     "n_dates": 428,
     "pos_rate": 0.4417
+  },
+  "calibration": {
+    "method": "monotone_platt",
+    "slope": 0.0,
+    "intercept": -0.1325458884697579,
+    "margin_center": -0.2308837706692099,
+    "margin_scale": 0.1843600891208519,
+    "fit_source": "validation_only",
+    "fit_rows": 125031,
+    "fit_dates": 422,
+    "fit_period": [
+      "2023-03-31",
+      "2024-12-25"
+    ],
+    "date_weighting": "equal_weight_per_date",
+    "ranking_policy": "raw_lightgbm_score",
+    "weak_validation_signal": true,
+    "target": "outperform_same_date_candidate_mean",
+    "note": "\u6821\u51c6\u6982\u7387\u4e0d\u7b49\u4e8e\u6536\u76ca\u9884\u6d4b\u6216\u7f6e\u4fe1\u533a\u95f4\uff1bSHAP \u89e3\u91ca\u539f\u59cb LightGBM log-odds\u3002"
+  },
+  "factor_ranker": {
+    "status": "fitted",
+    "factors": [
+      {
+        "feature": "MACD_norm_neu",
+        "name_cn": "\u5f52\u4e00\u5316\u5f02\u540c\u79fb\u52a8\u5e73\u5747\u7ebf(MACD)",
+        "ic": -0.017792551171187245,
+        "hac_t": -2.7856833134994305,
+        "direction": -1,
+        "weight": 0.5151795558506524
+      },
+      {
+        "feature": "debt_ratio_neu",
+        "name_cn": "\u8d44\u4ea7\u8d1f\u503a\u7387",
+        "ic": -0.004961588917869644,
+        "hac_t": -1.0817593507397985,
+        "direction": -1,
+        "weight": 0.14366175768885206
+      },
+      {
+        "feature": "OBV_zscore_neu",
+        "name_cn": "\u80fd\u91cf\u6f6e\u6807\u51c6\u5206(OBV-Z)",
+        "ic": -0.0117824617017665,
+        "hac_t": -2.4997742963921987,
+        "direction": -1,
+        "weight": 0.34115868646049535
+      }
+    ],
+    "fit_source": "training_only",
+    "fit_period": [
+      "2015-01-22",
+      "2023-03-23"
+    ],
+    "method": "abs_training_rank_ic_weighted_directional_percentiles",
+    "note": "\u591a\u56e0\u5b50\u5206\u6570\u4e3a 0\u2013100 \u7684\u5bf9\u7167\u6392\u540d\uff0c\u4e0d\u662f\u8dd1\u8d62\u6982\u7387\uff1b\u9ed8\u8ba4\u6392\u5e8f\u4ecd\u4f7f\u7528 LightGBM\u3002"
   },
   "backtest_periods": 86,
   "api": {
@@ -39,6 +94,9 @@ D:\Python_Project\Alpha\venv\Lib\site-packages\shap\explainers\_tree.py:620: Use
     "/api/v1/engineering/status": 200,
     "/api/v1/engineering/drift_status": 200,
     "local_explanation": 200,
-    "invalid_date": 422
+    "invalid_date": 422,
+    "factor_ranking": 200,
+    "empty_rule_screen": 200,
+    "invalid_rank_mode": 422
   }
 }

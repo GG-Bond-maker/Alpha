@@ -163,7 +163,9 @@ class RecommendationService:
         return sorted(self.data_df[col].dropna().astype(str).unique().tolist())
 
     def get_topk(self, date: Optional[str] = None, k: int = 10,
-                 industry: Optional[str] = None, board: Optional[str] = None) -> Dict[str, Any]:
+                 industry: Optional[str] = None, board: Optional[str] = None,
+                 rank_by: str = 'lightgbm', min_amount: float = 0,
+                 exclude_limit_up: bool = False) -> Dict[str, Any]:
         self.reload()
         if self.data_df.empty:
             return {
@@ -191,10 +193,28 @@ class RecommendationService:
         if industry and industry != "全部" and "行业" in df.columns:
             df = df[df["行业"] == industry]
 
+        if rank_by not in ('lightgbm', 'factor'):
+            raise ValueError('排序方式必须为 lightgbm 或 factor')
+        if min_amount < 0:
+            raise ValueError('成交额门槛不能为负')
+        if {'volume', 'history_days'}.issubset(df.columns):
+            from ml_pipeline.selection import screen_candidates
+            df, screening = screen_candidates(df, current_date, min_amount=min_amount, exclude_limit_up=exclude_limit_up)
+            df = df[df['rule_eligible']]
+        else:
+            screening = {'status': 'not_generated', 'input_count': len(df), 'eligible_count': None,
+                         'excluded_count': None, 'reason_counts': {}, 'note': '历史缓存没有规则筛选输入，请重新训练或刷新快照。'}
+
         score_col = next((c for c in ("跑赢候选池均值概率", "预测超额概率", "预测看涨概率")
                           if c in df.columns), None)
         if score_col:
-            df = df.sort_values(score_col, ascending=False)
+            if rank_by == 'factor':
+                if 'factor_score' not in df:
+                    df = df.iloc[0:0]
+                else:
+                    df = df[df['factor_score'].notna()].sort_values(['factor_score', score_col], ascending=False)
+            else:
+                df = df.sort_values(score_col, ascending=False, kind='stable')
 
         total = len(df)
         items = [self._to_item(row, idx + 1, current_date)
@@ -207,6 +227,9 @@ class RecommendationService:
             "date": current_date,
             "k": k,
             "total_candidates": total,
+            'screening': screening,
+            'rank_by': rank_by,
+            'selection_layer': getattr(self, 'report', {}).get('selection_layer', {}),
             "risk_guard": risk_guard_instance.status_report,
             "recommendations": guarded_items,
         }
@@ -334,7 +357,23 @@ class RecommendationService:
             "atr": self._num(row.get("相对真实波幅(ATR/价格)"), None),
             "adx": self._num(row.get("平均趋向指标(ADX)"), None),
             "update_date": date,
+            'model_rank': self._num(row.get('推荐排名'), None),
+            'factor_score': self._num(row.get('factor_score'), None),
+            'factor_rank': self._num(row.get('factor_rank'), None),
+            'calibrated_probability': self._num(row.get('calibrated_probability'), None),
+            'calibration_status': str(row.get('calibration_status', 'not_fitted')),
+            'avg_amount_20d': self._num(row.get('avg_amount_20d'), None),
+            'history_days': self._num(row.get('history_days'), None),
+            'factor_breakdown': self._json_value(row.get('factor_breakdown'), []),
+            'rule_reasons': self._json_value(row.get('rule_reasons'), []),
         }
+
+    @staticmethod
+    def _json_value(value, default):
+        try:
+            return json.loads(value) if isinstance(value, str) else default
+        except (TypeError, ValueError):
+            return default
 
     @staticmethod
     def _num(value, default):
@@ -420,6 +459,10 @@ class RecommendationService:
             return None
         result["industry"] = str(row.get("行业", "未分类"))
         result["date"] = str(row.get("更新日期", date or ""))
+        result['calibrated_probability'] = self._num(row.get('calibrated_probability'), None)
+        result['calibration'] = model_bundle.get('calibration')
+        result['factor_score'] = self._num(row.get('factor_score'), None)
+        result['factor_breakdown'] = self._json_value(row.get('factor_breakdown'), [])
         return result
 
     # ------------------------------------------------------------------

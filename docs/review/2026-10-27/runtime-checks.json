@@ -1,5 +1,5 @@
 {
-  "run_id": "20261027-004445-bb8d973e",
+  "run_id": "20261027-023632-b575a153",
   "hash_mismatches": [],
   "shap": {
     "space": "log_odds",
@@ -10,7 +10,7 @@
     "n_samples": 200
   },
   "recommendation_count": 300,
-  "max_score_feature_error": 4.995197617174707e-05,
+  "max_score_feature_error": 5.551115123125783e-17,
   "test_metrics": {
     "auc": 0.4985,
     "section_auc": 0.4973,
@@ -18,6 +18,61 @@
     "n_rows": 127741,
     "n_dates": 428,
     "pos_rate": 0.4417
+  },
+  "calibration": {
+    "method": "monotone_platt",
+    "slope": 0.0,
+    "intercept": -0.1325458884697579,
+    "margin_center": -0.2308837706692099,
+    "margin_scale": 0.1843600891208519,
+    "fit_source": "validation_only",
+    "fit_rows": 125031,
+    "fit_dates": 422,
+    "fit_period": [
+      "2023-03-31",
+      "2024-12-25"
+    ],
+    "date_weighting": "equal_weight_per_date",
+    "ranking_policy": "raw_lightgbm_score",
+    "weak_validation_signal": true,
+    "target": "outperform_same_date_candidate_mean",
+    "note": "校准概率不等于收益预测或置信区间；SHAP 解释原始 LightGBM log-odds。"
+  },
+  "factor_ranker": {
+    "status": "fitted",
+    "factors": [
+      {
+        "feature": "MACD_norm_neu",
+        "name_cn": "归一化异同移动平均线(MACD)",
+        "ic": -0.017792551171187245,
+        "hac_t": -2.7856833134994305,
+        "direction": -1,
+        "weight": 0.5151795558506524
+      },
+      {
+        "feature": "debt_ratio_neu",
+        "name_cn": "资产负债率",
+        "ic": -0.004961588917869644,
+        "hac_t": -1.0817593507397985,
+        "direction": -1,
+        "weight": 0.14366175768885206
+      },
+      {
+        "feature": "OBV_zscore_neu",
+        "name_cn": "能量潮标准分(OBV-Z)",
+        "ic": -0.0117824617017665,
+        "hac_t": -2.4997742963921987,
+        "direction": -1,
+        "weight": 0.34115868646049535
+      }
+    ],
+    "fit_source": "training_only",
+    "fit_period": [
+      "2015-01-22",
+      "2023-03-23"
+    ],
+    "method": "abs_training_rank_ic_weighted_directional_percentiles",
+    "note": "多因子分数为 0–100 的对照排名，不是跑赢概率；默认排序仍使用 LightGBM。"
   },
   "backtest_periods": 86,
   "api": {
@@ -37,6 +92,9 @@
     "/api/v1/engineering/status": 200,
     "/api/v1/engineering/drift_status": 200,
     "local_explanation": 200,
-    "invalid_date": 422
+    "invalid_date": 422,
+    "factor_ranking": 200,
+    "empty_rule_screen": 200,
+    "invalid_rank_mode": 422
   }
 }

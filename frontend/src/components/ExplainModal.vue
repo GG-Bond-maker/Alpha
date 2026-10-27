@@ -16,7 +16,7 @@
         <div>
           <div class="header-badges">
             <span class="badge badge-blue">{{ data.industry }}</span>
-            <span class="badge badge-gold">Top {{ data.predicted_rank }} 推荐</span>
+            <span class="badge badge-gold">模型池内第 {{ data.predicted_rank }} 名</span>
             <span class="stock-code">{{ data.stock_code }}</span>
           </div>
           <h2 id="dialogTitle" class="stock-title">{{ data.stock_name }} - 特征归因诊断</h2>
@@ -28,8 +28,8 @@
         <!-- 结构化自然语言理由卡片 -->
         <div class="reason-card">
           <div class="reason-title">
-            <span class="icon-tag">AI</span>
-            <strong>智能推荐理由生成 (AI Diagnosis)</strong>
+            <span class="icon-tag">模型</span>
+            <strong>特征归因摘要</strong>
           </div>
           <p class="reason-text">{{ data.natural_language_reason }}</p>
         </div>
@@ -57,8 +57,14 @@
         <!-- ECharts 瀑布图容器 -->
         <div class="chart-wrapper">
           <h3 class="section-title">SHAP 瀑布归因图 (log-odds 空间)</h3>
-          <p class="section-desc">图中基准值、SHAP 贡献与最终模型输出均为 log-odds；概率估计为 {{ (data.predicted_score * 100).toFixed(1) }}%。</p>
+          <p class="section-desc">图中基准值、SHAP 贡献与最终模型输出均为原始 LightGBM log-odds。排序分数 {{ data.predicted_score }}；校准后跑赢概率 {{ data.calibrated_probability == null ? '未生成' : (data.calibrated_probability * 100).toFixed(1) + '%' }}。SHAP 解释模型分数，不解释收益或保证。</p>
           <div ref="waterfallChartRef" class="echart-box"></div>
+        </div>
+
+        <div v-if="data.factor_breakdown?.length" class="table-wrapper">
+          <h3 class="section-title">多因子对照依据 · {{ data.factor_score?.toFixed(1) }} / 100</h3>
+          <p class="section-desc">方向与权重来自训练期；这是可解释对照分数，默认推荐仍按 LightGBM 排序。</p>
+          <table><thead><tr><th>因子</th><th>方向</th><th>训练 IC</th><th>权重</th><th>当日方向分位</th></tr></thead><tbody><tr v-for="factor in data.factor_breakdown" :key="factor.feature"><td>{{ factor.name_cn }}</td><td>{{ factor.direction > 0 ? '较高值优先' : '较低值优先' }}</td><td>{{ factor.ic?.toFixed(4) }}</td><td>{{ (factor.weight * 100).toFixed(1) }}%</td><td>{{ factor.percentile == null ? '缺失' : (factor.percentile * 100).toFixed(1) + '%' }}</td></tr></tbody></table>
         </div>
 
         <!-- 特征明细清单 -->

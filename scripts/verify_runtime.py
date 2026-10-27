@@ -54,6 +54,13 @@ def main():
     assert len(backtest['strategy']['nav']) == len(backtest['dates'])
     assert backtest['strategy']['dsr'] is None
     assert bundle['params']['subsample_freq'] == 1
+    from ml_pipeline.calibration import calibrate_margin
+    calibrated = calibrate_margin(bundle['model'].predict(recommendations[bundle['feature_cols']], raw_score=True), bundle.get('calibration'))
+    assert calibrated is not None
+    np.testing.assert_allclose(calibrated, recommendations['calibrated_probability'], atol=1e-10)
+    assert pd.Timestamp(bundle['calibration']['fit_period'][1]) < bundle['test']['date'].min()
+    assert bundle['factor_ranker']['fit_source'] == 'training_only'
+    assert sum(r['weight'] for r in bundle['factor_ranker']['factors']) > 0.99999
     from backend.app.main import app
     async def smoke():
         paths = ['/api/health', '/api/v1/recommend/topk', '/api/v1/recommend/dates',
@@ -76,10 +83,23 @@ def main():
         status, body = await request(app, '/api/v1/recommend/topk', 'date=invalid')
         assert status == 422
         out['invalid_date'] = status
+        status, body = await request(app, '/api/v1/recommend/topk', 'rank_by=factor&k=10')
+        assert status == 200 and len(body['recommendations']) == 10
+        scores = [r['factor_score'] for r in body['recommendations']]
+        assert scores == sorted(scores, reverse=True)
+        out['factor_ranking'] = status
+        status, body = await request(app, '/api/v1/recommend/topk', 'min_amount=1000000000000')
+        assert status == 200 and not body['recommendations']
+        assert body['screening']['excluded_count'] == body['screening']['input_count']
+        out['empty_rule_screen'] = status
+        status, body = await request(app, '/api/v1/recommend/topk', 'rank_by=invalid')
+        assert status == 422
+        out['invalid_rank_mode'] = status
         return out
     output = {'run_id': manifest['run_id'], 'hash_mismatches': mismatches,
               'shap': check, 'recommendation_count': len(recommendations),
               'max_score_feature_error': difference, 'test_metrics': report['model_metrics']['test'],
+              'calibration': bundle['calibration'], 'factor_ranker': bundle['factor_ranker'],
               'backtest_periods': backtest['strategy']['periods'], 'api': asyncio.run(smoke())}
     destination = ROOT / 'docs/review/2026-10-27/runtime-checks.json'
     destination.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding='utf-8')

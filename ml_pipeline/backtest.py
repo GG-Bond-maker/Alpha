@@ -47,11 +47,11 @@ def _load_stock_name_map() -> dict:
 
 
 def is_limit_up(code: str, pct_chg: float) -> bool:
-    """判断当日是否封涨停板（若非已持仓标的，次日开盘无法正常买入）。"""
+    """按信号日收盘涨幅作近涨停标记，不推断次日是否可成交。"""
     if pd.isna(pct_chg):
         return False
     code_str = str(code).zfill(6)
-    limit = 19.85 if code_str.startswith(('300', '301', '688')) else 9.85
+    limit = 19.85 if code_str.startswith(('300', '301', '688', '689')) else 9.85
     return pct_chg >= limit
 
 
@@ -62,7 +62,7 @@ def _filter_unbuyable(df: pd.DataFrame, prev_holdings: set,
         return df
     codes = df['stock_code'].astype(str).str.zfill(6)
     is_held = codes.isin(prev_holdings)
-    is_chinext_star = codes.str.startswith(('300', '301', '688'))
+    is_chinext_star = codes.str.startswith(('300', '301', '688', '689'))
     limit_threshold = np.where(is_chinext_star, 19.85, 9.85)
     limit_up = df['pct_chg'] >= limit_threshold
     can_trade = is_held | (~limit_up)

@@ -57,7 +57,7 @@
           <!-- 实时风控守卫胶囊 -->
           <button
             class="risk-capsule"
-            :class="isRiskTriggered ? 'is-halted' : 'is-healthy'"
+            :class="isRiskTriggered ? 'is-halted' : 'is-unassessed'"
             :title="isRiskTriggered ? '风控已熔断，点击打开风控驾驶舱' : '真实持仓风险未完整评估，点击查看筛查范围'"
             @click="showRiskCockpit = true"
           >
@@ -92,243 +92,8 @@
         </section>
 
         <section v-else-if="currentTab === 'recommend'">
-          <!-- 熔断告警横幅 -->
-          <div v-if="isRiskTriggered" class="card risk-halt-banner" @click="showRiskCockpit = true">
-            <div class="risk-banner-title">🚨 紧急风控熔断闭锁生效中 (Kill Switch Latched)</div>
-            <div class="risk-banner-desc">
-              {{ riskStatus?.reason }}。所有推荐标的已强制转为观望 (HOLD)，请点击此处打开风控驾驶舱查看仪表盘或进行管理员鉴权解锁。
-            </div>
-          </div>
-
-          <div class="filter-bar">
-            <div class="filter-field">
-              <label class="filter-label">截面日期</label>
-              <select v-model="selectedDate" @change="fetchRecommendations" class="form-select">
-                <option v-for="d in datesList" :key="d" :value="d">{{ d }}</option>
-              </select>
-            </div>
-            <div class="filter-field">
-              <label class="filter-label">板块</label>
-              <select v-model="selectedBoard" @change="fetchRecommendations" class="form-select">
-                <option value="全部">全部板块</option>
-                <option value="主板">主板</option>
-                <option value="创业板">创业板</option>
-                <option value="科创板">科创板</option>
-                <option value="北交所">北交所</option>
-              </select>
-            </div>
-            <div class="filter-field">
-              <label class="filter-label">推荐数量</label>
-              <select v-model="selectedK" @change="fetchRecommendations" class="form-select">
-                <option :value="5">Top 5</option>
-                <option :value="10">Top 10</option>
-                <option :value="15">Top 15</option>
-                <option :value="20">Top 20</option>
-              </select>
-            </div>
-            <div class="filter-field">
-              <label class="filter-label">行业</label>
-              <select v-model="selectedIndustry" @change="fetchRecommendations" class="form-select">
-                <option value="全部">全部行业</option>
-                <option v-for="ind in industryList" :key="ind" :value="ind">{{ ind }}</option>
-              </select>
-            </div>
-            <button class="btn btn-primary" style="margin-left: auto;" @click="handleExportExcel">
-              导出 Excel
-            </button>
-          </div>
-
-          <!-- 行业暴露与持仓集中度看板 (ML4T Exposure Analysis) -->
-          <div v-if="stockList.length > 0" class="card exposure-card">
-            <div class="exposure-header">
-              <div class="exposure-title-group">
-                <div class="exposure-title">
-                  <span class="exposure-icon">📊</span> 行业暴露与持仓集中度看板 (Sector Exposure & HHI)
-                </div>
-                <div class="exposure-desc">
-                  遵循《ML4T》组合构建规范：监控行业暴露倾斜与赫芬达尔集中度指数，防范单一板块黑天鹅风险
-                </div>
-              </div>
-              <div class="exposure-status-badge" :class="concentrationMetrics.isConcentrated ? 'is-warn' : 'is-healthy'">
-                {{ concentrationMetrics.isConcentrated ? '⚠️ 行业暴露偏高 (单行业 > 30%)' : '✅ 行业配置健康均衡' }}
-              </div>
-            </div>
-
-            <!-- 组合多行业彩条分布图 -->
-            <div class="exposure-bar-wrap" title="行业权重分布">
-              <div
-                v-for="s in sectorExposure"
-                :key="s.industry"
-                class="exposure-bar-seg"
-                :style="{ width: s.weightPct + '%', backgroundColor: s.color }"
-                :title="`${s.industry}: ${s.count}只 (${s.weightPct}%)`"
-              ></div>
-            </div>
-
-            <!-- 核心量化指标与行业气泡 -->
-            <div class="exposure-footer">
-              <div class="exposure-metrics-row">
-                <div class="metric-pill">
-                  <span class="lbl">覆盖行业数</span>
-                  <span class="val">{{ concentrationMetrics.distinctCount }} 个</span>
-                </div>
-                <div class="metric-pill">
-                  <span class="lbl">有效行业数 (Effective N)</span>
-                  <span class="val">{{ concentrationMetrics.effectiveN }}</span>
-                </div>
-                <div class="metric-pill">
-                  <span class="lbl">赫芬达尔指数 (HHI)</span>
-                  <span class="val">{{ concentrationMetrics.hhi }}</span>
-                </div>
-                <div class="metric-pill">
-                  <span class="lbl">最大行业暴露</span>
-                  <span class="val" :class="concentrationMetrics.isConcentrated ? 'text-neg' : 'text-pos'">
-                    {{ concentrationMetrics.maxSector?.industry }} ({{ concentrationMetrics.maxSector?.weightPct }}%)
-                  </span>
-                </div>
-              </div>
-
-              <div class="exposure-tags-row">
-                <span
-                  v-for="s in sectorExposure"
-                  :key="s.industry"
-                  class="sector-tag"
-                  :class="{ 'tag-concentrated': s.isConcentrated }"
-                >
-                  <span class="sector-dot" :style="{ backgroundColor: s.color }"></span>
-                  <span class="sector-name">{{ s.industry }}</span>
-                  <span class="sector-weight">{{ s.count }}只 ({{ s.weightPct }}%)</span>
-                  <span v-if="s.isConcentrated" class="tag-flag" title="单行业权重超过30%">超配</span>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">推荐清单 (Top-{{ selectedK }})</div>
-                <div class="card-subtitle">
-                  候选标的 <strong>{{ totalCandidates }}</strong> 只 ·
-                  截面分档 A 前10% / B 随后20% / C 其余
-                </div>
-              </div>
-            </div>
-
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width: 44px; text-align: center;" class="sortable-th" :class="{ 'is-sorted': sortColumn === 'is_favorite' }" @click="handleSort('is_favorite')" title="点击按自选排序">
-                      自选 <span class="sort-icon">{{ sortIcon('is_favorite') }}</span>
-                    </th>
-                    <th style="width: 64px;" class="sortable-th" :class="{ 'is-sorted': sortColumn === 'predicted_rank' }" @click="handleSort('predicted_rank')">
-                      排位 <span class="sort-icon">{{ sortIcon('predicted_rank') }}</span>
-                    </th>
-                    <th class="sortable-th" :class="{ 'is-sorted': sortColumn === 'stock_code' }" @click="handleSort('stock_code')">
-                      代码 <span class="sort-icon">{{ sortIcon('stock_code') }}</span>
-                    </th>
-                    <th>名称</th>
-                    <th>板块</th>
-                    <th>行业</th>
-                    <th>评级</th>
-                    <th class="sortable-th" :class="{ 'is-sorted': sortColumn === 'probability' }" @click="handleSort('probability')">
-                      跑赢候选池均值概率 <span class="sort-icon">{{ sortIcon('probability') }}</span>
-                    </th>
-                    <th>涨停</th>
-                    <th class="sortable-th" :class="{ 'is-sorted': sortColumn === 'close_price' }" @click="handleSort('close_price')">
-                      收盘价 <span class="sort-icon">{{ sortIcon('close_price') }}</span>
-                    </th>
-                    <th class="sortable-th" :class="{ 'is-sorted': sortColumn === 'pct_chg' }" @click="handleSort('pct_chg')">
-                      涨跌幅 <span class="sort-icon">{{ sortIcon('pct_chg') }}</span>
-                    </th>
-                    <th class="sortable-th" :class="{ 'is-sorted': sortColumn === 'rsi14' }" @click="handleSort('rsi14')">
-                      RSI14 <span class="sort-icon">{{ sortIcon('rsi14') }}</span>
-                    </th>
-                    <th class="sortable-th" :class="{ 'is-sorted': sortColumn === 'macd' }" @click="handleSort('macd')">
-                      MACD <span class="sort-icon">{{ sortIcon('macd') }}</span>
-                    </th>
-                    <th style="text-align: center;">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-if="loading">
-                    <td colspan="14">
-                      <div class="loading-state">
-                        <div class="spinner"></div>
-                        正在计算截面排序...
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-else-if="sortedStockList.length === 0">
-                    <td colspan="14">
-                      <div class="empty-state">
-                        <div class="empty-state-title">暂无推荐结果</div>
-                        <div class="empty-state-desc">请调整筛选条件或点击刷新</div>
-                      </div>
-                    </td>
-                  </tr>
-                  <tr v-for="item in sortedStockList" :key="item.stock_code">
-                    <td style="text-align: center;">
-                      <button
-                        type="button"
-                        class="star-toggle-btn"
-                        :class="{ 'is-active': item.is_favorite }"
-                        @click="toggleFavorite(item)"
-                        :title="item.is_favorite ? '已加入重点关注，点击取消' : '点击加入重点关注'"
-                      >
-                        {{ item.is_favorite ? '★' : '☆' }}
-                      </button>
-                    </td>
-                    <td>
-                      <span class="badge" :class="rankBadgeClass(item.predicted_rank)">
-                        {{ String(item.predicted_rank || 0).padStart(2, '0') }}
-                      </span>
-                    </td>
-                    <td><code class="code-font">{{ item.stock_code }}</code></td>
-                    <td><strong>{{ item.stock_name }}</strong></td>
-                    <td><span class="badge badge-silver">{{ item.board || '主板' }}</span></td>
-                    <td class="text-muted">{{ item.industry || '综合' }}</td>
-                    <td>
-                      <span :class="'badge-rating-' + (item.recommend_rating || 'c').toLowerCase()">
-                        {{ item.recommend_rating }} 级
-                      </span>
-                    </td>
-                    <td>
-                      <div class="prob-bar">
-                        <span :class="probClass(item.probability)">
-                          {{ (item.probability * 100).toFixed(1) }}%
-                        </span>
-                        <div class="prob-bar-track">
-                          <div class="prob-bar-fill"
-                               :style="{ width: Math.min(100, item.probability * 100) + '%', background: probColor(item.probability) }">
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span v-if="item.is_limit_up === '是'" class="badge-limit-up">涨停</span>
-                      <span v-else class="text-muted">—</span>
-                    </td>
-                    <td>{{ item.close_price != null && item.close_price > 0 ? '¥' + Number(item.close_price).toFixed(2) : '—' }}</td>
-                    <td :class="(item.pct_chg || 0) > 0 ? 'text-pos' : (item.pct_chg || 0) < 0 ? 'text-neg' : 'text-muted'">
-                      {{ (item.pct_chg || 0) > 0 ? '+' : '' }}{{ item.pct_chg || 0 }}%
-                    </td>
-                    <td>{{ item.rsi14 != null ? item.rsi14.toFixed(1) : '—' }}</td>
-                    <td :class="(item.macd || 0) > 0 ? 'text-pos' : (item.macd || 0) < 0 ? 'text-neg' : 'text-muted'">
-                      {{ item.macd != null ? item.macd.toFixed(3) : '—' }}
-                    </td>
-                    <td style="text-align: center; white-space: nowrap;">
-                      <button class="btn btn-outline btn-sm" @click="viewKline(item)">K线</button>
-                      <button class="btn btn-primary btn-sm" style="margin-left: 6px;" @click="showExplain(item)">
-                        归因
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <RecommendationView ref="recommendationViewRef" :key="'recommend-' + refreshKey"
+            @explain="showExplain" @viewKline="viewKline" @risk="riskStatus = $event" />
         </section>
 
         <section v-else-if="currentTab === 'kline'">
@@ -406,15 +171,10 @@ const fetchExperiment = async () => {
   catch { experiment.value = { status: 'unknown', message: '实验批次信息加载失败，请刷新重试。' } }
 }
 
+const RecommendationView = defineAsyncComponent(() => import('./components/RecommendationView.vue'))
+const recommendationViewRef = ref(null)
 const collapsed = ref(false)
 const currentTab = ref('home')
-const datesList = ref([])
-const selectedDate = ref('')
-const selectedBoard = ref('全部')
-const selectedK = ref(10)
-const selectedIndustry = ref('全部')
-const totalCandidates = ref(0)
-const stockList = ref([])
 const loading = ref(false)
 const refreshKey = ref(0)
 
@@ -490,35 +250,12 @@ const TAB_META = {
 
 const currentMeta = computed(() => TAB_META[currentTab.value] || { title: '', desc: '' })
 
-const industryList = [
-  '食品饮料', '医药生物', '电子', '电力设备', '计算机', '非银金融', '银行', '汽车',
-  '机械设备', '国防军工', '通信', '基础化工', '有色金属', '家用电器', '公用事业',
-  '交通运输', '石油石化', '建筑装饰', '建筑材料', '商贸零售', '房地产', '传媒',
-  '煤炭', '农林牧渔', '钢铁', '环保', '美容护理',
-]
-
-const dataSourceLabel = computed(() => {
-  if (loading.value) return '数据加载中...'
-  if (datesList.value.length > 0) return '数据引擎已就绪'
-  return '等待数据服务'
-})
-const dataSourceClass = computed(() => (datesList.value.length > 0 ? 'is-real' : 'is-synthetic'))
-
-const rankBadgeClass = (rank) => {
-  if (rank === 1) return 'badge-gold'
-  if (rank === 2) return 'badge-silver'
-  if (rank === 3) return 'badge-bronze'
-  return 'badge-blue'
-}
-
-const probColor = (p) => (p >= 0.5 ? '#dc2626' : '#16a34a')
-const probClass = (p) => (p >= 0.5 ? 'text-pos' : 'text-neg')
+const dataSourceLabel = computed(() => experiment.value?.status === 'complete' ? '实验批次已校验' : '历史产物待重训')
+const dataSourceClass = computed(() => experiment.value?.status === 'complete' ? 'is-real' : 'is-synthetic')
 
 const switchTab = (tab) => {
   currentTab.value = tab
-  if (tab === 'recommend' && stockList.value.length === 0) {
-    fetchRecommendations()
-  } else if (tab === 'kline') {
+  if (tab === 'kline') {
     nextTick(() => klineViewRef.value?.handleResize?.())
   }
 }
@@ -528,7 +265,7 @@ const refreshCurrent = async () => {
   loading.value = true
   try {
     if (currentTab.value === 'recommend') {
-      await fetchRecommendations()
+      await recommendationViewRef.value?.refresh?.()
     } else {
       refreshKey.value++
     }
@@ -536,142 +273,6 @@ const refreshCurrent = async () => {
     loading.value = false
   }
 }
-
-const loadDates = async () => {
-  try {
-    const res = await api.getDates()
-    datesList.value = res.data || []
-    if (datesList.value.length > 0) {
-      selectedDate.value = datesList.value[datesList.value.length - 1]
-    }
-  } catch (err) {
-    console.error('加载截面日期失败:', err)
-  }
-  await fetchRecommendations()
-}
-
-const fetchRecommendations = async () => {
-  loading.value = true
-  try {
-    const res = await api.getTopK(selectedDate.value, selectedK.value, selectedIndustry.value, selectedBoard.value)
-    stockList.value = res.data.recommendations || []
-    totalCandidates.value = res.data.total_candidates || 0
-    if (res.data.risk_guard) {
-      riskStatus.value = res.data.risk_guard
-    }
-  } catch (err) {
-    console.error('获取推荐失败:', err)
-    stockList.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
-// 行业暴露与持仓集中度分析 (ML4T Exposure Analysis)
-const SECTOR_PALETTE = [
-  '#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777',
-  '#0891b2', '#0d9488', '#ea580c', '#4f46e5', '#65a30d',
-  '#64748b', '#e11d48'
-]
-
-const sectorExposure = computed(() => {
-  if (!stockList.value || stockList.value.length === 0) return []
-  const counts = {}
-  const total = stockList.value.length
-  for (const item of stockList.value) {
-    const ind = item.industry || '未分类'
-    counts[ind] = (counts[ind] || 0) + 1
-  }
-  return Object.entries(counts)
-    .map(([industry, count], idx) => {
-      const weight = count / total
-      return {
-        industry,
-        count,
-        weight,
-        weightPct: (weight * 100).toFixed(1),
-        color: SECTOR_PALETTE[idx % SECTOR_PALETTE.length],
-        isConcentrated: weight > 0.30
-      }
-    })
-    .sort((a, b) => b.count - a.count)
-})
-
-const concentrationMetrics = computed(() => {
-  const exp = sectorExposure.value
-  if (!exp || exp.length === 0) {
-    return { hhi: 0, effectiveN: 0, maxSector: null, isConcentrated: false, distinctCount: 0 }
-  }
-  // HHI = sum(w_i ^ 2)
-  const hhi = exp.reduce((acc, cur) => acc + cur.weight * cur.weight, 0)
-  const effectiveN = hhi > 0 ? (1 / hhi) : 0
-  const maxSector = exp[0]
-  const isConcentrated = maxSector && maxSector.weight > 0.30
-  return {
-    hhi: Number(hhi.toFixed(3)),
-    effectiveN: Number(effectiveN.toFixed(1)),
-    maxSector,
-    isConcentrated,
-    distinctCount: exp.length
-  }
-})
-
-// 交互排序与自选关注状态
-const sortColumn = ref('predicted_rank')
-const sortDirection = ref('asc')
-
-const sortedStockList = computed(() => {
-  if (!sortColumn.value) return stockList.value
-  const list = [...stockList.value]
-  const dir = sortDirection.value === 'asc' ? 1 : -1
-  const col = sortColumn.value
-
-  return list.sort((a, b) => {
-    let valA = a[col]
-    let valB = b[col]
-
-    if (col === 'is_favorite') {
-      valA = valA ? 1 : 0
-      valB = valB ? 1 : 0
-      return (valB - valA) * dir
-    }
-
-    if (typeof valA === 'string') {
-      return dir * valA.localeCompare(String(valB))
-    }
-    const numA = Number(valA)
-    const numB = Number(valB)
-    const safeA = Number.isFinite(numA) ? numA : -Infinity
-    const safeB = Number.isFinite(numB) ? numB : -Infinity
-    return (safeA - safeB) * dir
-  })
-})
-
-const handleSort = (col) => {
-  if (sortColumn.value === col) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortColumn.value = col
-    // 排位和代码默认升序，概率/价格/涨跌幅等指标默认降序
-    sortDirection.value = (col === 'predicted_rank' || col === 'stock_code') ? 'asc' : 'desc'
-  }
-}
-
-const sortIcon = (col) => {
-  if (sortColumn.value !== col) return '↕'
-  return sortDirection.value === 'asc' ? '▲' : '▼'
-}
-
-const toggleFavorite = async (item) => {
-  try {
-    const res = await api.toggleFavorite(item.stock_code)
-    item.is_favorite = res.data.is_favorite
-  } catch (err) {
-    console.error('自选关注切换失败:', err)
-  }
-}
-
-const handleExportExcel = () => api.exportExcel()
 
 const viewKline = (item) => {
   currentTab.value = 'kline'
@@ -688,7 +289,7 @@ const showExplain = async (item) => {
   const rawCode = item.stock_code || item.code || ''
   const pureCode = String(rawCode).split('.')[0]
   try {
-    const res = await api.getStockExplanation(pureCode, selectedDate.value)
+    const res = await api.getStockExplanation(pureCode, item.update_date || item.date || undefined)
     explainModalRef.value?.openModal(res.data)
   } catch (err) {
     alert('获取归因失败: ' + err.message)
@@ -698,11 +299,12 @@ const showExplain = async (item) => {
 onMounted(() => {
   fetchExperiment()
   fetchRiskStatus()
-  loadDates()
 })
 </script>
 
 <style scoped>
+.risk-capsule.is-unassessed { background: #f8fafc; border-color: #cbd5e1; color: #475569; }
+.risk-capsule.is-unassessed .risk-dot { background: #64748b; }
 .experiment-status { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: 0 0 18px; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 12px; background: #fff; color: #334155; font-size: 13px; line-height: 1.6; }
 .experiment-status.is-legacy { background: #fffbeb; border-color: #d97706; color: #78350f; }
 

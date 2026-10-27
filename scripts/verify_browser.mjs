@@ -53,13 +53,34 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url: siteUrl })
   await until("document.querySelectorAll('.nav-item').length > 5")
-  const tabs = ['算法评测对比', '组合回测', '滚动窗口验证', '业绩归因', '数据与模型', '全局特征归因', '实验诊断图表']
+  const tabs = ['Top-K 选股推荐', '算法评测对比', '组合回测', '滚动窗口验证', '业绩归因', '数据与模型', '全局特征归因', '实验诊断图表']
   const snapshots = []
+  let selectionChecks = {}
   for (const tab of tabs) {
     await evaluate(`Array.from(document.querySelectorAll('.nav-item')).find(b => b.textContent.includes(${JSON.stringify(tab)})).click()`)
     await until("(document.querySelector('.content section')?.innerText.length || 0) > 80 && !document.querySelector('.content .loading-state') && !document.querySelector('.content section')?.innerText.includes('正在加载')")
     await sleep(600)
     snapshots.push(await evaluate(`({tab:${JSON.stringify(tab)}, text:document.querySelector('.content section').innerText.slice(0,500), canvases:document.querySelectorAll('.content canvas').length, overflow:document.documentElement.scrollWidth>innerWidth})`))
+    if (tab === 'Top-K 选股推荐') {
+      await until("document.querySelectorAll('.desktop-results tbody > tr').length >= 5")
+      await evaluate("Array.from(document.querySelectorAll('.desktop-results button')).find(b=>b.textContent==='因子依据').click()")
+      await until("document.querySelector('.factor-detail')")
+      await screenshot('recommendations-desktop')
+      await evaluate("Array.from(document.querySelectorAll('.desktop-results button')).find(b=>b.textContent==='SHAP 归因').click()")
+      await until("document.querySelector('dialog[open] .dialog-body')")
+      selectionChecks.explanation = await evaluate("({hasFactorEvidence:document.querySelector('dialog[open]').innerText.includes('多因子对照依据'),hasCalibrated:document.querySelector('dialog[open]').innerText.includes('校准后')})")
+      await screenshot('recommendation-explanation')
+      await evaluate("document.querySelector('dialog[open] .close-btn').click()")
+      await evaluate("const select=document.querySelectorAll('.selection-controls select')[1]; select.value='factor';select.dispatchEvent(new Event('change',{bubbles:true}))")
+      await until("!document.querySelector('.content .loading-state') && document.querySelector('.recommendation-results h2')?.textContent.includes('多因子对照')")
+      selectionChecks.factorMode = await evaluate("document.querySelector('.recommendation-results h2').textContent")
+      await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false })
+      await sleep(500)
+      selectionChecks.mobileOverflow = await evaluate('document.documentElement.scrollWidth>innerWidth')
+      await screenshot('recommendations-mobile')
+      await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
+      await sleep(300)
+    }
   }
   await until("document.querySelectorAll('.diagnostic-chart svg').length === 4")
   await sleep(600)
@@ -72,11 +93,12 @@ try {
   await sleep(500)
   const mobile = await evaluate("({width:innerWidth, scrollWidth:document.documentElement.scrollWidth, chartWidths:Array.from(document.querySelectorAll('.diagnostic-chart')).map(n=>n.getBoundingClientRect().width)})")
   await screenshot('diagnostics-mobile')
-  const result = { tabs: snapshots, desktopCharts, desktopLayout, mobile, errors }
+  const result = { tabs: snapshots, selectionChecks, desktopCharts, desktopLayout, mobile, errors }
   await writeFile(`${output}/browser-checks.json`, JSON.stringify(result, null, 2))
   console.log(JSON.stringify(result))
   if (errors.length) process.exitCode = 1
   if (mobile.scrollWidth > mobile.width) process.exitCode = 1
+  if (selectionChecks.mobileOverflow || !selectionChecks.explanation?.hasFactorEvidence) process.exitCode = 1
 } finally {
   if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ id: ++sequence, method: 'Browser.close' }))
   await sleep(100)

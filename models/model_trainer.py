@@ -29,6 +29,7 @@ from config.config import FEATURE_COLS, get_model_features, MODEL_DIR, SAVED_MOD
 from ml_pipeline.dataset import build_factor_panel, time_split
 from config.config import TARGET_DAYS
 from ml_pipeline.factor_diagnosis import diagnose_all, factors_for_model
+from ml_pipeline.backtest import is_limit_up as flag_signal_limit
 
 warnings.filterwarnings("ignore")
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -250,6 +251,24 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
 
     print(f"[Train] 验证 AUC={metrics['val']['auc']}  测试 AUC={metrics['test']['auc']}")
 
+    from ml_pipeline.calibration import fit_calibrator, calibrate_margin, reliability
+    from ml_pipeline.selection import fit_factor_ranker
+    calibration = fit_calibrator(model, val, feature_cols)
+    factor_ranker = fit_factor_ranker(train, feature_cols)
+    calibration_report = {'calibrator': calibration, 'evaluations': {}}
+    for name, split in [('validation_fit', val), ('held_out_test', test)]:
+        margin = model.predict(split[feature_cols], raw_score=True)
+        probability = model.predict_proba(split[feature_cols])[:, 1]
+        calibrated = calibrate_margin(margin, calibration)
+        calibration_report['evaluations'][name] = {
+            'rows': len(split), 'raw': reliability(split.target_up, probability),
+            'calibrated': reliability(split.target_up, calibrated),
+        }
+    os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
+    with open(os.path.join(SAVED_MODELS_DIR, 'calibration_report.json'), 'w', encoding='utf-8') as handle:
+        import json
+        json.dump(calibration_report, handle, ensure_ascii=False, indent=2, allow_nan=False)
+
     result = {
         'model': model,
         'panel': panel,
@@ -262,6 +281,8 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
         'feature_cols': get_model_features(),
         'label_mode': 'excess',
         'label_definition': 'probability of exceeding the same-date candidate-universe mean over the next five sessions',
+        'calibration': calibration,
+        'factor_ranker': factor_ranker,
     }
 
     os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
@@ -269,10 +290,7 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
     cols_to_keep = list(dict.fromkeys(['date', 'stock_code', 'ret_5d_fwd', 'excess_ret_5d', 'industry', 'score_lgb', 'target_up', 'label_end_date', 'entry_date', 'pct_chg'] + get_model_features() + [c for c in (candidate_factors or []) if c in train.columns]))
     train_sub = train[[c for c in cols_to_keep if c in train.columns]].copy()
     test_sub = test[[c for c in cols_to_keep if c in test.columns]].copy()
-    for c in train_sub.select_dtypes(include=[np.float64]).columns:
-        train_sub[c] = train_sub[c].astype(np.float32)
-    for c in test_sub.select_dtypes(include=[np.float64]).columns:
-        test_sub[c] = test_sub[c].astype(np.float32)
+    # 保留模型输入和收益的完整精度，避免保存后改变树分支或回测结果。
 
     saved_payload = {
         'model': model,
@@ -284,6 +302,8 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
         'feature_cols': get_model_features(),
         'label_mode': 'excess',
         'label_definition': 'probability of exceeding the same-date candidate-universe mean over the next five sessions',
+        'calibration': calibration,
+        'factor_ranker': factor_ranker,
     }
     joblib.dump(saved_payload, model_file, compress=3)
     print(f"[Train] 模型已保存: {model_file}")
@@ -317,13 +337,8 @@ def predict_signal(code: str, model, df: pd.DataFrame = None, panel: pd.DataFram
         return None
     prob = float(model.predict_proba(X)[0, 1])
 
-    # 截面胜率校准阈值 (50% 以上为看涨 A 级，46%~50% 为中性多头 B 级，其余为 C 级)
-    if prob >= 0.50:
-        rating = 'A'
-    elif prob >= 0.46:
-        rating = 'B'
-    else:
-        rating = 'C'
+    # 分档必须在完整候选池排序后生成，单股原始分数不代替校准概率。
+    rating = None
 
     latest_pct = float(latest_row.get('pct_chg', 0.0))
     latest_close = float(latest_row.get('close', 0.0))
@@ -332,9 +347,9 @@ def predict_signal(code: str, model, df: pd.DataFrame = None, panel: pd.DataFram
 
     return {
         'code': clean_code,
-        'probability': round(prob, 4),
+        'probability': prob,
         'rating': rating,
-        'is_limit_up': '是' if latest_pct >= 9.9 else '否',
+        'is_limit_up': '是' if flag_signal_limit(clean_code, latest_pct) else '否',
         'close': round(latest_close, 2),
         'pct_chg': round(latest_pct, 2),
         'update_date': latest_date,

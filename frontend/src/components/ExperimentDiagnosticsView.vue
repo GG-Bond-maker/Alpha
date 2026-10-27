@@ -7,17 +7,17 @@
     <div class="card diagnostic-context">
       <p>测试区间 <strong>{{ data.date_range?.join(' 至 ') }}</strong> · 以下图表均来自该区间的真实模型输出。</p>
       <dl>
-        <div><dt>Brier 分数</dt><dd>{{ number(data.calibration?.brier_score) }}</dd></div>
-        <div><dt>校准误差 ECE</dt><dd>{{ number(data.calibration?.ece) }}</dd></div>
+        <div><dt>Brier 分数 · 校准前</dt><dd>{{ number(data.calibration?.brier_score) }}<small v-if="data.calibration?.comparison">校准后 {{ number(data.calibration.comparison.calibrated.brier_score) }}</small></dd></div>
+        <div><dt>校准误差 ECE · 校准前</dt><dd>{{ number(data.calibration?.ece) }}<small v-if="data.calibration?.comparison">校准后 {{ number(data.calibration.comparison.calibrated.ece) }}</small></dd></div>
         <div><dt>平均 Rank IC</dt><dd>{{ number(data.rank_ic?.mean) }}</dd></div>
         <div><dt>IC 的 HAC t 值</dt><dd>{{ number(data.rank_ic?.hac_t, 2) }}</dd></div>
       </dl>
-      <p class="diagnostic-note">模型分数表示跑赢当日候选池均值的倾向；未经概率校准。测试标签仅用于诊断，不据此调整模型。</p>
+      <p class="diagnostic-note">模型分数表示跑赢当日候选池均值的倾向。校准器只在验证区间拟合；此处测试标签仅用于诊断，不用于调整模型或校准器。</p>
     </div>
     <div class="diagnostic-panels">
       <section class="card">
         <h2>概率可靠性图</h2>
-        <p class="diagnostic-note">越接近虚线，分组预测均值与实际跑赢比例越一致；点大小表示样本数量。</p>
+        <p class="diagnostic-note">越接近虚线，分组预测均值与实际跑赢比例越一致；点大小表示样本数量。校准不保证在后续区间继续有效。</p>
         <div ref="calibrationRef" class="diagnostic-chart" role="img" aria-label="预测分数分箱均值与实际跑赢比例散点图"></div>
         <details><summary>查看分箱数据</summary>
           <div class="table-wrap"><table><thead><tr><th>区间</th><th>样本</th><th>预测均值</th><th>实际比例</th></tr></thead><tbody>
@@ -78,13 +78,18 @@ function mountChart(element, options) {
 
 function render() {
   const bins = (data.value.calibration?.bins || []).filter(b => b.count)
+  const calibratedBins = (data.value.calibration?.comparison?.calibrated?.bins || []).filter(b => b.count)
   mountChart(calibrationRef.value, {
+    legend: { data: ['校准前', '校准后'], top: 0 },
     xAxis: { type: 'value', min: 0, max: 1, name: '预测分数', nameLocation: 'middle', nameGap: 32 },
     yAxis: { type: 'value', min: 0, max: 1, name: '实际跑赢比例' },
     series: [{ type: 'line', data: [[0, 0], [1, 1]], symbol: 'none', lineStyle: { type: 'dashed', color: '#64748b' }, silent: true },
-      { type: 'scatter', data: bins.map(b => [b.mean_prediction, b.observed_rate, b.count]),
+      { name: '校准前', type: 'scatter', data: bins.map(b => [b.mean_prediction, b.observed_rate, b.count]),
         symbolSize: v => 8 + Math.min(14, Math.log1p(v[2])), itemStyle: { color: '#2563eb' },
-        tooltip: { formatter: p => `预测均值 ${percent(p.value[0])}<br>实际比例 ${percent(p.value[1])}<br>样本 ${p.value[2]}` } }],
+        tooltip: { formatter: p => `校准前均值 ${percent(p.value[0])}<br>实际比例 ${percent(p.value[1])}<br>样本 ${p.value[2]}` } },
+      { name: '校准后', type: 'scatter', data: calibratedBins.map(b => [b.mean_prediction, b.observed_rate, b.count]),
+        symbol: 'diamond', symbolSize: v => 8 + Math.min(14, Math.log1p(v[2])), itemStyle: { color: '#b45309' },
+        tooltip: { formatter: p => `校准后均值 ${percent(p.value[0])}<br>实际比例 ${percent(p.value[1])}<br>样本 ${p.value[2]}` } }],
   })
   const ic = data.value.rank_ic || {}
   mountChart(icRef.value, {
@@ -161,6 +166,7 @@ onBeforeUnmount(() => { observer?.disconnect(); charts.forEach(c => c.dispose())
 .diagnostic-context dl { display: flex; gap: 18px 40px; flex-wrap: wrap; margin: 16px 0; font-variant-numeric: tabular-nums; }
 .diagnostic-context dt { font-size: 14px; color: #475569; margin-bottom: 4px; }
 .diagnostic-context dd { margin: 0; font-size: 19px; font-weight: 650; color: #0f172a; }
+.diagnostic-context dd small { display: block; margin-top: 4px; font-size: 13px; font-weight: 400; color: #475569; }
 details { margin-top: 12px; }
 summary { cursor: pointer; color: #1d4ed8; font-size: 14px; padding: 6px 0; }
 select:focus-visible, summary:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }

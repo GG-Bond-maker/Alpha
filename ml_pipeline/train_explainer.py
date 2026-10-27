@@ -225,7 +225,7 @@ def generate_reason(stock_name: str, stock_code: str, top_pos: list, top_neg: li
     """
     lines = [
         f"模型对 {stock_name}（{stock_code}）未来 5 个交易日跑赢当日候选池平均收益的"
-        f"概率估计为 {score:.1%}，"
+        f"校准前模型排序分数为 {score:.4f}，"
         f"在当前截面中排第 {rank} 位。"
     ]
 

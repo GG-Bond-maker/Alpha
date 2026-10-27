@@ -49,7 +49,7 @@ from ml_pipeline.train_explainer import (
 )
 
 
-def generate_recommendations(model, codes: list, panel=None) -> pd.DataFrame:
+def generate_recommendations(model, codes: list, panel=None, bundle=None) -> pd.DataFrame:
     """用训练好的模型为最新截面打分，生成前端使用的推荐表。"""
     from models.model_trainer import predict_signal
 
@@ -86,7 +86,8 @@ def generate_recommendations(model, codes: list, panel=None) -> pd.DataFrame:
         rank <= max(1, int(np.ceil(len(df) * RATING_TOP_A_RATIO))), 'A',
         np.where(rank <= max(1, int(np.ceil(len(df) * RATING_TOP_B_RATIO))), 'B', 'C'),
     )
-    return df
+    from ml_pipeline.selection import enrich_recommendations
+    return enrich_recommendations(df, panel, bundle or {'model': model})
 
 
 def main():
@@ -249,7 +250,7 @@ def main():
     # 推理不应依赖已经成熟的训练标签：重新构造含最新行情的横截面，
     # 否则模型会停留在最新行情之前 TARGET_DAYS 个交易日。
     inference_panel = build_inference_panel(codes, include_fundamental=True)
-    rec_df = generate_recommendations(model, codes, inference_panel)
+    rec_df = generate_recommendations(model, codes, inference_panel, bundle=result)
     if not rec_df.empty:
         rec_path = os.path.join(PROCESSED_DIR, 'realtime_recommendations.csv')
         rec_df.to_csv(rec_path, index=False, encoding='utf-8-sig')
@@ -289,6 +290,7 @@ def main():
             'backtest_rebalance_every_sessions': 5,
         },
         'model_metrics': result['metrics'],
+        'selection_layer': {'calibration': result['calibration'], 'factor_ranker': result['factor_ranker']},
         'best_params': result['params'],
         'loss_history': result.get('loss_history', {}),
         'baseline_comparison': eval_payload['comparison'],

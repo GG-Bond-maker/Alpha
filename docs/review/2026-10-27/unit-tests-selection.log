@@ -1,0 +1,22 @@
+test_initial_capital_is_included_in_drawdown (test_repair_regressions.BacktestTests.test_initial_capital_is_included_in_drawdown) ... ok
+test_labels_use_market_calendar_across_missing_stock_sessions (test_repair_regressions.BacktestTests.test_labels_use_market_calendar_across_missing_stock_sessions) ... ok
+test_repeated_selection_is_closed_and_reopened_with_both_costs (test_repair_regressions.BacktestTests.test_repeated_selection_is_closed_and_reopened_with_both_costs) ... ok
+test_neutralization_matches_per_date_reference_with_missing_values (test_repair_regressions.PipelineTests.test_neutralization_matches_per_date_reference_with_missing_values) ... ok
+test_split_purges_actual_label_end_dates (test_repair_regressions.PipelineTests.test_split_purges_actual_label_end_dates) ... ok
+test_training_accepts_missing_candidate_argument (test_repair_regressions.PipelineTests.test_training_accepts_missing_candidate_argument) ... ok
+test_vectorized_ic_and_quantile_returns_match_reference (test_repair_regressions.PipelineTests.test_vectorized_ic_and_quantile_returns_match_reference) ... ok
+test_calibration_is_monotone_and_validation_only (test_repair_regressions.SelectionLayerTests.test_calibration_is_monotone_and_validation_only) ... ok
+test_factor_comparator_directions_weights_and_missing_values (test_repair_regressions.SelectionLayerTests.test_factor_comparator_directions_weights_and_missing_values) ... ok
+test_inverted_validation_signal_never_reverses_model_ordering (test_repair_regressions.SelectionLayerTests.test_inverted_validation_signal_never_reverses_model_ordering) ... ok
+test_rules_explain_rejections_without_future_inputs (test_repair_regressions.SelectionLayerTests.test_rules_explain_rejections_without_future_inputs) ... ok
+test_signal_limit_indicator_uses_board_specific_threshold (test_repair_regressions.SelectionLayerTests.test_signal_limit_indicator_uses_board_specific_threshold) ... ok
+test_engineering_metrics_come_from_saved_results (test_repair_regressions.ServiceTests.test_engineering_metrics_come_from_saved_results) ... ok
+test_recommendation_dates_never_fall_back_or_mix (test_repair_regressions.ServiceTests.test_recommendation_dates_never_fall_back_or_mix) ... ok
+test_schedule_and_logging_remain_available_after_mutation (test_repair_regressions.ServiceTests.test_schedule_and_logging_remain_available_after_mutation) ... ok
+test_scheduler_runs_once_and_fails_closed_without_calendar (test_repair_regressions.ServiceTests.test_scheduler_runs_once_and_fails_closed_without_calendar) ... ok
+test_unobserved_risks_are_unknown_and_concentration_is_screened (test_repair_regressions.ServiceTests.test_unobserved_risks_are_unknown_and_concentration_is_screened) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 3.571s
+
+OK

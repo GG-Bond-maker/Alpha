@@ -53,7 +53,7 @@ def main():
 
     print(f"构建 {len(codes)} 只候选股票的最新推理截面...")
     panel = build_inference_panel(codes, include_fundamental=True)
-    all_recommendations = generate_recommendations(model, codes, panel)
+    all_recommendations = generate_recommendations(model, codes, panel, bundle=bundle if isinstance(bundle, dict) else None)
     if all_recommendations.empty:
         print("没有生成有效推荐，请检查行情、因子和模型输入是否齐全")
         return

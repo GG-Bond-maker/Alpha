@@ -109,6 +109,9 @@ class PipelineTests(unittest.TestCase):
                 result = trainer.train_market_model(panel=panel, n_trials=1, force_retrain=True)
             self.assertTrue(Path(temp, 'lgbm_market_classifier.pkl').exists())
             self.assertTrue(result['loss_history']['iterations'])
+            import joblib
+            saved = joblib.load(Path(temp) / 'lgbm_market_classifier.pkl')
+            np.testing.assert_array_equal(saved['train'][columns].to_numpy(), result['train'][columns].to_numpy())
 
 
 class ServiceTests(unittest.TestCase):
@@ -173,6 +176,65 @@ class ServiceTests(unittest.TestCase):
         report = service_instance.get_training_report()
         self.assertEqual(info['metrics']['auc'], report['model_metrics']['test']['auc'])
         self.assertEqual(info['best_params'], report['best_params'])
+
+
+class SelectionLayerTests(unittest.TestCase):
+    def test_signal_limit_indicator_uses_board_specific_threshold(self):
+        from ml_pipeline.backtest import is_limit_up
+        self.assertTrue(is_limit_up('000001', 10.0))
+        self.assertFalse(is_limit_up('300502', 10.0))
+        self.assertTrue(is_limit_up('688981', 20.0))
+
+    def test_inverted_validation_signal_never_reverses_model_ordering(self):
+        from ml_pipeline.calibration import fit_calibrator, calibrate_margin
+        class Model:
+            def predict(self, x, raw_score=False):
+                return x['margin'].to_numpy()
+        val = pd.DataFrame({'margin': np.tile(np.linspace(-2, 2, 30), 4),
+                            'target_up': np.tile([1] * 15 + [0] * 15, 4),
+                            'date': np.repeat(pd.date_range('2020-01-01', periods=4), 30)})
+        spec = fit_calibrator(Model(), val, ['margin'])
+        self.assertTrue(spec['weak_validation_signal'])
+        np.testing.assert_allclose(calibrate_margin([-5, 0, 5], spec), 0.5, atol=1e-5)
+
+    def test_calibration_is_monotone_and_validation_only(self):
+        from ml_pipeline.calibration import fit_calibrator, calibrate_margin
+        class Model:
+            def predict(self, features, raw_score=False):
+                return features['margin'].to_numpy()
+        validation = pd.DataFrame({'margin': np.tile(np.linspace(-3, 3, 40), 3),
+                                   'target_up': np.tile(([0] * 15 + [1] * 25), 3),
+                                   'date': np.repeat(pd.date_range('2020-01-01', periods=3), 40)})
+        spec = fit_calibrator(Model(), validation, ['margin'])
+        prediction = calibrate_margin(np.linspace(-10, 10, 100), spec)
+        self.assertTrue((np.diff(prediction) >= 0).all())
+        self.assertTrue(((prediction >= 0) & (prediction <= 1)).all())
+        self.assertEqual(spec['fit_source'], 'validation_only')
+        self.assertEqual(spec['fit_period'], ['2020-01-01', '2020-01-03'])
+
+    def test_rules_explain_rejections_without_future_inputs(self):
+        from ml_pipeline.selection import screen_candidates
+        candidates = pd.DataFrame({'更新日期': ['2020-01-01'] * 4, '最新收盘价': [10] * 4,
+                                    'volume': [100, 0, 100, 100], 'history_days': [200, 200, 10, 200],
+                                    '名称': ['正常', '停牌', '新股', 'ST公司'], '是否涨停': ['否'] * 4})
+        result, audit = screen_candidates(candidates, '2020-01-01')
+        self.assertEqual(result.rule_eligible.tolist(), [True, False, False, False])
+        self.assertEqual(audit['eligible_count'], 1)
+        self.assertEqual(audit['excluded_count'], 3)
+
+    def test_factor_comparator_directions_weights_and_missing_values(self):
+        from ml_pipeline.selection import enrich_recommendations
+        panel = pd.DataFrame({'stock_code': ['000001', '000002', '000003'],
+                              'date': pd.to_datetime(['2020-01-01'] * 3),
+                              'volume': [100] * 3, 'history_days': [200] * 3})
+        rows = pd.DataFrame({'代码': panel.stock_code, '更新日期': ['2020-01-01'] * 3,
+                             '最新收盘价': [10] * 3, '名称': ['a', 'b', 'c'],
+                             'value_neu': [1.0, 2.0, np.nan]})
+        bundle = {'factor_ranker': {'factors': [{'feature': 'value_neu', 'direction': -1, 'weight': 1}]}}
+        result = enrich_recommendations(rows, panel, bundle)
+        self.assertGreater(result.factor_score[0], result.factor_score[1])
+        self.assertTrue(pd.isna(result.factor_score[2]))
+        self.assertTrue(result.calibrated_probability.isna().all())
 
 
 if __name__ == '__main__':

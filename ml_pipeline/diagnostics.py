@@ -52,6 +52,12 @@ def build_diagnostics(test: pd.DataFrame, backtest: dict, path=None) -> dict:
         'monthly_settled_returns': monthly,
         'monthly_note': '按平仓月份复利汇总已完成持有期，不是逐日盯市月收益；首末月可能不完整。',
     }
+    calibration_path = os.path.join(SAVED_MODELS_DIR, 'calibration_report.json')
+    if os.path.exists(calibration_path):
+        with open(calibration_path, encoding='utf-8') as handle:
+            report = json.load(handle)
+        payload['calibration']['comparison'] = report['evaluations']['held_out_test']
+        payload['calibration']['calibrator'] = report['calibrator']
     path = path or os.path.join(SAVED_MODELS_DIR, 'diagnostics.json')
     with open(path, 'w', encoding='utf-8') as handle:
         json.dump(payload, handle, ensure_ascii=False, indent=2, allow_nan=False)

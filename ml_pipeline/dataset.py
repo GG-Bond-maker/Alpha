@@ -55,6 +55,9 @@ def _add_price_factors(df: pd.DataFrame) -> pd.DataFrame:
     from features.feature_engineering import calculate_technical_indicators
 
     close = df['close'].astype(float)
+    df['history_days'] = np.arange(1, len(df) + 1)
+    amount = pd.to_numeric(df['amount'], errors='coerce') if 'amount' in df else close * df['volume'].astype(float)
+    df['avg_amount_20d'] = amount.rolling(20, min_periods=20).mean()
     df['momentum_20d'] = close.pct_change(20)
     df['momentum_60d'] = close.pct_change(60)
     df['volatility_20d'] = close.pct_change().rolling(20).std() * np.sqrt(242)
@@ -88,7 +91,7 @@ def _prepare_single(df: pd.DataFrame, code: str, factor_cols: list,
     if len(needed) < len(factor_cols) * 0.5:
         return None
 
-    market_cols = [c for c in ('open', 'close', 'high', 'low', 'volume', 'pct_chg')
+    market_cols = [c for c in ('open', 'close', 'high', 'low', 'volume', 'pct_chg', 'avg_amount_20d', 'history_days')
                    if c in df.columns]
     keep = list(dict.fromkeys(needed + market_cols + ['ret_5d_fwd']))
     sub = df[keep].copy().replace([np.inf, -np.inf], np.nan)

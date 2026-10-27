@@ -14,8 +14,8 @@
 
       <div class="modal-body">
         <!-- 实时状态横幅 -->
-        <div class="status-banner" :class="isTriggered ? 'is-halted' : 'is-healthy'">
-          <div class="banner-icon">{{ isTriggered ? '🚨' : '🟢' }}</div>
+        <div class="status-banner" :class="isTriggered ? 'is-halted' : 'is-unassessed'">
+          <div class="banner-icon"><span v-if="isTriggered">🚨</span><svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v7M12 6v1"/></svg></div>
           <div class="banner-content">
             <div class="banner-title">
               {{ isTriggered ? '风控系统已触发熔断闭锁 (LATCHED)' : '真实持仓风险未完整评估' }}
@@ -198,6 +198,7 @@ const handleReset = async () => {
 </script>
 
 <style scoped>
+.status-banner.is-unassessed { background: #f8fafc; border-color: #cbd5e1; color: #334155; }
 .modal-backdrop {
   position: fixed;
   inset: 0;

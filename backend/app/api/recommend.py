@@ -32,9 +32,13 @@ def get_topk(
     k: int = Query(10, ge=1, le=50, description="推荐数量"),
     industry: Optional[str] = Query(None, description="行业筛选"),
     board: Optional[str] = Query(None, description="板块筛选"),
+    rank_by: str = Query('lightgbm', pattern='^(lightgbm|factor)$', description='默认模型排序或多因子对照'),
+    min_amount: float = Query(0, ge=0, le=1e12, description='20日平均成交额门槛，元'),
+    exclude_limit_up: bool = Query(False, description='剔除信号日涨停；不代表次日可成交'),
 ):
     try:
-        return service_instance.get_topk(date=date, k=k, industry=industry, board=board)
+        return service_instance.get_topk(date=date, k=k, industry=industry, board=board,
+                                         rank_by=rank_by, min_amount=min_amount, exclude_limit_up=exclude_limit_up)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
