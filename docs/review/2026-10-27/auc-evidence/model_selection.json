@@ -1,0 +1,765 @@
+{
+  "protocol_sha256": "ec87bd87ea8ab5add324b94e8fb4936af914784eae57da8b1ee8d7e07497b405",
+  "protocol": {
+    "version": 1,
+    "profiles": [
+      {
+        "name": "legacy_control",
+        "features": "legacy_ic",
+        "window": null,
+        "legacy": true
+      },
+      {
+        "name": "consistent_ic",
+        "features": "neutralized_ic",
+        "window": null
+      },
+      {
+        "name": "existing_price",
+        "features": "existing_price",
+        "window": null
+      },
+      {
+        "name": "enriched_price",
+        "features": "enriched_price",
+        "window": null
+      },
+      {
+        "name": "enriched_rolling",
+        "features": "enriched_price",
+        "window": 756
+      },
+      {
+        "name": "quality_all",
+        "features": "quality_all",
+        "window": null,
+        "diagnostic_only": true
+      },
+      {
+        "name": "enriched_stumps",
+        "features": "enriched_price",
+        "window": null,
+        "depth": 2
+      }
+    ],
+    "regularized_params": {
+      "n_estimators": 200,
+      "learning_rate": 0.025,
+      "max_depth": 3,
+      "num_leaves": 7,
+      "min_child_samples": 500,
+      "reg_alpha": 1.0,
+      "reg_lambda": 20.0,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.9,
+      "max_bin": 63,
+      "n_jobs": 4,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "legacy_params": {
+      "n_estimators": 212,
+      "learning_rate": 0.17254716573280354,
+      "max_depth": 7,
+      "num_leaves": 41,
+      "subsample": 0.6624074561769746,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.662397808134481,
+      "reg_alpha": 0.00018747059221802545,
+      "reg_lambda": 1.1752647960576206,
+      "n_jobs": 4,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "seed": 42,
+    "cv_folds": 3,
+    "cv_val_days": 252,
+    "selection_metric": "mean_daily_auc_minus_0.25_fold_std",
+    "weighting": "equal_date_total_weight_except_legacy_control",
+    "development_end": "2023-03-23 00:00:00",
+    "holdout_status": "previously_observed_retrospective_recheck",
+    "trials_total": 7,
+    "note": "No early stopping or selection uses outer validation/test labels."
+  },
+  "candidates": [
+    {
+      "profile": {
+        "name": "legacy_control",
+        "features": "legacy_ic",
+        "window": null,
+        "legacy": true
+      },
+      "folds": [
+        {
+          "fold": 1,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2020-02-06 00:00:00",
+          "label_end": "2020-02-13 00:00:00",
+          "validation_start": "2020-02-14 00:00:00",
+          "validation_end": "2021-02-25 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "debt_ratio_neu",
+            "pct_chg_neu"
+          ],
+          "section_auc": 0.5087794010016757,
+          "auc": 0.508608184360457
+        },
+        {
+          "fold": 2,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2021-02-18 00:00:00",
+          "label_end": "2021-02-25 00:00:00",
+          "validation_start": "2021-02-26 00:00:00",
+          "validation_end": "2022-03-10 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "debt_ratio_neu",
+            "roe_neu"
+          ],
+          "section_auc": 0.5071748664899487,
+          "auc": 0.5053319320969806
+        },
+        {
+          "fold": 3,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2022-03-03 00:00:00",
+          "label_end": "2022-03-10 00:00:00",
+          "validation_start": "2022-03-11 00:00:00",
+          "validation_end": "2023-03-23 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "debt_ratio_neu",
+            "pct_chg_neu"
+          ],
+          "section_auc": 0.5026829589373971,
+          "auc": 0.502747208439034
+        }
+      ],
+      "mean": 0.5062124088096739,
+      "std": 0.0031601257966284288,
+      "selection_score": 0.5054223773605168
+    },
+    {
+      "profile": {
+        "name": "consistent_ic",
+        "features": "neutralized_ic",
+        "window": null
+      },
+      "folds": [
+        {
+          "fold": 1,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2020-02-06 00:00:00",
+          "label_end": "2020-02-13 00:00:00",
+          "validation_start": "2020-02-14 00:00:00",
+          "validation_end": "2021-02-25 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "pct_chg_neu"
+          ],
+          "section_auc": 0.5163521887820323,
+          "auc": 0.5151669927431864
+        },
+        {
+          "fold": 2,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2021-02-18 00:00:00",
+          "label_end": "2021-02-25 00:00:00",
+          "validation_start": "2021-02-26 00:00:00",
+          "validation_end": "2022-03-10 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "pct_chg_neu"
+          ],
+          "section_auc": 0.5160517461033145,
+          "auc": 0.5164596681162659
+        },
+        {
+          "fold": 3,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2022-03-03 00:00:00",
+          "label_end": "2022-03-10 00:00:00",
+          "validation_start": "2022-03-11 00:00:00",
+          "validation_end": "2023-03-23 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "pct_chg_neu"
+          ],
+          "section_auc": 0.5015917776325302,
+          "auc": 0.5019635869903362
+        }
+      ],
+      "mean": 0.5113319041726258,
+      "std": 0.008436534550015373,
+      "selection_score": 0.5092227705351219
+    },
+    {
+      "profile": {
+        "name": "existing_price",
+        "features": "existing_price",
+        "window": null
+      },
+      "folds": [
+        {
+          "fold": 1,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2020-02-06 00:00:00",
+          "label_end": "2020-02-13 00:00:00",
+          "validation_start": "2020-02-14 00:00:00",
+          "validation_end": "2021-02-25 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu"
+          ],
+          "section_auc": 0.5272121355767736,
+          "auc": 0.5275115456723405
+        },
+        {
+          "fold": 2,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2021-02-18 00:00:00",
+          "label_end": "2021-02-25 00:00:00",
+          "validation_start": "2021-02-26 00:00:00",
+          "validation_end": "2022-03-10 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu"
+          ],
+          "section_auc": 0.5276959982521313,
+          "auc": 0.5264004745190944
+        },
+        {
+          "fold": 3,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2022-03-03 00:00:00",
+          "label_end": "2022-03-10 00:00:00",
+          "validation_start": "2022-03-11 00:00:00",
+          "validation_end": "2023-03-23 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu"
+          ],
+          "section_auc": 0.5164393709678992,
+          "auc": 0.5163223976064902
+        }
+      ],
+      "mean": 0.5237825015989347,
+      "std": 0.006363937960924062,
+      "selection_score": 0.5221915171087037
+    },
+    {
+      "profile": {
+        "name": "enriched_price",
+        "features": "enriched_price",
+        "window": null
+      },
+      "folds": [
+        {
+          "fold": 1,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2020-02-06 00:00:00",
+          "label_end": "2020-02-13 00:00:00",
+          "validation_start": "2020-02-14 00:00:00",
+          "validation_end": "2021-02-25 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5284946191303065,
+          "auc": 0.5291195642949826
+        },
+        {
+          "fold": 2,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2021-02-18 00:00:00",
+          "label_end": "2021-02-25 00:00:00",
+          "validation_start": "2021-02-26 00:00:00",
+          "validation_end": "2022-03-10 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5252075484135069,
+          "auc": 0.5237142140653233
+        },
+        {
+          "fold": 3,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2022-03-03 00:00:00",
+          "label_end": "2022-03-10 00:00:00",
+          "validation_start": "2022-03-11 00:00:00",
+          "validation_end": "2023-03-23 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5198685193058865,
+          "auc": 0.5197755408490286
+        }
+      ],
+      "mean": 0.5245235622832333,
+      "std": 0.004353536185105113,
+      "selection_score": 0.523435178236957
+    },
+    {
+      "profile": {
+        "name": "enriched_rolling",
+        "features": "enriched_price",
+        "window": 756
+      },
+      "folds": [
+        {
+          "fold": 1,
+          "train_start": "2016-12-26 00:00:00",
+          "train_end": "2020-02-06 00:00:00",
+          "label_end": "2020-02-13 00:00:00",
+          "validation_start": "2020-02-14 00:00:00",
+          "validation_end": "2021-02-25 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "momentum_60d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5306100810896641,
+          "auc": 0.5307837775590195
+        },
+        {
+          "fold": 2,
+          "train_start": "2018-01-05 00:00:00",
+          "train_end": "2021-02-18 00:00:00",
+          "label_end": "2021-02-25 00:00:00",
+          "validation_start": "2021-02-26 00:00:00",
+          "validation_end": "2022-03-10 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "momentum_60d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5244532314768553,
+          "auc": 0.5224073082074077
+        },
+        {
+          "fold": 3,
+          "train_start": "2019-01-18 00:00:00",
+          "train_end": "2022-03-03 00:00:00",
+          "label_end": "2022-03-10 00:00:00",
+          "validation_start": "2022-03-11 00:00:00",
+          "validation_end": "2023-03-23 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "momentum_60d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5157166117215891,
+          "auc": 0.5143276336787719
+        }
+      ],
+      "mean": 0.5235933080960362,
+      "std": 0.007483879917536537,
+      "selection_score": 0.521722338116652
+    },
+    {
+      "profile": {
+        "name": "quality_all",
+        "features": "quality_all",
+        "window": null,
+        "diagnostic_only": true
+      },
+      "folds": [
+        {
+          "fold": 1,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2020-02-06 00:00:00",
+          "label_end": "2020-02-13 00:00:00",
+          "validation_start": "2020-02-14 00:00:00",
+          "validation_end": "2021-02-25 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "pe_ttm_neu",
+            "pb_neu",
+            "roe_neu",
+            "gross_margin_neu",
+            "net_margin_neu",
+            "debt_ratio_neu",
+            "revenue_growth_neu"
+          ],
+          "section_auc": 0.5342861749685092,
+          "auc": 0.5341803475708757
+        },
+        {
+          "fold": 2,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2021-02-18 00:00:00",
+          "label_end": "2021-02-25 00:00:00",
+          "validation_start": "2021-02-26 00:00:00",
+          "validation_end": "2022-03-10 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "pe_ttm_neu",
+            "pb_neu",
+            "roe_neu",
+            "gross_margin_neu",
+            "net_margin_neu",
+            "debt_ratio_neu",
+            "revenue_growth_neu"
+          ],
+          "section_auc": 0.5183855991292845,
+          "auc": 0.5170873946594113
+        },
+        {
+          "fold": 3,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2022-03-03 00:00:00",
+          "label_end": "2022-03-10 00:00:00",
+          "validation_start": "2022-03-11 00:00:00",
+          "validation_end": "2023-03-23 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "pe_ttm_neu",
+            "pb_neu",
+            "roe_neu",
+            "gross_margin_neu",
+            "net_margin_neu",
+            "debt_ratio_neu",
+            "revenue_growth_neu"
+          ],
+          "section_auc": 0.5171434349816556,
+          "auc": 0.5166754478963036
+        }
+      ],
+      "mean": 0.5232717363598164,
+      "std": 0.009558981971994174,
+      "selection_score": 0.5208819908668179
+    },
+    {
+      "profile": {
+        "name": "enriched_stumps",
+        "features": "enriched_price",
+        "window": null,
+        "depth": 2
+      },
+      "folds": [
+        {
+          "fold": 1,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2020-02-06 00:00:00",
+          "label_end": "2020-02-13 00:00:00",
+          "validation_start": "2020-02-14 00:00:00",
+          "validation_end": "2021-02-25 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5286992590838209,
+          "auc": 0.5287236010892774
+        },
+        {
+          "fold": 2,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2021-02-18 00:00:00",
+          "label_end": "2021-02-25 00:00:00",
+          "validation_start": "2021-02-26 00:00:00",
+          "validation_end": "2022-03-10 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5248808946260379,
+          "auc": 0.5235388742578366
+        },
+        {
+          "fold": 3,
+          "train_start": "2015-01-22 00:00:00",
+          "train_end": "2022-03-03 00:00:00",
+          "label_end": "2022-03-10 00:00:00",
+          "validation_start": "2022-03-11 00:00:00",
+          "validation_end": "2023-03-23 00:00:00",
+          "features": [
+            "EMA20_ratio_neu",
+            "RSI14_neu",
+            "MACD_norm_neu",
+            "OBV_zscore_neu",
+            "CCI_neu",
+            "ATR_ratio_neu",
+            "ADX_neu",
+            "pct_chg_neu",
+            "vol_ratio_neu",
+            "ma_gap_neu",
+            "momentum_20d_neu",
+            "volatility_20d_neu",
+            "momentum_5d_neu",
+            "momentum_10d_neu",
+            "intraday_return_neu",
+            "overnight_gap_neu",
+            "close_position_neu",
+            "illiquidity_20d_neu"
+          ],
+          "section_auc": 0.5185931800549193,
+          "auc": 0.5176230329563304
+        }
+      ],
+      "mean": 0.5240577779215927,
+      "std": 0.005103072522162872,
+      "selection_score": 0.5227820097910519
+    }
+  ],
+  "selected_profile": {
+    "name": "enriched_price",
+    "features": "enriched_price",
+    "window": null
+  },
+  "params": {
+    "n_estimators": 200,
+    "learning_rate": 0.025,
+    "max_depth": 3,
+    "num_leaves": 7,
+    "min_child_samples": 500,
+    "reg_alpha": 1.0,
+    "reg_lambda": 20.0,
+    "subsample": 0.8,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.9,
+    "max_bin": 63,
+    "n_jobs": 4,
+    "random_state": 42,
+    "verbose": -1
+  },
+  "features": [
+    "EMA20_ratio_neu",
+    "RSI14_neu",
+    "MACD_norm_neu",
+    "OBV_zscore_neu",
+    "CCI_neu",
+    "ATR_ratio_neu",
+    "ADX_neu",
+    "pct_chg_neu",
+    "vol_ratio_neu",
+    "ma_gap_neu",
+    "momentum_20d_neu",
+    "volatility_20d_neu",
+    "momentum_5d_neu",
+    "momentum_10d_neu",
+    "intraday_return_neu",
+    "overnight_gap_neu",
+    "close_position_neu",
+    "illiquidity_20d_neu"
+  ],
+  "selection_score": 0.523435178236957,
+  "fit_start": "2015-01-22 00:00:00",
+  "fit_end": "2023-03-23 00:00:00",
+  "fit_rows": 483658,
+  "improvement_proven": false,
+  "warning": "Selection scores are optimistic; outer rechecks were previously observed. Prospective confirmation and point-in-time universe/fundamentals remain required.",
+  "run_id": "20261027-120722-ecde33c1"
+}

@@ -1,0 +1,122 @@
+[Experiment] 开始批次 20261027-120722-ecde33c1
+======================================================================
+ LightGBM 推荐系统 · 离线重训
+======================================================================
+
+[1/7] 构建面板数据集（300 只标的，含基本面因子）...
+
+[2/7] 因子有效性诊断（IC / ICIR / t 值）...
+[Selection] legacy_control fold=1 daily_AUC=0.508779
+[Selection] legacy_control fold=2 daily_AUC=0.507175
+[Selection] legacy_control fold=3 daily_AUC=0.502683
+[Selection] consistent_ic fold=1 daily_AUC=0.516352
+[Selection] consistent_ic fold=2 daily_AUC=0.516052
+[Selection] consistent_ic fold=3 daily_AUC=0.501592
+[Selection] existing_price fold=1 daily_AUC=0.527212
+[Selection] existing_price fold=2 daily_AUC=0.527696
+[Selection] existing_price fold=3 daily_AUC=0.516439
+[Selection] enriched_price fold=1 daily_AUC=0.528495
+[Selection] enriched_price fold=2 daily_AUC=0.525208
+[Selection] enriched_price fold=3 daily_AUC=0.519869
+[Selection] enriched_rolling fold=1 daily_AUC=0.530610
+[Selection] enriched_rolling fold=2 daily_AUC=0.524453
+[Selection] enriched_rolling fold=3 daily_AUC=0.515717
+[Selection] quality_all fold=1 daily_AUC=0.534286
+[Selection] quality_all fold=2 daily_AUC=0.518386
+[Selection] quality_all fold=3 daily_AUC=0.517143
+[Selection] enriched_stumps fold=1 daily_AUC=0.528699
+[Selection] enriched_stumps fold=2 daily_AUC=0.524881
+[Selection] enriched_stumps fold=3 daily_AUC=0.518593
+[Selection] FROZEN winner=enriched_price features=['EMA20_ratio_neu', 'RSI14_neu', 'MACD_norm_neu', 'OBV_zscore_neu', 'CCI_neu', 'ATR_ratio_neu', 'ADX_neu', 'pct_chg_neu', 'vol_ratio_neu', 'ma_gap_neu', 'momentum_20d_neu', 'volatility_20d_neu', 'momentum_5d_neu', 'momentum_10d_neu', 'intraday_return_neu', 'overnight_gap_neu', 'close_position_neu', 'illiquidity_20d_neu']
+[Factor] 因子诊断结果已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\factor_diagnosis.json
+[Factor] 入选 18 个因子并写入模型口径: ['EMA20_ratio', 'RSI14', 'MACD_norm', 'OBV_zscore', 'CCI', 'ATR_ratio', 'ADX', 'pct_chg', 'vol_ratio', 'ma_gap', 'momentum_20d', 'volatility_20d', 'momentum_5d', 'momentum_10d', 'intraday_return', 'overnight_gap', 'close_position', 'illiquidity_20d']
+
+[3/7] 训练模型（训练期固定候选比较，18 维因子）...
+[Train] 训练集 483658 行 / 验证集 125031 行 / 测试集 127741 行
+[Train] 正样本占比 — 训练 0.442 / 验证 0.467
+[Train] 采用超参: {'n_estimators': 200, 'learning_rate': 0.025, 'max_depth': 3, 'num_leaves': 7, 'min_child_samples': 500, 'reg_alpha': 1.0, 'reg_lambda': 20.0, 'subsample': 0.8, 'subsample_freq': 1, 'colsample_bytree': 0.9, 'max_bin': 63, 'n_jobs': 4, 'random_state': 42, 'verbose': -1}
+[Train] 验证 AUC=0.4975  测试 AUC=0.5153
+[Train] 模型已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\lgbm_market_classifier.pkl
+[Selection] Outer retrospective recheck: {"val": {"rows": 125031, "dates": 422, "start": "2023-03-31 00:00:00", "end": "2024-12-25 00:00:00", "reference_auc": 0.49988338784283826, "selected_auc": 0.49746485493122183, "reference_daily_auc": 0.49898464362603845, "selected_daily_auc": 0.4976319604820572, "paired_daily_auc_difference": {"mean": -0.0013526831439813194, "ci95": [-0.015509287484231554, 0.013671001133490656], "block_days": 20, "repetitions": 2000, "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"}, "selected_daily_auc_minus_random": {"mean": -0.002368039517942817, "ci95": [-0.01835493457342913, 0.012961756970042943], "block_days": 20, "repetitions": 2000, "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"}}, "test": {"rows": 127741, "dates": 428, "start": "2025-01-03 00:00:00", "end": "2026-10-14 00:00:00", "reference_auc": 0.49847797428554524, "selected_auc": 0.5153390240397165, "reference_daily_auc": 0.49731907768164496, "selected_daily_auc": 0.5163611047871846, "paired_daily_auc_difference": {"mean": 0.019042027105539563, "ci95": [0.003147149487925377, 0.037035103004779274], "block_days": 20, "repetitions": 2000, "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"}, "selected_daily_auc_minus_random": {"mean": 0.016361104787184562, "ci95": [-0.0022255219262163747, 0.03644417445300951], "block_days": 20, "repetitions": 2000, "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"}}}
+
+[4/7] 基线对比评测...
+[Metrics] 基线对比已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\evaluation_metrics.json
+
+[5/7] 组合回测（全市场 vs 行业中性）...
+  全市场排序 k=10 年化=31.11% 夏普=0.9414 回撤=-29.44% 超额=17.36% 行业数=None
+  行业中性   k=10 年化=36.48% 夏普=1.7136 回撤=-11.20% 超额=22.16% 行业数=10.0
+[Backtest] 结果已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\backtest_result.json
+
+[5.5/7] 滚动窗口验证（walk-forward）...
+  2023-03-31 ~ 2023-09-15  AUC=0.4947  截面AUC均值=0.4971  超额=13.90%
+  2023-09-25 ~ 2024-03-20  AUC=0.5013  截面AUC均值=0.5019  超额=5.93%
+  2024-03-28 ~ 2024-09-12  AUC=0.4918  截面AUC均值=0.4896  超额=-9.81%
+  2024-09-24 ~ 2025-03-19  AUC=0.5095  截面AUC均值=0.511  超额=33.25%
+  2025-03-27 ~ 2025-09-10  AUC=0.5274  截面AUC均值=0.5256  超额=-1.66%
+  2025-09-18 ~ 2026-03-17  AUC=0.5239  截面AUC均值=0.5263  超额=4.02%
+  2026-03-25 ~ 2026-09-08  AUC=0.4907  截面AUC均值=0.4923  超额=10.08%
+  窗口数=7  AUC均值=0.5056 中位数=0.5013 标准差=0.0151 低于随机的窗口占比=42.9%
+  回测跨窗口: 超额年化均值=7.96% 中位数=5.93% 正超额窗口占比=71.4% 最差回撤=-18.36%
+  拼接净值: 年化=17.22% 夏普=0.7644 最大回撤=-23.27%
+[WalkForward] 结果已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\walk_forward.json
+  正在做 Alpha/Beta 归因...
+  Alpha 年化=7.49% (t=1.405, p=0.1619)  Beta=1.0326  R2=0.7729
+  结论: alpha 不显著，收益主要来自 beta 暴露
+[Attribution] 归因结果已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\attribution.json
+
+[6/7] TreeSHAP 归因...
+[SHAP] 解释器已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\shap_explainer.pkl
+[SHAP] 全局重要性已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\global_importance.json
+[SHAP] beeswarm 样本已保存: D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\shap_summary.json (1200 行)
+[SHAP] 加和一致性: max_err=0.0, 通过=True
+
+[7/7] 生成最新截面推荐...
+[Panel] 25/300 已处理，有效 25 只
+[Panel] 50/300 已处理，有效 50 只
+[Panel] 75/300 已处理，有效 75 只
+[Panel] 100/300 已处理，有效 100 只
+[Panel] 125/300 已处理，有效 125 只
+[Panel] 150/300 已处理，有效 150 只
+[Panel] 175/300 已处理，有效 175 只
+[Panel] 200/300 已处理，有效 200 只
+[Panel] 225/300 已处理，有效 225 只
+[Panel] 250/300 已处理，有效 250 只
+[Panel] 275/300 已处理，有效 275 只
+[Panel] 300/300 已处理，有效 300 只
+[Panel] 300 只标的 / 2852 个截面 / 743282 行（跳过 0 只）
+[Rec] 300 条推荐已写入 D:\Python_Project\Alpha\saved_models\runs\20261027-120722-ecde33c1\processed\realtime_recommendations.csv
+ 推荐排名     代码   名称 推荐评级  跑赢候选池均值概率
+    1 300502  新易盛    A   0.537195
+    2 300308 中际旭创    A   0.533034
+    3 300750 宁德时代    A   0.530139
+    4 002384 东山精密    A   0.523429
+    5 688012 中微公司    A   0.519144
+    6 301165 锐捷网络    A   0.517555
+    7 300274 阳光电源    A   0.516328
+    8 002602 世纪华通    A   0.512289
+    9 688183 生益电子    A   0.507068
+   10 002709 天赐材料    A   0.506955
+warning: in the working copy of 'backend/app/api/data_engineering.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'backend/app/services/data_engineering_service.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'config/config.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/api/index.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/BacktestView.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'frontend/src/components/DataEngineeringView.vue', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/dataset.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/factor_diagnosis.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/run_training.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ml_pipeline/walk_forward.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'models/model_trainer.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/verify_browser.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'scripts/verify_runtime.py', LF will be replaced by CRLF the next time Git touches it
+[Experiment] 已激活完整实验批次 20261027-120722-ecde33c1
+
+======================================================================
+ 完成。训练集/验证集/测试集指标：
+   train  AUC=0.5389  n=483658  dates=1987
+   val    AUC=0.4975  n=125031  dates=422
+   test   AUC=0.5153  n=127741  dates=428
+ 回测超额年化: 0.2216
+ 滚动窗口 AUC: 均值=0.5056 中位数=0.5013 低于随机=42.9%（7 个窗口）
+ 滚动窗口超额年化: 均值=7.96% 正超额窗口占比=71.4%
+======================================================================

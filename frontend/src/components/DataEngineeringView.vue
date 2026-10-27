@@ -10,7 +10,7 @@
           <div>
             <div class="banner-engine-title">实时任务调度与执行引擎</div>
             <p class="banner-sub">
-              支持日频行情自动化摄取、LightGBM 推荐模型重训与 Optuna 贝叶斯寻优调度
+              支持日频行情更新、训练期时序比较与 LightGBM 推荐模型重训
             </p>
           </div>
         </div>
@@ -185,14 +185,14 @@
           <div class="ph-title">
             <h3>模型训练与寻优 (Model Training)</h3>
           </div>
-          <span class="badge badge-gold">LightGBM + Optuna</span>
+          <span class="badge badge-gold">LightGBM + TreeSHAP</span>
         </div>
 
         <div class="panel-body">
           <div class="tip-box highlight">
             <span class="tip-tag">RULE</span>
             <div class="tip-content">
-              <strong>模型重训规则：</strong> 如需强制重新训练模型，勾选 <code>force_retrain=True</code>。系统将使用时间序列交叉验证 (TimeSeriesSplit) 全量重拟合 LightGBM 并同步更新 TreeSHAP 归因解释器。
+              <strong>模型重训规则：</strong> 默认在训练期内比较有限候选方案。验证集用于概率校准，测试集用于复核；完成检查后更新 LightGBM 与 TreeSHAP。
             </div>
           </div>
 
@@ -201,19 +201,28 @@
               <input type="checkbox" v-model="modelTrainForm.force_retrain" />
               <div>
                 <strong class="text-strong-gold">强制重新训练模型 (force_retrain=True)</strong>
-                <p class="desc">忽略已保存的模型权重缓存文件 (<code>lgbm_market_classifier.pkl</code>)，重新拟合全量数据</p>
+                <p class="desc">重新构建训练批次；模型只拟合训练区间，失败时保留当前批次。</p>
               </div>
             </label>
 
             <label class="checkbox-option">
+              <span>训练方案</span>
+              <select v-model="modelTrainForm.scheme" class="form-select" aria-label="训练方案">
+                <option value="robust">固定候选时序比较（推荐）</option>
+                <option value="legacy">旧版 Optuna 搜索</option>
+              </select>
+            </label>
+            <p class="desc" v-if="modelTrainForm.scheme === 'robust'">比较浅树、量价特征与滚动窗口；每折只用过去数据筛选特征，不保证 AUC 提升。</p>
+
+            <label v-if="modelTrainForm.scheme === 'legacy'" class="checkbox-option">
               <input type="checkbox" v-model="modelTrainForm.use_optuna" />
               <div>
                 <strong>开启 Optuna 贝叶斯超参数自动寻优</strong>
-                <p class="desc">自动搜索最佳树深度、学习率、样本采样比与正则化参数，显著提升泛化能力与 AUC</p>
+                <p class="desc">仅在训练期内搜索树深度、学习率和正则化参数；更多试验可能增加选择偏差。</p>
               </div>
             </label>
 
-            <div v-if="modelTrainForm.use_optuna" class="slider-row">
+            <div v-if="modelTrainForm.scheme === 'legacy' && modelTrainForm.use_optuna" class="slider-row">
               <div class="slider-label">
                 <span>Optuna 优化试验轮数 (n_trials):</span>
                 <strong>{{ modelTrainForm.n_trials }} 轮</strong>
@@ -228,13 +237,7 @@
               />
             </div>
 
-            <label class="checkbox-option">
-              <input type="checkbox" v-model="modelTrainForm.retrain_single_models" />
-              <div>
-                <strong>同时微调重点主板标的专属单股模型</strong>
-                <p class="desc">为贵州茅台、宁德时代等龙头个股训练个性化预测权重 (<code>*_model.txt</code>)</p>
-              </div>
-            </label>
+            <p class="desc">所有候选股票使用同一个截面 LightGBM 模型，以统一口径比较预测与特征归因。</p>
           </div>
 
           <div class="action-btn-row">
@@ -249,7 +252,7 @@
 
           <!-- 当前模型超参数一览 -->
           <div class="sub-schedule-section">
-            <div class="sub-title">当前在用最优超参数：</div>
+            <div class="sub-title">当前批次模型参数：</div>
             <div class="param-tags">
               <span class="param-tag">树数量: {{ modelInfo.market_model?.best_params?.n_estimators ?? '—' }}</span>
               <span class="param-tag">学习率: {{ modelInfo.market_model?.best_params?.learning_rate ?? '—' }}</span>
@@ -267,8 +270,7 @@
       <div class="cf-left">
         <h4>特征工程与标的库治理</h4>
         <p class="cf-desc">
-          已标准化提取 <strong>{{ dataInfo.feature_count || 25 }} 维</strong> 量价动能指标：
-          <code>MA5/10/20/30</code>, <code>RSI14</code>, <code>MACD</code>, <code>MACD_Signal</code>, <code>MACD_Hist</code>, <code>KDJ(K/D/J)</code>, <code>OBV</code>, <code>CCI</code>, <code>Volume_Ratio</code>, <code>Turnover</code>, <code>ATR14</code> 等。
+          基础技术指标缓存包含 <strong>{{ dataInfo.feature_count ?? '—' }} 项</strong>。模型实际使用的量价因子以当前训练批次与因子检验页为准。
         </p>
         <div class="feature-pills">
           <span v-for="feat in (dataInfo.feature_list || []).slice(0, 12)" :key="feat" class="feature-pill">{{ feat }}</span>
@@ -395,7 +397,7 @@
 
         <div class="drift-footnote">
           <strong>PSI 判定标准：</strong>
-          PSI &lt; 0.10（稳定，无需调整）；0.10 ~ 0.20（轻度漂移，建议增加监控频次并关注因子衰减）；&ge; 0.20（显著漂移，代表宏观市场结构已变异，建议重新运行训练管道）。
+          PSI 分级阈值：&lt; 0.10、0.10 ~ 0.20、&ge; 0.20。分布差异不能直接推断预测能力、市场状态或重训收益，应结合样本外表现判断。
         </div>
       </div>
     </div>
@@ -471,6 +473,7 @@ const dataUpdateForm = ref({
 
 // 模型训练表单
 const modelTrainForm = ref({
+  scheme: 'robust',
   force_retrain: true,
   use_optuna: true,
   n_trials: 15,

@@ -1,0 +1,68 @@
+{
+  "reference_run": "20261027-023632-b575a153",
+  "protocol_sha256": "ec87bd87ea8ab5add324b94e8fb4936af914784eae57da8b1ee8d7e07497b405",
+  "status": "retrospective_previously_observed_holdout",
+  "splits": {
+    "val": {
+      "rows": 125031,
+      "dates": 422,
+      "start": "2023-03-31 00:00:00",
+      "end": "2024-12-25 00:00:00",
+      "reference_auc": 0.49988338784283826,
+      "selected_auc": 0.49746485493122183,
+      "reference_daily_auc": 0.49898464362603845,
+      "selected_daily_auc": 0.4976319604820572,
+      "paired_daily_auc_difference": {
+        "mean": -0.0013526831439813194,
+        "ci95": [
+          -0.015509287484231554,
+          0.013671001133490656
+        ],
+        "block_days": 20,
+        "repetitions": 2000,
+        "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"
+      },
+      "selected_daily_auc_minus_random": {
+        "mean": -0.002368039517942817,
+        "ci95": [
+          -0.01835493457342913,
+          0.012961756970042943
+        ],
+        "block_days": 20,
+        "repetitions": 2000,
+        "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"
+      }
+    },
+    "test": {
+      "rows": 127741,
+      "dates": 428,
+      "start": "2025-01-03 00:00:00",
+      "end": "2026-10-14 00:00:00",
+      "reference_auc": 0.49847797428554524,
+      "selected_auc": 0.5153390240397165,
+      "reference_daily_auc": 0.49731907768164496,
+      "selected_daily_auc": 0.5163611047871846,
+      "paired_daily_auc_difference": {
+        "mean": 0.019042027105539563,
+        "ci95": [
+          0.003147149487925377,
+          0.037035103004779274
+        ],
+        "block_days": 20,
+        "repetitions": 2000,
+        "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"
+      },
+      "selected_daily_auc_minus_random": {
+        "mean": 0.016361104787184562,
+        "ci95": [
+          -0.0022255219262163747,
+          0.03644417445300951
+        ],
+        "block_days": 20,
+        "repetitions": 2000,
+        "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"
+      }
+    }
+  },
+  "run_id": "20261027-120722-ecde33c1"
+}

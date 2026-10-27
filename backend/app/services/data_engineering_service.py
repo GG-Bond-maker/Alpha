@@ -295,9 +295,12 @@ class DataEngineeringService:
         force_retrain: bool = True,
         use_optuna: bool = True,
         n_trials: int = 15,
-        retrain_single_models: bool = False
+        retrain_single_models: bool = False,
+        scheme: str = 'robust',
     ):
         """启动后台模型重训与超参优化任务"""
+        if scheme not in ('robust', 'legacy'):
+            raise ValueError('未知训练方案')
         with self.lock:
             if self.task_state["status"] == "running":
                 raise RuntimeError("已有工程任务正在后台运行中，请等待其执行完成！")
@@ -314,13 +317,13 @@ class DataEngineeringService:
 
         thread = threading.Thread(
             target=self._run_model_train_worker,
-            args=(force_retrain, use_optuna, n_trials, retrain_single_models),
+            args=(force_retrain, use_optuna, n_trials, retrain_single_models, scheme),
             daemon=True
         )
         thread.start()
         return {"status": "started", "task_type": "model_train"}
 
-    def _run_model_train_worker(self, force_retrain, use_optuna, n_trials, retrain_single_models):
+    def _run_model_train_worker(self, force_retrain, use_optuna, n_trials, retrain_single_models, scheme='robust'):
         try:
             if retrain_single_models:
                 self.add_log("WARNING", "主流程仅训练共享截面模型，不训练个股专属模型。")
@@ -328,6 +331,7 @@ class DataEngineeringService:
                 self.add_log("INFO", "保留已验证的当前批次；需要重训时启用强制重训。")
             else:
                 command = [sys.executable, "-m", "ml_pipeline.run_training",
+                           "--scheme", scheme,
                            "--trials", str(n_trials if use_optuna else 1)]
                 self.add_log("TRAIN", "开始隔离训练，全部检查通过后才切换当前模型。")
                 environment = {**os.environ, "PYTHONIOENCODING": "utf-8", "PYTHONUNBUFFERED": "1"}

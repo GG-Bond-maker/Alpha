@@ -6,7 +6,7 @@
 2. 双样本 Kolmogorov-Smirnov 检验 (KS-Test) 验证连续变量累积分布函数的一致性；
 3. 预测概率分布漂移与目标市场收益分布检验；
 4. 设立制度化漂移警戒阈值：
-   - PSI < 0.10: 稳定 (No significant drift) - 继续部署运行
+   - PSI < 0.10: 未达该 PSI 告警阈值，不据此认定预测有效
    - 0.10 <= PSI < 0.20: 温和漂移 (Moderate drift) - 提高监控频次与提示
    - PSI >= 0.20: 显著漂移 (Significant drift) - 触发告警并建议模型重训
 """
@@ -92,7 +92,7 @@ def evaluate_feature_drift(ref_series: pd.Series, cur_series: pd.Series, n_bins:
     if psi < 0.10:
         status = 'STABLE'
         label = '分布稳定'
-        action = '正常生产运行'
+        action = '结合样本外预测指标复核'
     elif psi < 0.20:
         status = 'MODERATE'
         label = '轻度漂移'
@@ -115,6 +115,22 @@ def evaluate_feature_drift(ref_series: pd.Series, cur_series: pd.Series, n_bins:
         'status_label': label,
         'action': action,
     }
+
+
+def interpret_drift_report(report: dict) -> dict:
+    """Normalize cached wording: low PSI does not establish predictive skill."""
+    result = dict(report)
+    status = result.get('overall_status')
+    if status == 'HEALTHY':
+        result['overall_label'] = '已监控指标未达 PSI 告警阈值'
+        result['summary_desc'] = '已监控指标的 PSI 未达预设告警阈值；这只描述分布差异，不能证明预测有效或不存在过拟合。请结合样本外 AUC、IC 及逐窗口结果判断。'
+    elif status == 'WARNING':
+        result['summary_desc'] = '已监控指标存在温和 PSI 漂移；应结合数据质量与样本外预测指标复核，不能据此推断模型仍有效。'
+    elif status == 'CRITICAL':
+        result['summary_desc'] = '至少一项已监控指标达到显著 PSI 漂移阈值；请核查数据与模型表现。PSI 本身不确定市场状态或重训效果。'
+    result['features'] = [dict(row, action='结合样本外预测指标复核') if row.get('status') == 'STABLE' else dict(row)
+                          for row in result.get('features', [])]
+    return result
 
 
 def generate_drift_report(model_path: str = None) -> Dict[str, Any]:
@@ -185,12 +201,12 @@ def generate_drift_report(model_path: str = None) -> Dict[str, Any]:
     # 总体健康评估
     if max_psi < 0.10:
         overall_status = 'HEALTHY'
-        overall_label = '✅ 特征与模型高度稳定 (Healthy)'
-        summary_desc = '核心特征 PSI 均低于 0.10，未发生显著统计漂移。当前训练集提取的特征规律对测试区间保持有效。'
+        overall_label = '已监控指标未达 PSI 告警阈值'
+        summary_desc = 'PSI 仅描述分布差异，不证明预测有效。'
     elif max_psi < 0.20:
         overall_status = 'WARNING'
         overall_label = '⚠️ 存在温和分布漂移 (Moderate Drift)'
-        summary_desc = '个别特征分布在测试集发生温和漂移 (0.10 <= PSI < 0.20)，模型目前仍具备预测效力，建议缩短调仓重训周期。'
+        summary_desc = '已监控指标存在温和 PSI 漂移，应结合样本外指标复核。'
     else:
         overall_status = 'CRITICAL'
         overall_label = '🚨 检测到显著特征漂移 (Significant Drift)'
@@ -214,6 +230,7 @@ def generate_drift_report(model_path: str = None) -> Dict[str, Any]:
         }
     }
 
+    report = interpret_drift_report(report)
     destination = os.environ.get('ALPHA_ARTIFACT_DIR') or live_dir()
     out_path = os.path.join(destination, 'feature_drift_report.json')
     with open(out_path, 'w', encoding='utf-8') as f:

@@ -1,0 +1,334 @@
+{
+  "calibrator": {
+    "method": "monotone_platt",
+    "slope": 0.0,
+    "intercept": -0.1325447084136177,
+    "margin_center": -0.22623062650814976,
+    "margin_scale": 0.08597463687533932,
+    "fit_source": "validation_only",
+    "fit_rows": 125031,
+    "fit_dates": 422,
+    "fit_period": [
+      "2023-03-31",
+      "2024-12-25"
+    ],
+    "date_weighting": "equal_weight_per_date",
+    "ranking_policy": "raw_lightgbm_score",
+    "weak_validation_signal": true,
+    "target": "outperform_same_date_candidate_mean",
+    "note": "校准概率不等于收益预测或置信区间；SHAP 解释原始 LightGBM log-odds。"
+  },
+  "evaluations": {
+    "validation_fit": {
+      "rows": 125031,
+      "raw": {
+        "brier_score": 0.24996843200297833,
+        "ece": 0.02487881189958666,
+        "bins": [
+          {
+            "lower": 0.0,
+            "upper": 0.1,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.1,
+            "upper": 0.2,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.2,
+            "upper": 0.3,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.3,
+            "upper": 0.4,
+            "count": 2679,
+            "mean_prediction": 0.39072696551392516,
+            "observed_rate": 0.48898842851810376
+          },
+          {
+            "lower": 0.4,
+            "upper": 0.5,
+            "count": 120278,
+            "mean_prediction": 0.4437308030971311,
+            "observed_rate": 0.466485974159863
+          },
+          {
+            "lower": 0.5,
+            "upper": 0.6,
+            "count": 2074,
+            "mean_prediction": 0.5151561263962189,
+            "observed_rate": 0.46190935390549664
+          },
+          {
+            "lower": 0.6,
+            "upper": 0.7,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.7,
+            "upper": 0.8,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.8,
+            "upper": 0.9,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.9,
+            "upper": 1.0,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          }
+        ]
+      },
+      "calibrated": {
+        "brier_score": 0.24890387469131903,
+        "ece": 2.003872902944792e-05,
+        "bins": [
+          {
+            "lower": 0.0,
+            "upper": 0.1,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.1,
+            "upper": 0.2,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.2,
+            "upper": 0.3,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.3,
+            "upper": 0.4,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.4,
+            "upper": 0.5,
+            "count": 125031,
+            "mean_prediction": 0.466912249460768,
+            "observed_rate": 0.46689221073173853
+          },
+          {
+            "lower": 0.5,
+            "upper": 0.6,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.6,
+            "upper": 0.7,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.7,
+            "upper": 0.8,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.8,
+            "upper": 0.9,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.9,
+            "upper": 1.0,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          }
+        ]
+      }
+    },
+    "held_out_test": {
+      "rows": 127741,
+      "raw": {
+        "brier_score": 0.24633612635148971,
+        "ece": 0.0006377933495438923,
+        "bins": [
+          {
+            "lower": 0.0,
+            "upper": 0.1,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.1,
+            "upper": 0.2,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.2,
+            "upper": 0.3,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.3,
+            "upper": 0.4,
+            "count": 4868,
+            "mean_prediction": 0.3889710067252181,
+            "observed_rate": 0.37982744453574363
+          },
+          {
+            "lower": 0.4,
+            "upper": 0.5,
+            "count": 121588,
+            "mean_prediction": 0.4430705421253145,
+            "observed_rate": 0.44321808073165114
+          },
+          {
+            "lower": 0.5,
+            "upper": 0.6,
+            "count": 1285,
+            "mean_prediction": 0.5143793187093666,
+            "observed_rate": 0.5291828793774319
+          },
+          {
+            "lower": 0.6,
+            "upper": 0.7,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.7,
+            "upper": 0.8,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.8,
+            "upper": 0.9,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.9,
+            "upper": 1.0,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          }
+        ]
+      },
+      "calibrated": {
+        "brier_score": 0.24723459189208877,
+        "ece": 0.025245126140925556,
+        "bins": [
+          {
+            "lower": 0.0,
+            "upper": 0.1,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.1,
+            "upper": 0.2,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.2,
+            "upper": 0.3,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.3,
+            "upper": 0.4,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.4,
+            "upper": 0.5,
+            "count": 127741,
+            "mean_prediction": 0.46691224946076804,
+            "observed_rate": 0.4416671233198425
+          },
+          {
+            "lower": 0.5,
+            "upper": 0.6,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.6,
+            "upper": 0.7,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.7,
+            "upper": 0.8,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.8,
+            "upper": 0.9,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          },
+          {
+            "lower": 0.9,
+            "upper": 1.0,
+            "count": 0,
+            "mean_prediction": null,
+            "observed_rate": null
+          }
+        ]
+      }
+    }
+  },
+  "run_id": "20261027-120722-ecde33c1"
+}

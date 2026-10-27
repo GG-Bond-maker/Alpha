@@ -1,51 +1,54 @@
-INFO:     Started server process [16864]
+INFO:     Started server process [27876]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
-INFO:     Uvicorn running on http://127.0.0.1:54346 (Press CTRL+C to quit)
-INFO:     127.0.0.1:54379 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     Uvicorn running on http://127.0.0.1:51076 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51091 - "GET /api/health HTTP/1.1" 200 OK
 
-DevTools listening on ws://127.0.0.1:54347/devtools/browser/27d4d27f-8b8b-4418-a174-89196c9ab23c
-INFO:     127.0.0.1:57464 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59070 - "GET /assets/index-BC28BBpc.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57464 - "GET /assets/index-BMU6aS6o.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59070 - "GET /assets/HomeDashboardView-B5k_YGGA.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57464 - "GET /assets/HomeDashboardView-DJ9OJel8.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59070 - "GET /api/v1/recommend/risk_status HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55884 - "GET /api/v1/evaluation/experiment HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55884 - "GET /assets/RecommendationView-Byk5gtAv.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59070 - "GET /assets/RecommendationView-DYFWOyR8.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55884 - "GET /api/v1/stock/pool HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59070 - "GET /api/v1/recommend/dates HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59070 - "GET /api/v1/recommend/topk?date=2026-10-21&rank_by=lightgbm&k=10&board=&industry=&min_amount=0&exclude_limit_up=false HTTP/1.1" 200 OK
-INFO:     127.0.0.1:62785 - "GET /api/v1/explain/local/301165?date=2026-10-21 HTTP/1.1" 200 OK
-[30928:12004:1027/094227.328:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
-INFO:     127.0.0.1:61456 - "GET /api/v1/recommend/topk?date=2026-10-21&rank_by=factor&k=10&board=&industry=&min_amount=0&exclude_limit_up=false HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61456 - "GET /assets/MetricsView-CgfOGoxd.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52687 - "GET /assets/MetricsView-CzKaV9R8.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61456 - "GET /api/v1/evaluation/metrics HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52687 - "GET /assets/BacktestView-CxVwaKYk.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61456 - "GET /assets/BacktestView-8rUPD4Td.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:61456 - "GET /api/v1/evaluation/backtest HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57586 - "GET /api/v1/evaluation/sensitivity HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52687 - "GET /api/v1/evaluation/backtest/comparison HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /api/v1/evaluation/stress_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /assets/WalkForwardView-jS2GeYiL.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52687 - "GET /assets/WalkForwardView-B3JyR5oV.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /api/v1/evaluation/walk-forward HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /assets/AttributionView-C1IjNY9C.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52687 - "GET /assets/AttributionView-BK_FwQTL.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52687 - "GET /api/v1/evaluation/stress_test HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /api/v1/evaluation/attribution HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52687 - "GET /assets/DataEngineeringView-BIuu1GW8.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /assets/DataEngineeringView-JdVzDmVF.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52687 - "GET /api/v1/engineering/logs?limit=150 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57586 - "GET /api/v1/engineering/drift_status HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /api/v1/engineering/status HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57586 - "GET /assets/GlobalExplainView-BToGkqeZ.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /assets/GlobalExplainView-BZLFH7S2.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /api/v1/explain/global-summary HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /api/v1/evaluation/report HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57586 - "GET /assets/ExperimentDiagnosticsView-DyWruU5o.css HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /assets/ExperimentDiagnosticsView-CJKVdLuH.js HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57586 - "GET /api/v1/evaluation/diagnostics HTTP/1.1" 200 OK
-INFO:     127.0.0.1:54209 - "GET /api/v1/explain/global-summary HTTP/1.1" 200 OK
+DevTools listening on ws://127.0.0.1:51077/devtools/browser/23cff7e6-ef20-400c-971e-44603888ed03
+INFO:     127.0.0.1:51354 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61877 - "GET /assets/index-BC28BBpc.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51354 - "GET /assets/index-DQduIwlq.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61877 - "GET /assets/HomeDashboardView-B5k_YGGA.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51354 - "GET /assets/HomeDashboardView-B-LavVht.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52456 - "GET /api/v1/recommend/risk_status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49722 - "GET /api/v1/evaluation/experiment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49722 - "GET /assets/RecommendationView-FK5bi4Ov.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52456 - "GET /assets/RecommendationView-DYFWOyR8.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49722 - "GET /api/v1/stock/pool HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52456 - "GET /api/v1/recommend/dates HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52456 - "GET /api/v1/recommend/topk?date=2026-10-21&rank_by=lightgbm&k=10&board=&industry=&min_amount=0&exclude_limit_up=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53141 - "GET /api/v1/explain/local/300502?date=2026-10-21 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53141 - "GET /api/v1/recommend/topk?date=2026-10-21&rank_by=factor&k=10&board=&industry=&min_amount=0&exclude_limit_up=false HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58279 - "GET /assets/MetricsView-nD4bM1RU.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /assets/MetricsView-CzKaV9R8.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58279 - "GET /api/v1/evaluation/metrics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58279 - "GET /assets/BacktestView-CQL6kY8A.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /assets/BacktestView-6UzAyFn9.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58279 - "GET /api/v1/evaluation/backtest HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51459 - "GET /api/v1/evaluation/stress_test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /api/v1/evaluation/backtest/comparison HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/v1/evaluation/sensitivity HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /assets/WalkForwardView-B3JyR5oV.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /assets/WalkForwardView-BqjVj_B7.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /api/v1/evaluation/walk-forward HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /assets/AttributionView-BK_FwQTL.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /assets/AttributionView-1KVlM5U6.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /api/v1/evaluation/stress_test HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/v1/evaluation/attribution HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /assets/DataEngineeringView-Cga9X-Pv.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /assets/DataEngineeringView-DxKpcb2R.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62243 - "GET /api/v1/engineering/logs?limit=150 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51459 - "GET /api/v1/engineering/drift_status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /api/v1/engineering/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51459 - "GET /assets/FactorDiagnosisView-DSLMIZgk.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /assets/FactorDiagnosisView-CPsNFIVY.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51459 - "GET /api/v1/evaluation/factors HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51459 - "GET /assets/GlobalExplainView-LCMrep_q.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /assets/GlobalExplainView-BToGkqeZ.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /api/v1/explain/global-summary HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /api/v1/evaluation/report HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51459 - "GET /assets/ExperimentDiagnosticsView-DyWruU5o.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /assets/ExperimentDiagnosticsView-DDmwihi_.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51459 - "GET /api/v1/evaluation/diagnostics HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52390 - "GET /api/v1/explain/global-summary HTTP/1.1" 200 OK
+Created TensorFlow Lite XNNPACK delegate for CPU.

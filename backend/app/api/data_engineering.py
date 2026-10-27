@@ -13,7 +13,7 @@
 
 import json
 import os
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Literal
 
 from fastapi import APIRouter, HTTPException, Body
 from pydantic import BaseModel, Field
@@ -31,6 +31,7 @@ class DataUpdateRequest(BaseModel):
 
 
 class ModelTrainRequest(BaseModel):
+    scheme: Literal['robust', 'legacy'] = Field('robust', description='默认固定候选时序比较；legacy 保留旧搜索')
     force_retrain: bool = Field(True, description="是否强制重新训练模型 (忽略本地已有权重缓存)")
     use_optuna: bool = Field(True, description="是否启用 Optuna 贝叶斯超参数寻优")
     n_trials: int = Field(15, ge=1, le=50, description="Optuna 试验轮数")
@@ -86,7 +87,8 @@ def trigger_model_train(req: ModelTrainRequest = Body(...)):
             force_retrain=req.force_retrain,
             use_optuna=req.use_optuna,
             n_trials=req.n_trials,
-            retrain_single_models=req.retrain_single_models
+            retrain_single_models=req.retrain_single_models,
+            scheme=req.scheme,
         )
         return {
             "status": "success",
@@ -152,7 +154,8 @@ def get_drift_status():
         return generate_drift_report()
     try:
         with open(report_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            from ml_pipeline.drift_monitor import interpret_drift_report
+            return interpret_drift_report(json.load(f))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"读取漂移监控报告失败: {e}")
 

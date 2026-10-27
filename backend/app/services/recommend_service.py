@@ -515,7 +515,16 @@ class RecommendationService:
         if not self.factor_diagnosis:
             return {"results": [], "usable_factors": [],
                     "message": "尚未生成因子诊断，请先运行 python -m ml_pipeline.run_training"}
-        return self.factor_diagnosis
+        # IC significance is a diagnostic, not the actual feature set selected
+        # by bounded temporal CV. Keep these two statements distinct in the UI.
+        actual = self.report.get('panel', {}).get('selected_factors', []) if self.report else []
+        if not actual:
+            actual = self.factor_diagnosis.get('usable_factors', [])
+        result = dict(self.factor_diagnosis, model_factors=actual)
+        result['results'] = [dict(row, ic_screen_included=row.get('in_model', False),
+                                  in_model=row['factor'] in actual)
+                             for row in self.factor_diagnosis.get('results', [])]
+        return result
 
     def get_sensitivity_analysis(self) -> Dict[str, Any]:
         self.reload()

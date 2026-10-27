@@ -53,7 +53,7 @@ try {
   await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url: siteUrl })
   await until("document.querySelectorAll('.nav-item').length > 5")
-  const tabs = ['Top-K 选股推荐', '算法评测对比', '组合回测', '滚动窗口验证', '业绩归因', '数据与模型', '全局特征归因', '实验诊断图表']
+  const tabs = ['Top-K 选股推荐', '算法评测对比', '组合回测', '滚动窗口验证', '业绩归因', '数据与模型', '因子有效性检验', '全局特征归因', '实验诊断图表']
   const snapshots = []
   let selectionChecks = {}
   for (const tab of tabs) {
@@ -61,6 +61,24 @@ try {
     await until("(document.querySelector('.content section')?.innerText.length || 0) > 80 && !document.querySelector('.content .loading-state') && !document.querySelector('.content section')?.innerText.includes('正在加载')")
     await sleep(600)
     snapshots.push(await evaluate(`({tab:${JSON.stringify(tab)}, text:document.querySelector('.content section').innerText.slice(0,500), canvases:document.querySelectorAll('.content canvas').length, overflow:document.documentElement.scrollWidth>innerWidth})`))
+    if (tab === '数据与模型') {
+      await until("document.querySelector('select[aria-label=\"训练方案\"]')")
+      selectionChecks.trainingDefault = await evaluate("document.querySelector('select[aria-label=\"训练方案\"]').value")
+      if (selectionChecks.trainingDefault !== 'robust') throw new Error('Training must default to bounded temporal comparison')
+      selectionChecks.psiDoesNotClaimSkill = await evaluate("document.querySelector('.content section').innerText.includes('不能证明预测有效')")
+      if (!selectionChecks.psiDoesNotClaimSkill) throw new Error('PSI must not imply predictive effectiveness')
+      await evaluate("(()=>{const scheme=document.querySelector('select[aria-label=\"训练方案\"]');scheme.value='legacy';scheme.dispatchEvent(new Event('change',{bubbles:true}))})()")
+      await until("document.querySelector('.slider-row')")
+      await evaluate("(()=>{const scheme=document.querySelector('select[aria-label=\"训练方案\"]');scheme.value='robust';scheme.dispatchEvent(new Event('change',{bubbles:true}))})()")
+      await until("!document.querySelector('.slider-row')")
+      selectionChecks.trainingLegacyToggle = true
+      await screenshot('training-protocol-desktop')
+    }
+    if (tab === '因子有效性检验') {
+      await until("document.querySelector('.content section').innerText.includes('模型实际因子数')")
+      selectionChecks.factorDiagnosticsDistinguishesModelInputs = await evaluate("document.querySelector('.content section').innerText.includes('实际入模')")
+      await screenshot('factor-audit-desktop')
+    }
     if (tab === 'Top-K 选股推荐') {
       await until("document.querySelectorAll('.desktop-results tbody > tr').length >= 5")
       await evaluate("Array.from(document.querySelectorAll('.desktop-results button')).find(b=>b.textContent==='因子依据').click()")

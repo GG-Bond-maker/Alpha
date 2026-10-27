@@ -1,0 +1,110 @@
+[
+  {
+    "feature": "RSI14_neu",
+    "name_cn": "14日相对强弱指标(RSI)",
+    "mean_abs_shap": 0.0328,
+    "importance_ratio": 0.1556
+  },
+  {
+    "feature": "momentum_5d_neu",
+    "name_cn": "5日动量",
+    "mean_abs_shap": 0.0263,
+    "importance_ratio": 0.1247
+  },
+  {
+    "feature": "illiquidity_20d_neu",
+    "name_cn": "20日非流动性",
+    "mean_abs_shap": 0.0229,
+    "importance_ratio": 0.1087
+  },
+  {
+    "feature": "CCI_neu",
+    "name_cn": "顺势指标(CCI)",
+    "mean_abs_shap": 0.0221,
+    "importance_ratio": 0.1046
+  },
+  {
+    "feature": "ATR_ratio_neu",
+    "name_cn": "相对真实波幅(ATR/价格)",
+    "mean_abs_shap": 0.0196,
+    "importance_ratio": 0.0929
+  },
+  {
+    "feature": "vol_ratio_neu",
+    "name_cn": "成交量放大倍数",
+    "mean_abs_shap": 0.0145,
+    "importance_ratio": 0.0688
+  },
+  {
+    "feature": "intraday_return_neu",
+    "name_cn": "当日开收盘收益",
+    "mean_abs_shap": 0.0138,
+    "importance_ratio": 0.0656
+  },
+  {
+    "feature": "EMA20_ratio_neu",
+    "name_cn": "价格/20日均线比率",
+    "mean_abs_shap": 0.0134,
+    "importance_ratio": 0.0635
+  },
+  {
+    "feature": "ADX_neu",
+    "name_cn": "平均趋向指标(ADX)",
+    "mean_abs_shap": 0.013,
+    "importance_ratio": 0.0615
+  },
+  {
+    "feature": "MACD_norm_neu",
+    "name_cn": "归一化异同移动平均线(MACD)",
+    "mean_abs_shap": 0.0127,
+    "importance_ratio": 0.0604
+  },
+  {
+    "feature": "overnight_gap_neu",
+    "name_cn": "当日隔夜跳空",
+    "mean_abs_shap": 0.006,
+    "importance_ratio": 0.0282
+  },
+  {
+    "feature": "momentum_20d_neu",
+    "name_cn": "20日动量",
+    "mean_abs_shap": 0.0051,
+    "importance_ratio": 0.0242
+  },
+  {
+    "feature": "volatility_20d_neu",
+    "name_cn": "20日波动率",
+    "mean_abs_shap": 0.0025,
+    "importance_ratio": 0.0116
+  },
+  {
+    "feature": "close_position_neu",
+    "name_cn": "当日收盘区间位置",
+    "mean_abs_shap": 0.002,
+    "importance_ratio": 0.0096
+  },
+  {
+    "feature": "momentum_10d_neu",
+    "name_cn": "10日动量",
+    "mean_abs_shap": 0.0018,
+    "importance_ratio": 0.0087
+  },
+  {
+    "feature": "OBV_zscore_neu",
+    "name_cn": "能量潮标准分(OBV-Z)",
+    "mean_abs_shap": 0.0016,
+    "importance_ratio": 0.0076
+  },
+  {
+    "feature": "pct_chg_neu",
+    "name_cn": "当日涨跌幅(%)",
+    "mean_abs_shap": 0.0004,
+    "importance_ratio": 0.0021
+  },
+  {
+    "feature": "ma_gap_neu",
+    "name_cn": "短期均线偏离度",
+    "mean_abs_shap": 0.0004,
+    "importance_ratio": 0.0019
+  }
+]

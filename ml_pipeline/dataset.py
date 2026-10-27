@@ -16,7 +16,7 @@
 import numpy as np
 import pandas as pd
 
-from config.config import FEATURE_COLS, TARGET_DAYS, get_stock_board, get_pool
+from config.config import FEATURE_COLS, SHORT_HORIZON_FACTORS, TARGET_DAYS, get_stock_board, get_pool
 
 MIN_FEATURE_COVERAGE = 0.8
 
@@ -47,7 +47,7 @@ FUNDAMENTAL_FACTORS = [
 # 量价派生因子（由日线直接计算，无需外部数据）
 PRICE_FACTORS = [
     'momentum_20d', 'momentum_60d', 'volatility_20d', 'turnover_proxy',
-]
+] + SHORT_HORIZON_FACTORS
 
 
 def _add_price_factors(df: pd.DataFrame) -> pd.DataFrame:
@@ -61,6 +61,14 @@ def _add_price_factors(df: pd.DataFrame) -> pd.DataFrame:
     df['momentum_20d'] = close.pct_change(20)
     df['momentum_60d'] = close.pct_change(60)
     df['volatility_20d'] = close.pct_change().rolling(20).std() * np.sqrt(242)
+    # 信号在当日收盘后生成，以下仅使用当日及过去的 OHLCV。
+    df['momentum_5d'] = close.pct_change(5)
+    df['momentum_10d'] = close.pct_change(10)
+    df['intraday_return'] = close / df['open'].astype(float) - 1.0
+    df['overnight_gap'] = df['open'].astype(float) / close.shift(1) - 1.0
+    price_range = df['high'].astype(float) - df['low'].astype(float)
+    df['close_position'] = ((close - df['low'].astype(float)) / price_range.where(price_range > 0))
+    df['illiquidity_20d'] = (close.pct_change().abs() / (amount.where(amount > 0) / 1e8)).rolling(20).mean()
     # 成交量相对水平作为换手活跃度代理（无流通股本数据时的替代）
     if 'volume' in df.columns:
         vol = df['volume'].astype(float)
@@ -100,7 +108,9 @@ def _prepare_single(df: pd.DataFrame, code: str, factor_cols: list,
     # 价格字段也保留原值，避免把停牌日伪装成有成交的交易日。
     sub[needed] = sub[needed].ffill()
 
-    coverage = sub[needed].notna().mean(axis=1) >= MIN_FEATURE_COVERAGE
+    # 新增候选特征不能改变既有样本/标签的截面，避免比较时悄悄更换题目。
+    coverage_cols = [c for c in needed if c not in SHORT_HORIZON_FACTORS]
+    coverage = sub[coverage_cols].notna().mean(axis=1) >= MIN_FEATURE_COVERAGE
     sub = sub[coverage]
     if len(sub) == 0:
         return None

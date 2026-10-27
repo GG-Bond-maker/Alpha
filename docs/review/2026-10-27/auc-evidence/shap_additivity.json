@@ -1,0 +1,9 @@
+{
+  "space": "log_odds",
+  "max_abs_error": 0.0,
+  "mean_abs_error": 0.0,
+  "tolerance": 0.001,
+  "passed": true,
+  "n_samples": 200,
+  "run_id": "20261027-120722-ecde33c1"
+}

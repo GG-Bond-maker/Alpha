@@ -1,0 +1,293 @@
+D:\Python_Project\Alpha\venv\Lib\site-packages\shap\explainers\_tree.py:620: UserWarning: LightGBM binary classifier with TreeExplainer shap values output has changed to a list of ndarray
+  warnings.warn(
+{
+  "run_id": "20261027-120722-ecde33c1",
+  "hash_mismatches": [],
+  "shap": {
+    "space": "log_odds",
+    "max_abs_error": 0.0,
+    "mean_abs_error": 0.0,
+    "tolerance": 0.001,
+    "passed": true,
+    "n_samples": 200
+  },
+  "recommendation_count": 300,
+  "max_score_feature_error": 5.551115123125783e-17,
+  "test_metrics": {
+    "auc": 0.5153,
+    "section_auc": 0.5164,
+    "accuracy": 0.5589,
+    "n_rows": 127741,
+    "n_dates": 428,
+    "pos_rate": 0.4417
+  },
+  "calibration": {
+    "method": "monotone_platt",
+    "slope": 0.0,
+    "intercept": -0.1325447084136177,
+    "margin_center": -0.22623062650814976,
+    "margin_scale": 0.08597463687533932,
+    "fit_source": "validation_only",
+    "fit_rows": 125031,
+    "fit_dates": 422,
+    "fit_period": [
+      "2023-03-31",
+      "2024-12-25"
+    ],
+    "date_weighting": "equal_weight_per_date",
+    "ranking_policy": "raw_lightgbm_score",
+    "weak_validation_signal": true,
+    "target": "outperform_same_date_candidate_mean",
+    "note": "\u6821\u51c6\u6982\u7387\u4e0d\u7b49\u4e8e\u6536\u76ca\u9884\u6d4b\u6216\u7f6e\u4fe1\u533a\u95f4\uff1bSHAP \u89e3\u91ca\u539f\u59cb LightGBM log-odds\u3002"
+  },
+  "factor_ranker": {
+    "status": "fitted",
+    "factors": [
+      {
+        "feature": "EMA20_ratio_neu",
+        "name_cn": "\u4ef7\u683c/20\u65e5\u5747\u7ebf\u6bd4\u7387",
+        "ic": -0.023405408889071805,
+        "hac_t": -4.042496820436486,
+        "direction": -1,
+        "weight": 0.09825139333703568
+      },
+      {
+        "feature": "RSI14_neu",
+        "name_cn": "14\u65e5\u76f8\u5bf9\u5f3a\u5f31\u6307\u6807(RSI)",
+        "ic": -0.011767879516862676,
+        "hac_t": -2.047120876588019,
+        "direction": -1,
+        "weight": 0.049399289054675104
+      },
+      {
+        "feature": "MACD_norm_neu",
+        "name_cn": "\u5f52\u4e00\u5316\u5f02\u540c\u79fb\u52a8\u5e73\u5747\u7ebf(MACD)",
+        "ic": -0.017792551171187245,
+        "hac_t": -2.7856833134994305,
+        "direction": -1,
+        "weight": 0.07468969894415631
+      },
+      {
+        "feature": "OBV_zscore_neu",
+        "name_cn": "\u80fd\u91cf\u6f6e\u6807\u51c6\u5206(OBV-Z)",
+        "ic": -0.0117824617017665,
+        "hac_t": -2.4997742963921987,
+        "direction": -1,
+        "weight": 0.04946050225507204
+      },
+      {
+        "feature": "CCI_neu",
+        "name_cn": "\u987a\u52bf\u6307\u6807(CCI)",
+        "ic": -0.008733250185212383,
+        "hac_t": -1.7192732989695243,
+        "direction": -1,
+        "weight": 0.03666050027686868
+      },
+      {
+        "feature": "ATR_ratio_neu",
+        "name_cn": "\u76f8\u5bf9\u771f\u5b9e\u6ce2\u5e45(ATR/\u4ef7\u683c)",
+        "ic": -0.005770476749351009,
+        "hac_t": -0.7380057220962388,
+        "direction": -1,
+        "weight": 0.024223348693874883
+      },
+      {
+        "feature": "ADX_neu",
+        "name_cn": "\u5e73\u5747\u8d8b\u5411\u6307\u6807(ADX)",
+        "ic": 0.008586074016159326,
+        "hac_t": 2.0048788488419103,
+        "direction": 1,
+        "weight": 0.03604268309862568
+      },
+      {
+        "feature": "pct_chg_neu",
+        "name_cn": "\u5f53\u65e5\u6da8\u8dcc\u5e45(%)",
+        "ic": -0.016296115029517732,
+        "hac_t": -5.556043753225143,
+        "direction": -1,
+        "weight": 0.06840794857372909
+      },
+      {
+        "feature": "vol_ratio_neu",
+        "name_cn": "\u6210\u4ea4\u91cf\u653e\u5927\u500d\u6570",
+        "ic": 0.004487214019012036,
+        "hac_t": 1.3524136322218379,
+        "direction": 1,
+        "weight": 0.01883645919876498
+      },
+      {
+        "feature": "ma_gap_neu",
+        "name_cn": "\u77ed\u671f\u5747\u7ebf\u504f\u79bb\u5ea6",
+        "ic": -0.013346236260350662,
+        "hac_t": -2.333400625515686,
+        "direction": -1,
+        "weight": 0.05602492631508661
+      },
+      {
+        "feature": "momentum_20d_neu",
+        "name_cn": "20\u65e5\u52a8\u91cf",
+        "ic": -0.01998141615849509,
+        "hac_t": -3.398136264798485,
+        "direction": -1,
+        "weight": 0.08387813209005454
+      },
+      {
+        "feature": "volatility_20d_neu",
+        "name_cn": "20\u65e5\u6ce2\u52a8\u7387",
+        "ic": -0.005458930687432557,
+        "hac_t": -0.7715544966329246,
+        "direction": -1,
+        "weight": 0.02291553840022749
+      },
+      {
+        "feature": "momentum_5d_neu",
+        "name_cn": "5\u65e5\u52a8\u91cf",
+        "ic": -0.024934599167774258,
+        "hac_t": -5.234693377848868,
+        "direction": -1,
+        "weight": 0.10467063925886688
+      },
+      {
+        "feature": "momentum_10d_neu",
+        "name_cn": "10\u65e5\u52a8\u91cf",
+        "ic": -0.015746535319977974,
+        "hac_t": -2.9288700771822,
+        "direction": -1,
+        "weight": 0.06610091892652406
+      },
+      {
+        "feature": "intraday_return_neu",
+        "name_cn": "\u5f53\u65e5\u5f00\u6536\u76d8\u6536\u76ca",
+        "ic": -0.02122706039477381,
+        "hac_t": -7.377630359093045,
+        "direction": -1,
+        "weight": 0.08910710640093596
+      },
+      {
+        "feature": "overnight_gap_neu",
+        "name_cn": "\u5f53\u65e5\u9694\u591c\u8df3\u7a7a",
+        "ic": 0.003807298404342183,
+        "hac_t": 1.6599976531925715,
+        "direction": 1,
+        "weight": 0.015982304554019132
+      },
+      {
+        "feature": "close_position_neu",
+        "name_cn": "\u5f53\u65e5\u6536\u76d8\u533a\u95f4\u4f4d\u7f6e",
+        "ic": -0.01243557445739796,
+        "hac_t": -4.921222620568742,
+        "direction": -1,
+        "weight": 0.05220214366587188
+      },
+      {
+        "feature": "illiquidity_20d_neu",
+        "name_cn": "20\u65e5\u975e\u6d41\u52a8\u6027",
+        "ic": 0.012660530785945893,
+        "hac_t": 2.644670410034231,
+        "direction": 1,
+        "weight": 0.05314646695561104
+      }
+    ],
+    "fit_source": "training_only",
+    "fit_period": [
+      "2015-01-22",
+      "2023-03-23"
+    ],
+    "method": "abs_training_rank_ic_weighted_directional_percentiles",
+    "note": "\u591a\u56e0\u5b50\u5206\u6570\u4e3a 0\u2013100 \u7684\u5bf9\u7167\u6392\u540d\uff0c\u4e0d\u662f\u8dd1\u8d62\u6982\u7387\uff1b\u9ed8\u8ba4\u6392\u5e8f\u4ecd\u4f7f\u7528 LightGBM\u3002"
+  },
+  "backtest_periods": 86,
+  "api": {
+    "/api/health": 200,
+    "/api/v1/recommend/topk": 200,
+    "/api/v1/recommend/dates": 200,
+    "/api/v1/explain/global": 200,
+    "/api/v1/explain/global-summary": 200,
+    "/api/v1/evaluation/metrics": 200,
+    "/api/v1/evaluation/backtest": 200,
+    "/api/v1/evaluation/report": 200,
+    "/api/v1/evaluation/experiment": 200,
+    "/api/v1/evaluation/diagnostics": 200,
+    "/api/v1/evaluation/walk-forward": 200,
+    "/api/v1/evaluation/attribution": 200,
+    "/api/v1/evaluation/stress_test": 200,
+    "/api/v1/engineering/status": 200,
+    "/api/v1/engineering/drift_status": 200,
+    "factor_diagnosis_matches_model": 200,
+    "local_explanation": 200,
+    "invalid_date": 422,
+    "factor_ranking": 200,
+    "empty_rule_screen": 200,
+    "invalid_rank_mode": 422
+  },
+  "model_selection_checks": {
+    "profile": "enriched_price",
+    "protocol_hash_valid": true,
+    "candidates": 7,
+    "outer_windows": 7,
+    "test_population_unchanged": true,
+    "reference_status": "retrospective_previously_observed_holdout",
+    "comparison": {
+      "val": {
+        "rows": 125031,
+        "dates": 422,
+        "start": "2023-03-31 00:00:00",
+        "end": "2024-12-25 00:00:00",
+        "reference_auc": 0.49988338784283826,
+        "selected_auc": 0.49746485493122183,
+        "reference_daily_auc": 0.49898464362603845,
+        "selected_daily_auc": 0.4976319604820572,
+        "paired_daily_auc_difference": {
+          "mean": -0.0013526831439813194,
+          "ci95": [
+            -0.015509287484231554,
+            0.013671001133490656
+          ],
+          "block_days": 20,
+          "repetitions": 2000,
+          "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"
+        },
+        "selected_daily_auc_minus_random": {
+          "mean": -0.002368039517942817,
+          "ci95": [
+            -0.01835493457342913,
+            0.012961756970042943
+          ],
+          "block_days": 20,
+          "repetitions": 2000,
+          "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"
+        }
+      },
+      "test": {
+        "rows": 127741,
+        "dates": 428,
+        "start": "2025-01-03 00:00:00",
+        "end": "2026-10-14 00:00:00",
+        "reference_auc": 0.49847797428554524,
+        "selected_auc": 0.5153390240397165,
+        "reference_daily_auc": 0.49731907768164496,
+        "selected_daily_auc": 0.5163611047871846,
+        "paired_daily_auc_difference": {
+          "mean": 0.019042027105539563,
+          "ci95": [
+            0.003147149487925377,
+            0.037035103004779274
+          ],
+          "block_days": 20,
+          "repetitions": 2000,
+          "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"
+        },
+        "selected_daily_auc_minus_random": {
+          "mean": 0.016361104787184562,
+          "ci95": [
+            -0.0022255219262163747,
+            0.03644417445300951
+          ],
+          "block_days": 20,
+          "repetitions": 2000,
+          "inference_scope": "conditional retrospective uncertainty, not correction for all historical trials"
+        }
+      }
+    }
+  }
+}

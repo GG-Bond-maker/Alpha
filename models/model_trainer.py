@@ -30,6 +30,7 @@ from ml_pipeline.dataset import build_factor_panel, time_split
 from config.config import TARGET_DAYS
 from ml_pipeline.factor_diagnosis import diagnose_all, factors_for_model
 from ml_pipeline.backtest import is_limit_up as flag_signal_limit
+from ml_pipeline.model_selection import date_weights
 
 warnings.filterwarnings("ignore")
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -170,7 +171,7 @@ def optimize_hyperparameters(train: pd.DataFrame, feature_cols: list,
 
 def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
                        force_retrain: bool = False, codes: list = None,
-                       candidate_factors: list = None) -> dict:
+                       candidate_factors: list = None, training_plan: dict = None) -> dict:
     """训练市场通用模型并返回模型、切分数据与指标。
 
     Returns:
@@ -192,6 +193,9 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
         panel = build_factor_panel(codes)
 
     train, val, test = time_split(panel)
+    if training_plan is not None:
+        from ml_pipeline.model_selection import fit_frame
+        train = fit_frame(train, training_plan['selected_profile'])
 
     feature_cols = get_model_features()
     missing = [col for col in feature_cols if col not in panel.columns]
@@ -203,21 +207,19 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
     print(f"[Train] 训练集 {len(train)} 行 / 验证集 {len(val)} 行 / 测试集 {len(test)} 行")
     print(f"[Train] 正样本占比 — 训练 {y_tr.mean():.3f} / 验证 {y_va.mean():.3f}")
 
-    params = optimize_hyperparameters(
+    params = dict(training_plan['params']) if training_plan else optimize_hyperparameters(
         train, feature_cols, n_trials=n_trials,
         candidate_factors=candidate_factors,
     )
     print(f"[Train] 采用超参: {params}")
 
-    # 早停的风险：A 股技术指标对截面超额收益的信号极弱（实测 IC 普遍 < 0.05），
-    # 验证集 AUC 在首轮之后往往不再提升，early_stopping 会在第 1 轮就终止，
-    # 使模型退化为单棵树、所有标的预测值完全相同。因此这里改用固定轮数训练，
-    # 轮数由 Optuna 在训练集内部交叉验证中选定，不依赖单次验证集的噪声。
+    # 轮数在训练期内固定/选择，不根据外部验证集或测试集早停。
     model = lgb.LGBMClassifier(**params)
     evals_result = {}
     model.fit(
         X_tr,
         y_tr,
+        sample_weight=date_weights(train) if training_plan else None,
         eval_set=[(X_tr, y_tr), (X_va, y_va)],
         eval_names=['train', 'validation'],
         eval_metric='binary_logloss',
@@ -283,6 +285,7 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
         'label_definition': 'probability of exceeding the same-date candidate-universe mean over the next five sessions',
         'calibration': calibration,
         'factor_ranker': factor_ranker,
+        'model_selection': training_plan,
     }
 
     os.makedirs(SAVED_MODELS_DIR, exist_ok=True)
@@ -304,6 +307,7 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
         'label_definition': 'probability of exceeding the same-date candidate-universe mean over the next five sessions',
         'calibration': calibration,
         'factor_ranker': factor_ranker,
+        'model_selection': training_plan,
     }
     joblib.dump(saved_payload, model_file, compress=3)
     print(f"[Train] 模型已保存: {model_file}")

@@ -105,6 +105,10 @@ def main():
     parser.add_argument('--wf-no-backtest', action='store_true',
                         help='滚动窗口内跳过回测（仅算 AUC 与因子稳定性）')
     parser.add_argument('--cached', action='store_true', help='仅使用本地原始因子缓存，离线重建标签与特征')
+    parser.add_argument('--scheme', choices=['robust', 'legacy'], default='robust',
+                        help='robust：训练期固定候选时序比较；legacy：旧 Optuna 搜索')
+    parser.add_argument('--reuse-panel', default=None,
+                        help='复用本地已重建的 gzip pickle 面板；记录文件 SHA256，仍重新验证/训练')
     args = parser.parse_args()
     if args.trials < 1 or args.k < 1:
         parser.error('trials 和 k 必须大于 0')
@@ -124,15 +128,50 @@ def main():
         codes = codes[:args.limit]
 
     print(f"\n[1/7] 构建面板数据集（{len(codes)} 只标的，含基本面因子）...")
-    panel = build_factor_panel(codes if args.limit else None, include_fundamental=True)
-    panel.to_pickle(os.path.join(PROCESSED_DIR, 'panel_dataset.pkl'), compression='gzip')
+    panel_source = None
+    if args.reuse_panel:
+        import hashlib
+        import shutil
+        from pathlib import Path
+        source = Path(args.reuse_panel).resolve(strict=True)
+        with source.open('rb') as handle:
+            panel_source = {'path': str(source), 'sha256': hashlib.file_digest(handle, 'sha256').hexdigest()}
+        panel = pd.read_pickle(source, compression='gzip')
+        required = {'date', 'stock_code', 'target_up', 'label_end_date', 'entry_date'}
+        required.update(f + '_neu' for f in list(FEATURE_COLS) + PRICE_FACTORS + FUNDAMENTAL_FACTORS)
+        if not required.issubset(panel.columns) or panel.duplicated(['date', 'stock_code']).any():
+            raise ValueError('复用面板缺少所需特征或包含重复样本')
+        if set(panel.stock_code) != set(str(code).zfill(6) for code in codes):
+            raise ValueError('复用面板股票池与当前训练股票池不一致')
+        shutil.copyfile(source, os.path.join(PROCESSED_DIR, 'panel_dataset.pkl'))
+    else:
+        panel = build_factor_panel(codes if args.limit else None, include_fundamental=True)
+        panel.to_pickle(os.path.join(PROCESSED_DIR, 'panel_dataset.pkl'), compression='gzip')
 
     # 因子诊断：产出论文所需的因子有效性检验表
     print("\n[2/7] 因子有效性诊断（IC / ICIR / t 值）...")
     all_factors = list(FEATURE_COLS) + PRICE_FACTORS + FUNDAMENTAL_FACTORS
     train_for_selection, _, _ = time_split(panel)
+    training_plan = None
+    reference_bundle = None
+    reference_run = None
+    if args.scheme == 'robust':
+        from pathlib import Path
+        import joblib
+        from ml_pipeline.artifacts import POINTER, STORE
+        if POINTER.exists():
+            reference_run = json.loads(POINTER.read_text(encoding='utf-8'))['run_id']
+            reference_path = (STORE / 'runs' / reference_run).resolve()
+            reference_path.relative_to((STORE / 'runs').resolve())
+            reference_bundle = joblib.load(reference_path / 'lgbm_market_classifier.pkl')
+        from ml_pipeline.model_selection import audit_training_data, select_model
+        audit_training_data(train_for_selection, SAVED_MODELS_DIR)
+        training_plan = select_model(train_for_selection, SAVED_MODELS_DIR)
     diagnosis = diagnose_all(train_for_selection, all_factors)
     selected_factors, selection_mode = factors_for_model(diagnosis)
+    if training_plan:
+        selected_factors = [col.removesuffix('_neu') for col in training_plan['features']]
+        selection_mode = 'training_only_temporal_cv:' + training_plan['selected_profile']['name']
     save_diagnosis(diagnosis)
 
     # 关键：把诊断结论固化为模型实际使用的因子列表，
@@ -143,21 +182,29 @@ def main():
             'factors': usable,
             'model_features': [x + '_neu' for x in usable],
             'criteria': diagnosis['criteria'],
-            'rejected': diagnosis['rejected_factors'],
+            'rejected': [factor for factor in all_factors if factor not in usable],
+            'ic_screen_rejected': diagnosis['rejected_factors'],
             'selection_mode': selection_mode,
+            'training_scheme': args.scheme,
+            'selection_protocol_sha256': training_plan['protocol_sha256'] if training_plan else None,
             'selection_period': [str(train_for_selection['date'].min()),
                                  str(train_for_selection['date'].max())],
         }, f, ensure_ascii=False, indent=2)
     print(f"[Factor] 入选 {len(usable)} 个因子并写入模型口径: {usable}")
 
     # 2. 训练
-    print(f"\n[3/7] 训练模型（Optuna {args.trials} 轮，{len(get_model_features())} 维因子）...")
+    search_description = ('训练期固定候选比较' if training_plan else f'Optuna {args.trials} 轮')
+    print(f"\n[3/7] 训练模型（{search_description}，{len(get_model_features())} 维因子）...")
     from models.model_trainer import train_market_model
     result = train_market_model(
         panel=panel, n_trials=args.trials, force_retrain=True,
         candidate_factors=all_factors,
+        training_plan=training_plan,
     )
     model = result['model']
+    if reference_bundle is not None:
+        from ml_pipeline.model_selection import compare_reference
+        compare_reference(result, reference_bundle, reference_run, SAVED_MODELS_DIR)
 
     # 3. 基线对比
     print("\n[4/7] 基线对比评测...")
@@ -199,6 +246,7 @@ def main():
             backtest_k=0 if args.wf_no_backtest else args.k,
             backtest_selection=args.selection,
             candidate_factors=all_factors,
+            training_plan=training_plan,
         )
         if 'error' in wf:
             print(f"  [警告] {wf['error']}")
@@ -264,6 +312,7 @@ def main():
         'run_id': run_id,
         'panel': {
             'cached_only': args.cached,
+            'reused_panel_source': panel_source,
             'feature_engine': 'pandas',
             'label_calendar': 'union_of_observed_market_sessions',
             'stocks': int(panel['stock_code'].nunique()),
@@ -290,6 +339,7 @@ def main():
             'backtest_rebalance_every_sessions': 5,
         },
         'model_metrics': result['metrics'],
+        'model_selection': training_plan,
         'selection_layer': {'calibration': result['calibration'], 'factor_ranker': result['factor_ranker']},
         'best_params': result['params'],
         'loss_history': result.get('loss_history', {}),

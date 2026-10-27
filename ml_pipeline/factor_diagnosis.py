@@ -168,9 +168,19 @@ def _greedy_decorrelate(panel: pd.DataFrame, ordered: list,
 
 
 def diagnose_all(panel: pd.DataFrame, factors: list,
-                 ret_col: str = 'ret_5d_fwd') -> dict:
+                 ret_col: str = 'ret_5d_fwd', representation: str = 'neutralized') -> dict:
     """批量诊断并输出汇总报告。"""
-    results = [diagnose_factor(panel, f, ret_col) for f in factors]
+    if representation not in ('raw', 'neutralized'):
+        raise ValueError('representation must be raw or neutralized')
+    results = []
+    for factor in factors:
+        column = factor + '_neu' if representation == 'neutralized' else factor
+        if column not in panel:
+            continue
+        result = diagnose_factor(panel, column, ret_col)
+        result.update(factor=factor, input_column=column,
+                      name_cn=FEATURE_NAMES_CN.get(factor, factor))
+        results.append(result)
     results = [r for r in results if 'ic_mean' in r]
     results.sort(key=lambda x: abs(x['ic_mean']), reverse=True)
 
@@ -198,6 +208,7 @@ def diagnose_all(panel: pd.DataFrame, factors: list,
         'rejected_factors': [r['factor'] for r in results if r['factor'] not in usable],
         'decorrelation_dropped': dropped,
         'criteria': {
+            'representation': representation,
             'min_abs_ic': MIN_ABS_IC,
             'min_abs_t': MIN_T_STAT,
             'max_pairwise_corr': 0.7,

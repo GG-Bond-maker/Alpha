@@ -54,6 +54,38 @@ def main():
     assert len(backtest['strategy']['nav']) == len(backtest['dates'])
     assert backtest['strategy']['dsr'] is None
     assert bundle['params']['subsample_freq'] == 1
+    selection_checks = None
+    if bundle.get('model_selection'):
+        plan = bundle['model_selection']
+        protocol = json.loads((directory / 'model_selection_protocol.json').read_text(encoding='utf-8'))
+        protocol.pop('run_id', None)  # finalize_run stamps all JSON artifacts.
+        encoded = json.dumps(protocol, ensure_ascii=False, sort_keys=True, indent=2).encode()
+        assert hashlib.sha256(encoded).hexdigest() == plan['protocol_sha256']
+        assert len(plan['candidates']) == protocol['trials_total'] == 7
+        development_end = pd.Timestamp(protocol['development_end'])
+        for candidate in plan['candidates']:
+            for fold in candidate['folds']:
+                assert pd.Timestamp(fold['label_end']) < pd.Timestamp(fold['validation_start'])
+                assert pd.Timestamp(fold['validation_end']) <= development_end
+        eligible = [c for c in plan['candidates'] if not c['profile'].get('legacy')
+                    and not c['profile'].get('diagnostic_only')]
+        assert max(eligible, key=lambda c: c['selection_score'])['profile'] == plan['selected_profile']
+        assert bundle['feature_cols'] == plan['features']
+        assert pd.Timestamp(bundle['calibration']['fit_period'][0]) > development_end
+        comparison_path = directory / 'reference_comparison.json'
+        comparison = (json.loads(comparison_path.read_text(encoding='utf-8')) if comparison_path.exists()
+                      else {'status': 'no_reference', 'splits': {}})
+        comparable = comparison['status'] == 'retrospective_previously_observed_holdout'
+        if comparable:
+            assert comparison['splits']['test']['rows'] == len(bundle['test'])
+        walk_forward = json.loads((directory / 'walk_forward.json').read_text(encoding='utf-8'))
+        for window in walk_forward['windows']:
+            assert pd.Timestamp(window['val_start']) > development_end
+            assert pd.Timestamp(window['train_label_end']) < pd.Timestamp(window['val_start'])
+        selection_checks = {'profile': plan['selected_profile']['name'], 'protocol_hash_valid': True,
+                            'candidates': len(plan['candidates']), 'outer_windows': len(walk_forward['windows']),
+                            'test_population_unchanged': comparable, 'reference_status': comparison['status'],
+                            'comparison': comparison['splits']}
     from ml_pipeline.calibration import calibrate_margin
     calibrated = calibrate_margin(bundle['model'].predict(recommendations[bundle['feature_cols']], raw_score=True), bundle.get('calibration'))
     assert calibrated is not None
@@ -74,7 +106,14 @@ def main():
         for path in paths:
             status, body = await request(app, path)
             assert status == 200, (path, status)
+            if path.endswith('/drift_status') and body.get('overall_status') == 'HEALTHY':
+                assert '不能证明预测有效' in body['summary_desc']
             out[path] = status
+        status, diagnosis = await request(app, '/api/v1/evaluation/factors')
+        assert status == 200
+        assert {f + '_neu' for f in diagnosis['model_factors']} == set(bundle['feature_cols'])
+        assert {r['factor'] + '_neu' for r in diagnosis['results'] if r['in_model']} == set(bundle['feature_cols'])
+        out['factor_diagnosis_matches_model'] = status
         code = recommendations.iloc[0]['代码']
         status, body = await request(app, '/api/v1/explain/local/' + code)
         assert status == 200
@@ -101,6 +140,7 @@ def main():
               'max_score_feature_error': difference, 'test_metrics': report['model_metrics']['test'],
               'calibration': bundle['calibration'], 'factor_ranker': bundle['factor_ranker'],
               'backtest_periods': backtest['strategy']['periods'], 'api': asyncio.run(smoke())}
+    output['model_selection_checks'] = selection_checks
     destination = ROOT / 'docs/review/2026-10-27/runtime-checks.json'
     destination.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps(output, ensure_ascii=True, indent=2))

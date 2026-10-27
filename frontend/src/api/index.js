@@ -158,7 +158,7 @@ export const api = {
   },
 
   // 触发 LightGBM 模型重新训练 (force_retrain 与 Optuna)
-  triggerModelTrain(payload = { force_retrain: true, use_optuna: true, n_trials: 15, retrain_single_models: false }) {
+  triggerModelTrain(payload = { scheme: 'robust', force_retrain: true, use_optuna: true, n_trials: 15, retrain_single_models: false }) {
     return apiClient.post('/engineering/model/train', payload)
   },
 

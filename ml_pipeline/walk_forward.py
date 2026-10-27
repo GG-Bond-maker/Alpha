@@ -88,7 +88,7 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
                      candidate_factors: list = None,
                      backtest_k: int = 10,
                      backtest_selection: str = 'neutral',
-                     verbose: bool = True) -> dict:
+                     verbose: bool = True, training_plan: dict = None) -> dict:
     """执行滚动窗口验证。
 
     Args:
@@ -109,6 +109,13 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
 
     dates = np.sort(panel['date'].unique())
     start = int(len(dates) * start_ratio)
+    params = dict(PARAMS)
+    if training_plan:
+        # Profile selection must predate every outer window. Reusing a profile
+        # selected in 2023 to "validate" 2020 would introduce selection leakage.
+        selection_end = pd.Timestamp(training_plan['protocol']['development_end'])
+        start = max(start, int(np.searchsorted(dates, selection_end.to_datetime64(), side='right')) + TARGET_DAYS)
+        params = dict(training_plan['params'])
 
     windows = []
     scored_windows = []
@@ -135,7 +142,14 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
         if va['target_up'].nunique() < 2:
             continue
 
-        if candidate_factors:
+        if training_plan:
+            from ml_pipeline.model_selection import fit_frame, features_for_profile
+            profile = training_plan['selected_profile']
+            tr = fit_frame(tr, profile)
+            fold_features = features_for_profile(tr, profile)
+            selected_raw = [f.removesuffix('_neu') for f in fold_features]
+            selection_mode = 'frozen_development_profile:' + profile['name']
+        elif candidate_factors:
             diagnosis = diagnose_all(tr, candidate_factors)
             selected_raw, selection_mode = factors_for_model(diagnosis)
             fold_features = [f + '_neu' for f in selected_raw]
@@ -144,8 +158,10 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
             fold_features = list(factors)
             selection_mode = 'fixed_training_selection'
 
-        model = lgb.LGBMClassifier(**PARAMS)
-        model.fit(tr[fold_features], tr['target_up'])
+        model = lgb.LGBMClassifier(**params)
+        from ml_pipeline.model_selection import date_weights
+        model.fit(tr[fold_features], tr['target_up'],
+                  sample_weight=date_weights(tr) if training_plan else None)
 
         va = va.copy()
         va['pred'] = model.predict_proba(va[fold_features])[:, 1]
@@ -156,7 +172,9 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
         sec_auc = _section_auc(va, 'pred')
 
         window = {
-            'train_end': str(train_end)[:10],
+            'train_end': str(tr.date.max())[:10],
+            'train_start': str(tr.date.min())[:10],
+            'train_label_end': str(tr.label_end_date.max())[:10],
             'val_start': str(val_start)[:10],
             'val_end': str(val_end)[:10],
             'n_train': int(len(tr)),
@@ -276,7 +294,9 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
         'val_days': val_days,
         'backtest_k': backtest_k,
         'backtest_selection': backtest_selection,
-        'params': PARAMS,
+        'params': params,
+        'profile_selection_end': training_plan['protocol']['development_end'] if training_plan else None,
+        'holdout_status': 'previously_observed_retrospective' if training_plan else 'historical_walk_forward',
     }
 
     return {

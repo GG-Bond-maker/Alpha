@@ -22,9 +22,9 @@
           <div class="stat-hint">技术指标 + 量价 + 基本面</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">入选因子数</div>
-          <div class="stat-value">{{ usable.length }}</div>
-          <div class="stat-hint">|IC| ≥ {{ criteria.min_abs_ic }} 且 |t| ≥ {{ criteria.min_abs_t }}</div>
+          <div class="stat-label">模型实际因子数</div>
+          <div class="stat-value">{{ modelFactors.length }}</div>
+          <div class="stat-hint">由训练期方案确定；单因子检验另列</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">有效截面数</div>
@@ -43,7 +43,7 @@
           <div>
             <div class="card-title">因子有效性检验表</div>
             <div class="card-subtitle">
-              IC 为逐截面 Spearman 秩相关的均值；t 值 = ICIR × √截面数，|t| ≥ 2 视为统计显著
+              检验实际中性化输入；t 值采用 Newey–West HAC 校正。单因子显著性与实际入模分别展示。
             </div>
           </div>
           <button class="btn btn-outline btn-sm" @click="fetchData">刷新</button>
@@ -62,7 +62,8 @@
                 <th>IC&gt;0 占比</th>
                 <th>Top-Bottom</th>
                 <th>单调</th>
-                <th>结论</th>
+                <th>IC 门槛</th>
+                <th>实际入模</th>
               </tr>
             </thead>
             <tbody>
@@ -92,9 +93,10 @@
                   <span v-else class="text-muted">否</span>
                 </td>
                 <td>
-                  <span v-if="r.usable" class="badge badge-green">入选</span>
-                  <span v-else class="badge badge-silver">剔除</span>
+                  <span v-if="r.usable" class="badge badge-green">通过</span>
+                  <span v-else class="badge badge-silver">未通过</span>
                 </td>
+                <td>{{ r.in_model ? '是' : '否' }}</td>
               </tr>
             </tbody>
           </table>
@@ -126,7 +128,7 @@
         <ul class="note-list">
           <li><strong>IC（信息系数）</strong>：每个交易日内，因子值与未来 5 日收益的 Spearman 秩相关。均值越远离 0，说明因子的横截面区分能力越强。</li>
           <li><strong>ICIR</strong>：IC 均值除以 IC 标准差，衡量稳定性。日频 IC 波动大，ICIR 普遍偏低，因此不作为硬性门槛。</li>
-          <li><strong>t 值</strong>：ICIR × √截面数，用于判断 IC 均值是否显著异于 0。|t| ≥ 2 相当于 95% 置信水平。</li>
+          <li><strong>t 值</strong>：用 Newey–West HAC 校正 5 日标签重叠产生的序列相关。门槛属于单因子诊断，未校正全部多重试验，不能据此证明稳定 alpha。</li>
           <li><strong>分层收益</strong>：若 Top 组收益显著高于 Bottom 组且中间单调，说明因子可用于排序；否则即使 IC 显著也难以转化为可交易信号。</li>
           <li>行业中性化在入模前完成：因子先按申万行业截面去均值，再标准化，避免模型学到「这是银行」而非「这个估值便宜」。</li>
         </ul>
@@ -143,6 +145,7 @@ import { api } from '../api'
 const loading = ref(true)
 const results = ref([])
 const usable = ref([])
+const modelFactors = ref([])
 const criteria = ref({ min_abs_ic: 0.015, min_abs_t: 2.0 })
 const nSections = ref(0)
 const nStocks = ref(0)
@@ -185,6 +188,7 @@ const fetchData = async () => {
     const d = res.data || {}
     results.value = d.results || []
     usable.value = d.usable_factors || []
+    modelFactors.value = d.model_factors || d.usable_factors || []
     criteria.value = d.criteria || criteria.value
     nSections.value = d.n_sections_total || 0
     nStocks.value = d.n_stocks_total || 0

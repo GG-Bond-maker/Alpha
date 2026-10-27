@@ -49,7 +49,12 @@ FEATURE_COLS = [
 ]
 
 # 候选因子池：所有可能入模的因子，供诊断模块逐一检验。
-CANDIDATE_FACTORS = FEATURE_COLS + [
+SHORT_HORIZON_FACTORS = [
+    'momentum_5d', 'momentum_10d', 'intraday_return', 'overnight_gap',
+    'close_position', 'illiquidity_20d',
+]
+
+CANDIDATE_FACTORS = FEATURE_COLS + SHORT_HORIZON_FACTORS + [
     'momentum_20d', 'momentum_60d', 'volatility_20d', 'turnover_proxy',
     'pe_ttm', 'pb', 'roe', 'roa', 'gross_margin', 'net_margin',
     'debt_ratio', 'revenue_growth', 'profit_growth',
@@ -97,6 +102,12 @@ def get_model_features() -> list:
 MODEL_FEATURES = get_model_features()
 
 FEATURE_NAMES_CN = {
+    'momentum_5d': '5日动量',
+    'momentum_10d': '10日动量',
+    'intraday_return': '当日开收盘收益',
+    'overnight_gap': '当日隔夜跳空',
+    'close_position': '当日收盘区间位置',
+    'illiquidity_20d': '20日非流动性',
     'EMA20_ratio': '价格/20日均线比率',
     'RSI14': '14日相对强弱指标(RSI)',
     'MACD_norm': '归一化异同移动平均线(MACD)',
