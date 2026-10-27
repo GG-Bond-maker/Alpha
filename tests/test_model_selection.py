@@ -2,6 +2,9 @@
 import unittest
 from unittest.mock import patch
 import tempfile
+import hashlib
+import json
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -11,10 +14,35 @@ from ml_pipeline.dataset import _add_price_factors, _prepare_single
 from ml_pipeline.factor_diagnosis import diagnose_all
 from ml_pipeline.model_selection import (
     date_weights, fit_frame, temporal_folds, quality_features, paired_block_interval,
+    freeze_training_plan,
 )
 
 
 class ModelSelectionTests(unittest.TestCase):
+    def test_refit_freezes_prior_features_and_parameters_without_search(self):
+        protocol = {'development_end': '2022-12-30', 'trials_total': 7}
+        canonical = json.dumps(protocol, ensure_ascii=False, sort_keys=True, indent=2)
+        source = {'protocol': protocol,
+                  'protocol_sha256': hashlib.sha256(canonical.encode()).hexdigest(),
+                  'selected_profile': {'name': 'enriched_price', 'window': None},
+                  'features': ['signal_neu'], 'params': {'n_estimators': 200},
+                  'fit_start': '2020-01-01', 'fit_end': '2022-12-30',
+                  'candidates': [{'profile': {'name': 'enriched_price'}, 'selection_score': .51}]}
+        dates = pd.bdate_range('2023-01-03', periods=8)
+        train = pd.DataFrame({'date': dates, 'label_end_date': dates + pd.offsets.BDay(5),
+                              'signal_neu': range(8)})
+        with tempfile.TemporaryDirectory() as destination:
+            with patch('ml_pipeline.model_selection.select_model', side_effect=AssertionError('search')):
+                frozen = freeze_training_plan(source, train, 'source-run', destination)
+            self.assertEqual(json.loads((Path(destination) /
+                                         'model_selection_protocol.json').read_text()), protocol)
+        self.assertEqual(frozen['features'], source['features'])
+        self.assertEqual(frozen['params'], source['params'])
+        self.assertEqual(frozen['frozen_from_run'], 'source-run')
+        self.assertEqual(frozen['fit_end'], str(dates[-1]))
+        self.assertEqual(frozen['training_label_end'], str(dates[-1] + pd.offsets.BDay(5)))
+        self.assertEqual(source.get('frozen_training'), None)
+
     def test_new_features_are_invariant_to_future_prices(self):
         rng = np.random.default_rng(47)
         close = 100 * np.exp(np.cumsum(rng.normal(0, .01, 180)))

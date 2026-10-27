@@ -107,11 +107,15 @@ def main():
     parser.add_argument('--cached', action='store_true', help='仅使用本地原始因子缓存，离线重建标签与特征')
     parser.add_argument('--scheme', choices=['robust', 'legacy'], default='robust',
                         help='robust：训练期固定候选时序比较；legacy：旧 Optuna 搜索')
+    parser.add_argument('--freeze-current', action='store_true',
+                        help='复用当前批次已确定的特征和 LightGBM 参数，不重新选型')
     parser.add_argument('--reuse-panel', default=None,
                         help='复用本地已重建的 gzip pickle 面板；记录文件 SHA256，仍重新验证/训练')
     args = parser.parse_args()
     if args.trials < 1 or args.k < 1:
         parser.error('trials 和 k 必须大于 0')
+    if args.freeze_current and args.scheme != 'robust':
+        parser.error('--freeze-current 仅适用于 robust 方案')
     if args.cached:
         os.environ['ALPHA_OFFLINE'] = '1'
     run_id = os.environ['ALPHA_RUN_ID']
@@ -164,14 +168,23 @@ def main():
             reference_path = (STORE / 'runs' / reference_run).resolve()
             reference_path.relative_to((STORE / 'runs').resolve())
             reference_bundle = joblib.load(reference_path / 'lgbm_market_classifier.pkl')
-        from ml_pipeline.model_selection import audit_training_data, select_model
+        from ml_pipeline.model_selection import audit_training_data, select_model, freeze_training_plan
         audit_training_data(train_for_selection, SAVED_MODELS_DIR)
-        training_plan = select_model(train_for_selection, SAVED_MODELS_DIR)
+        if args.freeze_current:
+            if reference_bundle is None:
+                raise RuntimeError('没有可复用的当前完整训练批次')
+            training_plan = freeze_training_plan(reference_bundle.get('model_selection'),
+                                                 train_for_selection, reference_run, SAVED_MODELS_DIR)
+            if training_plan['features'] != reference_bundle['feature_cols'] or training_plan['params'] != reference_bundle['params']:
+                raise ValueError('冻结方案与当前模型的实际特征或参数不一致')
+        else:
+            training_plan = select_model(train_for_selection, SAVED_MODELS_DIR)
     diagnosis = diagnose_all(train_for_selection, all_factors)
     selected_factors, selection_mode = factors_for_model(diagnosis)
     if training_plan:
         selected_factors = [col.removesuffix('_neu') for col in training_plan['features']]
-        selection_mode = 'training_only_temporal_cv:' + training_plan['selected_profile']['name']
+        selection_mode = (('frozen_from_run:' + reference_run) if args.freeze_current else
+                          'training_only_temporal_cv:' + training_plan['selected_profile']['name'])
     save_diagnosis(diagnosis)
 
     # 关键：把诊断结论固化为模型实际使用的因子列表，
@@ -187,13 +200,16 @@ def main():
             'selection_mode': selection_mode,
             'training_scheme': args.scheme,
             'selection_protocol_sha256': training_plan['protocol_sha256'] if training_plan else None,
-            'selection_period': [str(train_for_selection['date'].min()),
-                                 str(train_for_selection['date'].max())],
+            'selection_period': ([training_plan['source_fit_start'], training_plan['source_fit_end']] if args.freeze_current else
+                                 [str(train_for_selection['date'].min()),
+                                  str(train_for_selection['date'].max())]),
+            'frozen_from_run': reference_run if args.freeze_current else None,
         }, f, ensure_ascii=False, indent=2)
     print(f"[Factor] 入选 {len(usable)} 个因子并写入模型口径: {usable}")
 
     # 2. 训练
-    search_description = ('训练期固定候选比较' if training_plan else f'Optuna {args.trials} 轮')
+    search_description = ('沿用当前批次冻结方案' if args.freeze_current else
+                          '训练期固定候选比较' if training_plan else f'Optuna {args.trials} 轮')
     print(f"\n[3/7] 训练模型（{search_description}，{len(get_model_features())} 维因子）...")
     from models.model_trainer import train_market_model
     result = train_market_model(
@@ -323,8 +339,10 @@ def main():
             'features': get_model_features(),
             'selected_factors': _load_selected_factors(),
             'factor_selection_mode': selection_mode,
-            'factor_selection_period': [str(train_for_selection['date'].min()),
-                                        str(train_for_selection['date'].max())],
+            'frozen_training_from_run': training_plan.get('frozen_from_run') if training_plan else None,
+            'factor_selection_period': ([training_plan['source_fit_start'], training_plan['source_fit_end']] if args.freeze_current else
+                                        [str(train_for_selection['date'].min()),
+                                         str(train_for_selection['date'].max())]),
             'point_in_time_universe': bool(panel.attrs.get('universe_point_in_time', False)),
             'universe_note': (
                 '按历史沪深300成分股及历史行业分类过滤。'

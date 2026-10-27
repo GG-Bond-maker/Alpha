@@ -81,6 +81,11 @@ try {
     }
     if (tab === 'Top-K 选股推荐') {
       await until("document.querySelectorAll('.desktop-results tbody > tr').length >= 5")
+      if (process.env.ALPHA_EXPECT_LATEST_DATE) {
+        const shown = await evaluate('document.querySelector(\'.content section\').innerText.includes(' + JSON.stringify(process.env.ALPHA_EXPECT_LATEST_DATE) + ')')
+        if (!shown) throw new Error('Recommendation view does not show the refreshed market date')
+        selectionChecks.latestDateShown = process.env.ALPHA_EXPECT_LATEST_DATE
+      }
       await evaluate("Array.from(document.querySelectorAll('.desktop-results button')).find(b=>b.textContent==='因子依据').click()")
       await until("document.querySelector('.factor-detail')")
       await screenshot('recommendations-desktop')

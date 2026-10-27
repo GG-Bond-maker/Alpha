@@ -185,6 +185,15 @@ SHAP 描述模型如何使用特征，不代表因果关系。全局重要性衡
 python -m ml_pipeline.run_training --cached --scheme robust --k 10
 ```
 
+沿用当前完整批次已选定的量价特征与 LightGBM 参数，只更新行情并重新拟合、验证时：
+
+```powershell
+python scripts/refresh_factor_prices.py --as-of YYYY-MM-DD --workers 3
+python -m ml_pipeline.run_training --cached --scheme robust --freeze-current --k 10
+```
+
+行情更新先在本地暂存并校验 300 只股票，全部拉取成功且至少 270 只覆盖指定交易日后才发布缓存。冻结重训保留原方案和候选比较记录，并标注其来源批次；新测试期属于回顾性复核，不用于重新选特征或参数。`--as-of` 应填写行情源已经发布收盘数据的交易日。
+
 缓存训练不会补充最新行情；推荐页日期和实验数据区间是实际覆盖范围。未经历史成分股回放的数据仍有幸存者偏差。DSR 缺少真实可比策略试验分布时显示未计算。
 
 验证命令：

@@ -113,7 +113,8 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
     if training_plan:
         # Profile selection must predate every outer window. Reusing a profile
         # selected in 2023 to "validate" 2020 would introduce selection leakage.
-        selection_end = pd.Timestamp(training_plan['protocol']['development_end'])
+        selection_end = pd.Timestamp(training_plan['fit_end'] if training_plan.get('frozen_training')
+                                     else training_plan['protocol']['development_end'])
         start = max(start, int(np.searchsorted(dates, selection_end.to_datetime64(), side='right')) + TARGET_DAYS)
         params = dict(training_plan['params'])
 
@@ -295,7 +296,8 @@ def run_walk_forward(panel: pd.DataFrame, step_days: int = DEFAULT_STEP_DAYS,
         'backtest_k': backtest_k,
         'backtest_selection': backtest_selection,
         'params': params,
-        'profile_selection_end': training_plan['protocol']['development_end'] if training_plan else None,
+        'profile_selection_end': (training_plan['fit_end'] if training_plan.get('frozen_training')
+                                  else training_plan['protocol']['development_end']) if training_plan else None,
         'holdout_status': 'previously_observed_retrospective' if training_plan else 'historical_walk_forward',
     }
 

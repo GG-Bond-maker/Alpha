@@ -237,5 +237,23 @@ class SelectionLayerTests(unittest.TestCase):
         self.assertTrue(result.calibrated_probability.isna().all())
 
 
+class RecommendationDateTests(unittest.TestCase):
+    def test_older_market_cache_does_not_replace_zero_change_on_new_signal_date(self):
+        from backend.app.services.recommend_service import RecommendationService
+        service = RecommendationService.__new__(RecommendationService)
+        service._get_market_indicator_cache = lambda: {
+            '000001': {'date': '2026-10-21', 'close': 99, 'pct_chg': 9.9}}
+        row = pd.Series({'代码': '000001', '名称': 'test', '推荐评级': 'A',
+                         '跑赢候选池均值概率': .51, '最新收盘价': 10.0,
+                         '当日涨幅(%)': 0.0})
+        item = service._to_item(row, 1, '2026-10-26')
+        self.assertEqual(item['close_price'], 10.0)
+        self.assertEqual(item['pct_chg'], 0.0)
+        self.assertEqual(item['update_date'], '2026-10-26')
+        missing = service._to_item(row.drop(['最新收盘价', '当日涨幅(%)']), 1, '2026-10-26')
+        self.assertEqual(missing['close_price'], 0.0)
+        self.assertEqual(missing['pct_chg'], 0.0)
+
+
 if __name__ == '__main__':
     unittest.main()

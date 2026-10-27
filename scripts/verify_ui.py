@@ -1,5 +1,6 @@
 """Run a bounded local browser check; stop only the processes created here."""
 import json
+import os
 from pathlib import Path
 import socket
 import subprocess
@@ -9,7 +10,7 @@ import time
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'docs' / 'review' / '2026-10-27' / 'screenshots'
+DEFAULT_OUT = ROOT / 'docs' / 'review' / '2026-10-27' / 'screenshots'
 
 
 def free_port():
@@ -29,13 +30,15 @@ def wait_json(url):
 
 
 def main():
-    OUT.mkdir(parents=True, exist_ok=True)
+    output = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else DEFAULT_OUT
+    expected_date = sys.argv[2] if len(sys.argv) > 2 else ''
+    output.mkdir(parents=True, exist_ok=True)
     browser_path = Path(r'C:\Program Files\Google\Chrome\Application\chrome.exe')
     if not browser_path.exists():
         browser_path = Path(r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe')
     port, browser_port = free_port(), free_port()
     processes = []
-    with tempfile.TemporaryDirectory(prefix='alpha-browser-', ignore_cleanup_errors=True) as profile, (OUT / 'server.log').open('w', encoding='utf-8') as log:
+    with tempfile.TemporaryDirectory(prefix='alpha-browser-', ignore_cleanup_errors=True) as profile, (output / 'server.log').open('w', encoding='utf-8') as log:
         try:
             processes.append(subprocess.Popen([sys.executable, '-m', 'uvicorn', 'backend.app.main:app', '--host', '127.0.0.1', '--port', str(port)], cwd=ROOT, stdout=log, stderr=log, creationflags=subprocess.CREATE_NO_WINDOW))
             wait_json(f'http://127.0.0.1:{port}/api/health')
@@ -44,7 +47,8 @@ def main():
             request = urllib.request.Request(f'http://127.0.0.1:{browser_port}/json/new?about:blank', method='PUT')
             with urllib.request.urlopen(request) as response:
                 page = json.load(response)
-            subprocess.run(['node', str(ROOT / 'scripts' / 'verify_browser.mjs'), page['webSocketDebuggerUrl'], f'http://127.0.0.1:{port}', str(OUT)], cwd=ROOT, check=True, timeout=150)
+            subprocess.run(['node', str(ROOT / 'scripts' / 'verify_browser.mjs'), page['webSocketDebuggerUrl'], f'http://127.0.0.1:{port}', str(output)], cwd=ROOT, check=True, timeout=150,
+                           env={**os.environ, 'ALPHA_EXPECT_LATEST_DATE': expected_date})
         finally:
             for process in reversed(processes):
                 if process.poll() is None:

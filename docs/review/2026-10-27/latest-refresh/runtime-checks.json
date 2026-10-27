@@ -1,0 +1,233 @@
+{
+  "run_id": "20261027-125345-031dc8d2",
+  "hash_mismatches": [],
+  "latest_recommendation_date": "2026-10-26",
+  "latest_mature_signal_date": "2026-10-19",
+  "shap": {
+    "space": "log_odds",
+    "max_abs_error": 0.0,
+    "mean_abs_error": 0.0,
+    "tolerance": 0.001,
+    "passed": true,
+    "n_samples": 200
+  },
+  "recommendation_count": 300,
+  "max_score_feature_error": 5.551115123125783e-17,
+  "test_metrics": {
+    "auc": 0.5143,
+    "section_auc": 0.5153,
+    "accuracy": 0.5579,
+    "n_rows": 127753,
+    "n_dates": 428,
+    "pos_rate": 0.4423
+  },
+  "calibration": {
+    "method": "monotone_platt",
+    "slope": 0.0,
+    "intercept": -0.13015842115409146,
+    "margin_center": -0.22686013197594918,
+    "margin_scale": 0.0859810569914785,
+    "fit_source": "validation_only",
+    "fit_rows": 125332,
+    "fit_dates": 423,
+    "fit_period": [
+      "2023-04-04",
+      "2024-12-30"
+    ],
+    "date_weighting": "equal_weight_per_date",
+    "ranking_policy": "raw_lightgbm_score",
+    "weak_validation_signal": true,
+    "target": "outperform_same_date_candidate_mean",
+    "note": "校准概率不等于收益预测或置信区间；SHAP 解释原始 LightGBM log-odds。"
+  },
+  "factor_ranker": {
+    "status": "fitted",
+    "factors": [
+      {
+        "feature": "EMA20_ratio_neu",
+        "name_cn": "价格/20日均线比率",
+        "ic": -0.023371738601162432,
+        "hac_t": -4.0420227514923095,
+        "direction": -1,
+        "weight": 0.09839367356823393
+      },
+      {
+        "feature": "RSI14_neu",
+        "name_cn": "14日相对强弱指标(RSI)",
+        "ic": -0.01173010867082537,
+        "hac_t": -2.043220819803792,
+        "direction": -1,
+        "weight": 0.04938308198516722
+      },
+      {
+        "feature": "MACD_norm_neu",
+        "name_cn": "归一化异同移动平均线(MACD)",
+        "ic": -0.01769984171575473,
+        "hac_t": -2.774280410021066,
+        "direction": -1,
+        "weight": 0.07451531431652934
+      },
+      {
+        "feature": "OBV_zscore_neu",
+        "name_cn": "能量潮标准分(OBV-Z)",
+        "ic": -0.01185295173111327,
+        "hac_t": -2.5190582130182824,
+        "direction": -1,
+        "weight": 0.04990024419463542
+      },
+      {
+        "feature": "CCI_neu",
+        "name_cn": "顺势指标(CCI)",
+        "ic": -0.008756857251005999,
+        "hac_t": -1.7263946345473011,
+        "direction": -1,
+        "weight": 0.036865864732726926
+      },
+      {
+        "feature": "ATR_ratio_neu",
+        "name_cn": "相对真实波幅(ATR/价格)",
+        "ic": -0.0056409072456673716,
+        "hac_t": -0.7220104190552081,
+        "direction": -1,
+        "weight": 0.023747894653043725
+      },
+      {
+        "feature": "ADX_neu",
+        "name_cn": "平均趋向指标(ADX)",
+        "ic": 0.008646804441109678,
+        "hac_t": 2.021569353588233,
+        "direction": 1,
+        "weight": 0.036402548740836316
+      },
+      {
+        "feature": "pct_chg_neu",
+        "name_cn": "当日涨跌幅(%)",
+        "ic": -0.016238396505641406,
+        "hac_t": -5.543078257778202,
+        "direction": -1,
+        "weight": 0.06836271414434543
+      },
+      {
+        "feature": "vol_ratio_neu",
+        "name_cn": "成交量放大倍数",
+        "ic": 0.00455669475401078,
+        "hac_t": 1.3748743983381355,
+        "direction": 1,
+        "weight": 0.01918342250130768
+      },
+      {
+        "feature": "ma_gap_neu",
+        "name_cn": "短期均线偏离度",
+        "ic": -0.013270188260910218,
+        "hac_t": -2.322519219337906,
+        "direction": -1,
+        "weight": 0.05586672836859764
+      },
+      {
+        "feature": "momentum_20d_neu",
+        "name_cn": "20日动量",
+        "ic": -0.019906534507834608,
+        "hac_t": -3.3898318409180797,
+        "direction": -1,
+        "weight": 0.08380536389112467
+      },
+      {
+        "feature": "volatility_20d_neu",
+        "name_cn": "20日波动率",
+        "ic": -0.005332316449751223,
+        "hac_t": -0.754210331914205,
+        "direction": -1,
+        "weight": 0.022448745173508436
+      },
+      {
+        "feature": "momentum_5d_neu",
+        "name_cn": "5日动量",
+        "ic": -0.02490927420530147,
+        "hac_t": -5.236419042313784,
+        "direction": -1,
+        "weight": 0.10486660991733675
+      },
+      {
+        "feature": "momentum_10d_neu",
+        "name_cn": "10日动量",
+        "ic": -0.01570521661574365,
+        "hac_t": -2.9249982694743015,
+        "direction": -1,
+        "weight": 0.06611805751288981
+      },
+      {
+        "feature": "intraday_return_neu",
+        "name_cn": "当日开收盘收益",
+        "ic": -0.02119753319487812,
+        "hac_t": -7.370316992435196,
+        "direction": -1,
+        "weight": 0.08924039401693912
+      },
+      {
+        "feature": "overnight_gap_neu",
+        "name_cn": "当日隔夜跳空",
+        "ic": 0.003826165532512809,
+        "hac_t": 1.6677043971273369,
+        "direction": 1,
+        "weight": 0.016107936548861147
+      },
+      {
+        "feature": "close_position_neu",
+        "name_cn": "当日收盘区间位置",
+        "ic": -0.012286511367248449,
+        "hac_t": -4.867041848138996,
+        "direction": -1,
+        "weight": 0.051725505294728566
+      },
+      {
+        "feature": "illiquidity_20d_neu",
+        "name_cn": "20日非流动性",
+        "ic": 0.012604899367233476,
+        "hac_t": 2.6360058346181963,
+        "direction": 1,
+        "weight": 0.053065900439187845
+      }
+    ],
+    "fit_source": "training_only",
+    "fit_period": [
+      "2015-01-22",
+      "2023-03-27"
+    ],
+    "method": "abs_training_rank_ic_weighted_directional_percentiles",
+    "note": "多因子分数为 0–100 的对照排名，不是跑赢概率；默认排序仍使用 LightGBM。"
+  },
+  "backtest_periods": 86,
+  "api": {
+    "/api/health": 200,
+    "/api/v1/recommend/topk": 200,
+    "/api/v1/recommend/dates": 200,
+    "/api/v1/explain/global": 200,
+    "/api/v1/explain/global-summary": 200,
+    "/api/v1/evaluation/metrics": 200,
+    "/api/v1/evaluation/backtest": 200,
+    "/api/v1/evaluation/report": 200,
+    "/api/v1/evaluation/experiment": 200,
+    "/api/v1/evaluation/diagnostics": 200,
+    "/api/v1/evaluation/walk-forward": 200,
+    "/api/v1/evaluation/attribution": 200,
+    "/api/v1/evaluation/stress_test": 200,
+    "/api/v1/engineering/status": 200,
+    "/api/v1/engineering/drift_status": 200,
+    "factor_diagnosis_matches_model": 200,
+    "latest_kline_matches_recommendation": 200,
+    "local_explanation": 200,
+    "invalid_date": 422,
+    "factor_ranking": 200,
+    "empty_rule_screen": 200,
+    "invalid_rank_mode": 422
+  },
+  "model_selection_checks": {
+    "profile": "enriched_price",
+    "protocol_hash_valid": true,
+    "candidates": 7,
+    "outer_windows": 7,
+    "test_population_unchanged": false,
+    "reference_status": "not_comparable_changed_population_or_labels",
+    "comparison": {}
+  }
+}

@@ -252,6 +252,7 @@ class RecommendationService:
                 if not df.empty:
                     last = df.iloc[-1]
                     cache[code] = {
+                        "date": str(last.get("date", ""))[:10],
                         "close": round(float(last.get("close", 0.0)), 2),
                         "pct_chg": round(float(last.get("pct_chg", 0.0)), 2),
                         "macd": round(float(last.get("MACD", 0.0)), 3) if pd.notna(last.get("MACD")) else None,
@@ -270,6 +271,7 @@ class RecommendationService:
                     c = str(p_row["stock_code"]).zfill(6)
                     if c not in cache:
                         cache[c] = {
+                            "date": str(latest_date)[:10],
                             "close": None,
                             "pct_chg": round(float(p_row.get("pct_chg", 0.0)), 2) if pd.notna(p_row.get("pct_chg")) else None,
                             "macd": round(float(p_row.get("MACD_norm", 0.0)), 3) if pd.notna(p_row.get("MACD_norm")) else None,
@@ -301,6 +303,8 @@ class RecommendationService:
             is_fav = False
 
         mkt = self._get_market_indicator_cache().get(code, {})
+        if mkt.get('date') != date:
+            mkt = {}
 
         close_price = self._num(row.get("最新收盘价"), None)
         if (close_price is None or close_price == 0.0) and mkt.get("close"):
@@ -309,7 +313,7 @@ class RecommendationService:
             close_price = 0.0
 
         pct_chg = self._num(row.get("当日涨幅(%)"), None)
-        if (pct_chg is None or pct_chg == 0.0) and mkt.get("pct_chg") is not None:
+        if pct_chg is None and mkt.get("pct_chg") is not None:
             pct_chg = mkt["pct_chg"]
         if pct_chg is None:
             pct_chg = 0.0

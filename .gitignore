@@ -80,6 +80,8 @@ data/factors/
 saved_models/runs/
 saved_models/current.json
 data/processed/live/
+data/cache/*_hist.csv
+docs/review/**/server.log
 
 # Temporary root inspection scripts & logs
 /*.txt

@@ -1,0 +1,3012 @@
+{
+  "as_of": "2026-10-26",
+  "latest_trade_date": "2026-10-26",
+  "on_latest": 300,
+  "stocks": 300,
+  "successful": 300,
+  "failures": [],
+  "source": "Sina qfq full-history snapshot via AKShare",
+  "completed_at": "2026-10-27T12:53:27",
+  "records": [
+    {
+      "code": "000001",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000002",
+      "rows": 2733,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2730,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000063",
+      "rows": 2794,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2791,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000100",
+      "rows": 2702,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2699,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000157",
+      "rows": 2867,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2864,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000166",
+      "rows": 2823,
+      "first": "2015-01-26",
+      "last": "2026-10-26",
+      "overlap_rows": 2820,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000301",
+      "rows": 2692,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2689,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000333",
+      "rows": 2815,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2812,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000338",
+      "rows": 2866,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2863,
+      "revised_closes": 2863,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000408",
+      "rows": 2806,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2803,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000425",
+      "rows": 2828,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2825,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000538",
+      "rows": 2704,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2701,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000568",
+      "rows": 2850,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2847,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000596",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000617",
+      "rows": 2759,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2756,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000625",
+      "rows": 2816,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2813,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000630",
+      "rows": 2704,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2701,
+      "revised_closes": 2701,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000651",
+      "rows": 2711,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2708,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000657",
+      "rows": 2718,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2715,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000708",
+      "rows": 2756,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2753,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000725",
+      "rows": 2864,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2861,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000768",
+      "rows": 2863,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2860,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000776",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000792",
+      "rows": 2544,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2541,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000807",
+      "rows": 2835,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2832,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000858",
+      "rows": 2808,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2805,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000895",
+      "rows": 2853,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2850,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000938",
+      "rows": 2725,
+      "first": "2015-05-26",
+      "last": "2026-10-26",
+      "overlap_rows": 2722,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000963",
+      "rows": 2840,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2837,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000975",
+      "rows": 2694,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2691,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000977",
+      "rows": 2828,
+      "first": "2015-01-19",
+      "last": "2026-10-26",
+      "overlap_rows": 2825,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000988",
+      "rows": 2865,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2862,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "000999",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "001280",
+      "rows": 215,
+      "first": "2025-12-03",
+      "last": "2026-10-26",
+      "overlap_rows": 212,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "001391",
+      "rows": 439,
+      "first": "2024-12-30",
+      "last": "2026-10-26",
+      "overlap_rows": 436,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "001965",
+      "rows": 2141,
+      "first": "2017-12-25",
+      "last": "2026-10-26",
+      "overlap_rows": 2138,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "001979",
+      "rows": 2610,
+      "first": "2015-12-30",
+      "last": "2026-10-26",
+      "overlap_rows": 2607,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002001",
+      "rows": 2854,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2851,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002027",
+      "rows": 2777,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2774,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002028",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002049",
+      "rows": 2647,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2644,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002050",
+      "rows": 2802,
+      "first": "2015-01-27",
+      "last": "2026-10-26",
+      "overlap_rows": 2799,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002074",
+      "rows": 2829,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2826,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002142",
+      "rows": 2861,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2858,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002179",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002202",
+      "rows": 2862,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2859,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002230",
+      "rows": 2807,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2804,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002236",
+      "rows": 2863,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2860,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002241",
+      "rows": 2856,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2853,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002294",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002304",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002311",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002352",
+      "rows": 2820,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2817,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002353",
+      "rows": 2764,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2761,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002371",
+      "rows": 2797,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2794,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002384",
+      "rows": 2667,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2664,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002415",
+      "rows": 2823,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2820,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002422",
+      "rows": 2864,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2861,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002460",
+      "rows": 2851,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2848,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002463",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002466",
+      "rows": 2825,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2822,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002475",
+      "rows": 2851,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2848,
+      "revised_closes": 2847,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002493",
+      "rows": 2864,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2861,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002532",
+      "rows": 2759,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2756,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002558",
+      "rows": 2546,
+      "first": "2015-11-11",
+      "last": "2026-10-26",
+      "overlap_rows": 2543,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002594",
+      "rows": 2858,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2855,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002600",
+      "rows": 2704,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2701,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002602",
+      "rows": 2496,
+      "first": "2015-12-08",
+      "last": "2026-10-26",
+      "overlap_rows": 2493,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002625",
+      "rows": 2630,
+      "first": "2015-03-26",
+      "last": "2026-10-26",
+      "overlap_rows": 2627,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002648",
+      "rows": 2848,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2845,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002709",
+      "rows": 2854,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2851,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002714",
+      "rows": 2843,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2840,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002736",
+      "rows": 2851,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2848,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002837",
+      "rows": 2306,
+      "first": "2016-12-29",
+      "last": "2026-10-26",
+      "overlap_rows": 2303,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002916",
+      "rows": 2147,
+      "first": "2017-12-13",
+      "last": "2026-10-26",
+      "overlap_rows": 2144,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002920",
+      "rows": 2140,
+      "first": "2017-12-26",
+      "last": "2026-10-26",
+      "overlap_rows": 2137,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "002938",
+      "rows": 1961,
+      "first": "2018-09-18",
+      "last": "2026-10-26",
+      "overlap_rows": 1958,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "003816",
+      "rows": 1735,
+      "first": "2019-08-26",
+      "last": "2026-10-26",
+      "overlap_rows": 1732,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300014",
+      "rows": 2848,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2845,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300015",
+      "rows": 2850,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2847,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300033",
+      "rows": 2867,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2864,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300059",
+      "rows": 2812,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2809,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300122",
+      "rows": 2864,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2861,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300124",
+      "rows": 2855,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2852,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300251",
+      "rows": 2828,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2825,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300274",
+      "rows": 2847,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2844,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300308",
+      "rows": 2704,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2701,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300316",
+      "rows": 2765,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2762,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300394",
+      "rows": 2825,
+      "first": "2015-02-17",
+      "last": "2026-10-26",
+      "overlap_rows": 2822,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300408",
+      "rows": 2858,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2855,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300413",
+      "rows": 2596,
+      "first": "2015-01-21",
+      "last": "2026-10-26",
+      "overlap_rows": 2593,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300418",
+      "rows": 2785,
+      "first": "2015-01-21",
+      "last": "2026-10-26",
+      "overlap_rows": 2782,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300433",
+      "rows": 2796,
+      "first": "2015-03-18",
+      "last": "2026-10-26",
+      "overlap_rows": 2793,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300442",
+      "rows": 2779,
+      "first": "2015-04-24",
+      "last": "2026-10-26",
+      "overlap_rows": 2776,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300450",
+      "rows": 2631,
+      "first": "2015-05-18",
+      "last": "2026-10-26",
+      "overlap_rows": 2628,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300476",
+      "rows": 2757,
+      "first": "2015-06-11",
+      "last": "2026-10-26",
+      "overlap_rows": 2754,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300498",
+      "rows": 2657,
+      "first": "2015-11-02",
+      "last": "2026-10-26",
+      "overlap_rows": 2654,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300502",
+      "rows": 2584,
+      "first": "2016-03-03",
+      "last": "2026-10-26",
+      "overlap_rows": 2581,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300628",
+      "rows": 2332,
+      "first": "2017-03-17",
+      "last": "2026-10-26",
+      "overlap_rows": 2329,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300661",
+      "rows": 2270,
+      "first": "2017-06-06",
+      "last": "2026-10-26",
+      "overlap_rows": 2267,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300750",
+      "rows": 2031,
+      "first": "2018-06-11",
+      "last": "2026-10-26",
+      "overlap_rows": 2028,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300760",
+      "rows": 1947,
+      "first": "2018-10-16",
+      "last": "2026-10-26",
+      "overlap_rows": 1944,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300803",
+      "rows": 1681,
+      "first": "2019-11-18",
+      "last": "2026-10-26",
+      "overlap_rows": 1678,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300832",
+      "rows": 1566,
+      "first": "2020-05-12",
+      "last": "2026-10-26",
+      "overlap_rows": 1563,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300866",
+      "rows": 1494,
+      "first": "2020-08-24",
+      "last": "2026-10-26",
+      "overlap_rows": 1491,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300896",
+      "rows": 1469,
+      "first": "2020-09-28",
+      "last": "2026-10-26",
+      "overlap_rows": 1466,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "300999",
+      "rows": 1462,
+      "first": "2020-10-15",
+      "last": "2026-10-26",
+      "overlap_rows": 1459,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "301165",
+      "rows": 951,
+      "first": "2022-11-21",
+      "last": "2026-10-26",
+      "overlap_rows": 948,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "301236",
+      "rows": 1118,
+      "first": "2022-03-15",
+      "last": "2026-10-26",
+      "overlap_rows": 1115,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "301269",
+      "rows": 1016,
+      "first": "2022-07-29",
+      "last": "2026-10-26",
+      "overlap_rows": 1013,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "301308",
+      "rows": 1021,
+      "first": "2022-08-05",
+      "last": "2026-10-26",
+      "overlap_rows": 1018,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "302132",
+      "rows": 2858,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2855,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600000",
+      "rows": 2836,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2833,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600009",
+      "rows": 2857,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2854,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600010",
+      "rows": 2859,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2856,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600011",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600015",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600016",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600018",
+      "rows": 2865,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2862,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600019",
+      "rows": 2776,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2773,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600023",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 2865,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600025",
+      "rows": 2147,
+      "first": "2017-12-15",
+      "last": "2026-10-26",
+      "overlap_rows": 2144,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600026",
+      "rows": 2770,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2767,
+      "revised_closes": 2767,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600027",
+      "rows": 2857,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2854,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600028",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600029",
+      "rows": 2865,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2862,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600030",
+      "rows": 2851,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2848,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600031",
+      "rows": 2867,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2864,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600036",
+      "rows": 2863,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2860,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600039",
+      "rows": 2846,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2843,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600048",
+      "rows": 2861,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2858,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600050",
+      "rows": 2773,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2770,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600061",
+      "rows": 2826,
+      "first": "2015-01-07",
+      "last": "2026-10-26",
+      "overlap_rows": 2823,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600066",
+      "rows": 2867,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2864,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600085",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600089",
+      "rows": 2858,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2855,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600104",
+      "rows": 2848,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2845,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600111",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600115",
+      "rows": 2854,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2851,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600118",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600150",
+      "rows": 2727,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2724,
+      "revised_closes": 2724,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600160",
+      "rows": 2847,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2844,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600176",
+      "rows": 2846,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2843,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600183",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600188",
+      "rows": 2867,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2864,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600196",
+      "rows": 2853,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2850,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600219",
+      "rows": 2762,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2759,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600221",
+      "rows": 2726,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2723,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600233",
+      "rows": 2771,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2768,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600276",
+      "rows": 2867,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2864,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600309",
+      "rows": 2735,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2732,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600346",
+      "rows": 2659,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2656,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600362",
+      "rows": 2860,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2857,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600372",
+      "rows": 2840,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2837,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600406",
+      "rows": 2759,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2756,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600415",
+      "rows": 2860,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2857,
+      "revised_closes": 2857,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600426",
+      "rows": 2861,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2858,
+      "revised_closes": 2858,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600436",
+      "rows": 2862,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2859,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600438",
+      "rows": 2716,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2713,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600460",
+      "rows": 2783,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2780,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600482",
+      "rows": 2745,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2742,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600489",
+      "rows": 2849,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2846,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600515",
+      "rows": 2586,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2583,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600519",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600522",
+      "rows": 2797,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2794,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600547",
+      "rows": 2832,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2829,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600549",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600570",
+      "rows": 2861,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2858,
+      "revised_closes": 2858,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600584",
+      "rows": 2699,
+      "first": "2015-01-14",
+      "last": "2026-10-26",
+      "overlap_rows": 2696,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600585",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600588",
+      "rows": 2862,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2859,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600600",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600660",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600674",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600690",
+      "rows": 2791,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2788,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600741",
+      "rows": 2840,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2837,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600760",
+      "rows": 2786,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2783,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600795",
+      "rows": 2804,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2801,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600803",
+      "rows": 2805,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2802,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600809",
+      "rows": 2856,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2853,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600845",
+      "rows": 2858,
+      "first": "2015-01-12",
+      "last": "2026-10-26",
+      "overlap_rows": 2855,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600875",
+      "rows": 2792,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2789,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600886",
+      "rows": 2808,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2805,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600887",
+      "rows": 2844,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2841,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600893",
+      "rows": 2833,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2830,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600900",
+      "rows": 2749,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2746,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600905",
+      "rows": 1302,
+      "first": "2021-06-10",
+      "last": "2026-10-26",
+      "overlap_rows": 1299,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600918",
+      "rows": 1550,
+      "first": "2020-06-03",
+      "last": "2026-10-26",
+      "overlap_rows": 1547,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600919",
+      "rows": 2476,
+      "first": "2016-08-02",
+      "last": "2026-10-26",
+      "overlap_rows": 2473,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600926",
+      "rows": 2427,
+      "first": "2016-10-27",
+      "last": "2026-10-26",
+      "overlap_rows": 2424,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600930",
+      "rows": 309,
+      "first": "2025-07-16",
+      "last": "2026-10-26",
+      "overlap_rows": 306,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600938",
+      "rows": 1093,
+      "first": "2022-04-21",
+      "last": "2026-10-26",
+      "overlap_rows": 1090,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600941",
+      "rows": 1162,
+      "first": "2022-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 1159,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600958",
+      "rows": 2796,
+      "first": "2015-03-23",
+      "last": "2026-10-26",
+      "overlap_rows": 2793,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600989",
+      "rows": 1806,
+      "first": "2019-05-16",
+      "last": "2026-10-26",
+      "overlap_rows": 1803,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "600999",
+      "rows": 2856,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2853,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601006",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601009",
+      "rows": 2861,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2858,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601012",
+      "rows": 2856,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2853,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601018",
+      "rows": 2731,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2728,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601021",
+      "rows": 2832,
+      "first": "2015-01-21",
+      "last": "2026-10-26",
+      "overlap_rows": 2829,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601058",
+      "rows": 2851,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2848,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601066",
+      "rows": 2025,
+      "first": "2018-06-20",
+      "last": "2026-10-26",
+      "overlap_rows": 2022,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601077",
+      "rows": 1695,
+      "first": "2019-10-29",
+      "last": "2026-10-26",
+      "overlap_rows": 1692,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601088",
+      "rows": 2794,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2791,
+      "revised_closes": 2791,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601100",
+      "rows": 2829,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2826,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601111",
+      "rows": 2846,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2843,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601117",
+      "rows": 2865,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2862,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601127",
+      "rows": 2491,
+      "first": "2016-06-15",
+      "last": "2026-10-26",
+      "overlap_rows": 2488,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601136",
+      "rows": 928,
+      "first": "2022-12-22",
+      "last": "2026-10-26",
+      "overlap_rows": 925,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601138",
+      "rows": 2032,
+      "first": "2018-06-08",
+      "last": "2026-10-26",
+      "overlap_rows": 2029,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601166",
+      "rows": 2863,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2860,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601169",
+      "rows": 2829,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2826,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601186",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601211",
+      "rows": 2733,
+      "first": "2015-06-26",
+      "last": "2026-10-26",
+      "overlap_rows": 2730,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601225",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 2655,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601229",
+      "rows": 2413,
+      "first": "2016-11-16",
+      "last": "2026-10-26",
+      "overlap_rows": 2410,
+      "revised_closes": 2410,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601238",
+      "rows": 2848,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2845,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601288",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601318",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601319",
+      "rows": 1924,
+      "first": "2018-11-16",
+      "last": "2026-10-26",
+      "overlap_rows": 1921,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601328",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601336",
+      "rows": 2843,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2840,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601360",
+      "rows": 2744,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2741,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601377",
+      "rows": 2850,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2847,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601390",
+      "rows": 2782,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2779,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601398",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601456",
+      "rows": 1490,
+      "first": "2020-07-31",
+      "last": "2026-10-26",
+      "overlap_rows": 1487,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601600",
+      "rows": 2759,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2756,
+      "revised_closes": 2756,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601601",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 2865,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601607",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601618",
+      "rows": 2796,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2793,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601628",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601633",
+      "rows": 2846,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2843,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601658",
+      "rows": 1665,
+      "first": "2019-12-10",
+      "last": "2026-10-26",
+      "overlap_rows": 1662,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601668",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601669",
+      "rows": 2853,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2850,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601688",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 2865,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601689",
+      "rows": 2810,
+      "first": "2015-03-19",
+      "last": "2026-10-26",
+      "overlap_rows": 2807,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601698",
+      "rows": 1776,
+      "first": "2019-06-28",
+      "last": "2026-10-26",
+      "overlap_rows": 1773,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601727",
+      "rows": 2608,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2605,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601728",
+      "rows": 1252,
+      "first": "2021-08-20",
+      "last": "2026-10-26",
+      "overlap_rows": 1249,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601766",
+      "rows": 2830,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2827,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601788",
+      "rows": 2866,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2863,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601800",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601816",
+      "rows": 1639,
+      "first": "2020-01-16",
+      "last": "2026-10-26",
+      "overlap_rows": 1636,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601818",
+      "rows": 2857,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2854,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601825",
+      "rows": 1253,
+      "first": "2021-08-19",
+      "last": "2026-10-26",
+      "overlap_rows": 1250,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601838",
+      "rows": 2115,
+      "first": "2018-01-31",
+      "last": "2026-10-26",
+      "overlap_rows": 2112,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601857",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601868",
+      "rows": 1227,
+      "first": "2021-09-28",
+      "last": "2026-10-26",
+      "overlap_rows": 1224,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601872",
+      "rows": 2768,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2765,
+      "revised_closes": 2765,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601877",
+      "rows": 2731,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2728,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601878",
+      "rows": 2266,
+      "first": "2017-06-26",
+      "last": "2026-10-26",
+      "overlap_rows": 2263,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601881",
+      "rows": 2366,
+      "first": "2017-01-23",
+      "last": "2026-10-26",
+      "overlap_rows": 2363,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601888",
+      "rows": 2812,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2809,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601898",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601899",
+      "rows": 2838,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2835,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601901",
+      "rows": 2855,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2852,
+      "revised_closes": 2852,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601916",
+      "rows": 1669,
+      "first": "2019-11-26",
+      "last": "2026-10-26",
+      "overlap_rows": 1666,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601919",
+      "rows": 2725,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2722,
+      "revised_closes": 2722,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601939",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601985",
+      "rows": 2763,
+      "first": "2015-06-10",
+      "last": "2026-10-26",
+      "overlap_rows": 2760,
+      "revised_closes": 2697,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601988",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601995",
+      "rows": 1424,
+      "first": "2020-11-02",
+      "last": "2026-10-26",
+      "overlap_rows": 1421,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "601998",
+      "rows": 2866,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2863,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603019",
+      "rows": 2842,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2839,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603259",
+      "rows": 2055,
+      "first": "2018-05-08",
+      "last": "2026-10-26",
+      "overlap_rows": 2052,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603260",
+      "rows": 2181,
+      "first": "2017-10-30",
+      "last": "2026-10-26",
+      "overlap_rows": 2178,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603288",
+      "rows": 2868,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2865,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603296",
+      "rows": 777,
+      "first": "2023-08-08",
+      "last": "2026-10-26",
+      "overlap_rows": 774,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603369",
+      "rows": 2865,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2862,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603392",
+      "rows": 1572,
+      "first": "2020-04-29",
+      "last": "2026-10-26",
+      "overlap_rows": 1569,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603501",
+      "rows": 2130,
+      "first": "2017-05-04",
+      "last": "2026-10-26",
+      "overlap_rows": 2127,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603799",
+      "rows": 2816,
+      "first": "2015-01-29",
+      "last": "2026-10-26",
+      "overlap_rows": 2813,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603893",
+      "rows": 1629,
+      "first": "2020-02-07",
+      "last": "2026-10-26",
+      "overlap_rows": 1626,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603986",
+      "rows": 2264,
+      "first": "2016-08-18",
+      "last": "2026-10-26",
+      "overlap_rows": 2261,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "603993",
+      "rows": 2849,
+      "first": "2015-01-05",
+      "last": "2026-10-26",
+      "overlap_rows": 2846,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "605117",
+      "rows": 1336,
+      "first": "2021-04-20",
+      "last": "2026-10-26",
+      "overlap_rows": 1333,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "605499",
+      "rows": 1312,
+      "first": "2021-05-27",
+      "last": "2026-10-26",
+      "overlap_rows": 1309,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688008",
+      "rows": 1760,
+      "first": "2019-07-22",
+      "last": "2026-10-26",
+      "overlap_rows": 1757,
+      "revised_closes": 1757,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688009",
+      "rows": 1760,
+      "first": "2019-07-22",
+      "last": "2026-10-26",
+      "overlap_rows": 1757,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688012",
+      "rows": 1751,
+      "first": "2019-07-22",
+      "last": "2026-10-26",
+      "overlap_rows": 1748,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688036",
+      "rows": 1711,
+      "first": "2019-09-30",
+      "last": "2026-10-26",
+      "overlap_rows": 1708,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688041",
+      "rows": 1006,
+      "first": "2022-08-12",
+      "last": "2026-10-26",
+      "overlap_rows": 1003,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688047",
+      "rows": 1051,
+      "first": "2022-06-24",
+      "last": "2026-10-26",
+      "overlap_rows": 1048,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688072",
+      "rows": 1084,
+      "first": "2022-04-20",
+      "last": "2026-10-26",
+      "overlap_rows": 1081,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688082",
+      "rows": 1195,
+      "first": "2021-11-18",
+      "last": "2026-10-26",
+      "overlap_rows": 1192,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688111",
+      "rows": 1681,
+      "first": "2019-11-18",
+      "last": "2026-10-26",
+      "overlap_rows": 1678,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688126",
+      "rows": 1569,
+      "first": "2020-04-20",
+      "last": "2026-10-26",
+      "overlap_rows": 1566,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688183",
+      "rows": 1373,
+      "first": "2021-02-25",
+      "last": "2026-10-26",
+      "overlap_rows": 1370,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688223",
+      "rows": 1147,
+      "first": "2022-01-26",
+      "last": "2026-10-26",
+      "overlap_rows": 1144,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688256",
+      "rows": 1519,
+      "first": "2020-07-20",
+      "last": "2026-10-26",
+      "overlap_rows": 1516,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688271",
+      "rows": 1010,
+      "first": "2022-08-22",
+      "last": "2026-10-26",
+      "overlap_rows": 1007,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688303",
+      "rows": 1273,
+      "first": "2021-07-22",
+      "last": "2026-10-26",
+      "overlap_rows": 1270,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688396",
+      "rows": 1615,
+      "first": "2020-02-27",
+      "last": "2026-10-26",
+      "overlap_rows": 1612,
+      "revised_closes": 1612,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688472",
+      "rows": 817,
+      "first": "2023-06-09",
+      "last": "2026-10-26",
+      "overlap_rows": 814,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688506",
+      "rows": 918,
+      "first": "2023-01-06",
+      "last": "2026-10-26",
+      "overlap_rows": 915,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688521",
+      "rows": 1488,
+      "first": "2020-08-18",
+      "last": "2026-10-26",
+      "overlap_rows": 1485,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    },
+    {
+      "code": "688981",
+      "rows": 1515,
+      "first": "2020-07-16",
+      "last": "2026-10-26",
+      "overlap_rows": 1512,
+      "revised_closes": 0,
+      "invalid_historical_prices": 0,
+      "source": "akshare.stock_zh_a_daily:sina:qfq"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import lightgbm as lgb
@@ -173,6 +174,36 @@ def select_model(train: pd.DataFrame, output_dir: str | Path) -> dict:
                         'Prospective confirmation and point-in-time universe/fundamentals remain required.')
     (destination / 'model_selection.json').write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f"[Selection] FROZEN winner={profile['name']} features={features}", flush=True)
+    return plan
+
+
+def freeze_training_plan(source: dict, train: pd.DataFrame,
+                         source_run: str, output_dir: str | Path) -> dict:
+    """Reuse the active feature set and parameters without a new model search."""
+    if not source or not source.get('selected_profile') or not source.get('features') or not source.get('params'):
+        raise ValueError('The active batch has no complete training plan to freeze')
+    plan = deepcopy(source)
+    canonical = json.dumps(plan['protocol'], ensure_ascii=False, sort_keys=True, indent=2)
+    if hashlib.sha256(canonical.encode()).hexdigest() != plan['protocol_sha256']:
+        raise ValueError('Active selection protocol hash mismatch')
+    fitted = fit_frame(train, plan['selected_profile'])
+    if not set(plan['features']).issubset(fitted.columns):
+        raise ValueError('Current panel is missing frozen model features')
+    plan.update(frozen_from_run=source_run, frozen_training=True,
+                source_fit_start=source['fit_start'], source_fit_end=source['fit_end'],
+                candidates_source_run=source_run,
+                fit_start=str(fitted.date.min()), fit_end=str(fitted.date.max()),
+                fit_rows=int(len(fitted)),
+                training_label_end=str(pd.to_datetime(fitted.label_end_date).max()),
+                warning='Feature list, LightGBM parameters and protocol frozen from the previous batch. '
+                        'Recorded candidates belong to the source batch and were not re-evaluated. '
+                        'The new holdout is not a fresh blind test after earlier historical inspection.')
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    (destination / 'model_selection_protocol.json').write_text(canonical, encoding='utf-8')
+    (destination / 'model_selection.json').write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding='utf-8')
+    print(f"[Selection] FROZEN from {source_run}: {plan['selected_profile']['name']} "
+          f"features={len(plan['features'])} fit_end={plan['fit_end']}", flush=True)
     return plan
 
 
