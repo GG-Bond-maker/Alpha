@@ -104,5 +104,9 @@ apply_final_formatting.py
 report_docx_dump.txt
 logs_server.txt
 
+# Temporary work and tooling
+_work/
+.playwright-mcp/
+
 # Environment
 .env
