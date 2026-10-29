@@ -57,7 +57,7 @@
         <!-- ECharts 瀑布图容器 -->
         <div class="chart-wrapper">
           <h3 class="section-title">SHAP 瀑布归因图 (log-odds 空间)</h3>
-          <p class="section-desc">图中基准值、SHAP 贡献与最终模型输出均为原始 LightGBM log-odds。排序分数 {{ data.predicted_score }}；校准后跑赢概率 {{ data.calibrated_probability == null ? '未生成' : (data.calibrated_probability * 100).toFixed(1) + '%' }}。SHAP 解释模型分数，不解释收益或保证。</p>
+          <p class="section-desc">图中基准值、SHAP 贡献与最终模型输出均为原始 LightGBM log-odds。排序分数 {{ data.predicted_score }}；{{ calibrationSummary }}。SHAP 解释模型分数，不解释收益或保证。</p>
           <div ref="waterfallChartRef" class="echart-box"></div>
         </div>
 
@@ -113,6 +113,14 @@ const waterfallChartRef = ref(null)
 const data = ref(null)
 const loading = ref(false)
 let chartInstance = null
+
+const calibrationSummary = computed(() => {
+  if (!data.value || data.value.calibrated_probability == null) return '校准概率未生成'
+  if (data.value.calibration?.weak_validation_signal) {
+    return `校准未生效，所有股票统一为验证集基准率 ${(data.value.calibrated_probability * 100).toFixed(1)}%，不参与排序`
+  }
+  return `校准后跑赢概率 ${(data.value.calibrated_probability * 100).toFixed(1)}%`
+})
 
 const totalPositiveShap = computed(() => {
   if (!data.value) return 0

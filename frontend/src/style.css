@@ -786,3 +786,272 @@ dialog::backdrop {
   .topbar-actions > .source-tag { display: none; }
   .content { padding: 14px 12px 32px; }
 }
+
+/* ==========================================================================
+   长周期累计净值与超额区间看板 (Out-of-Sample NAV & Win/Lag Band)
+   ========================================================================== */
+.nav-curve-card {
+  margin-top: 16px;
+  border: 1px solid var(--slate-200);
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.nav-curve-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.nav-curve-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--slate-100);
+  background: linear-gradient(180deg, #ffffff 0%, var(--slate-50) 100%);
+}
+
+.nav-curve-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-curve-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--slate-800);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-curve-subtitle {
+  font-size: 12px;
+  color: var(--slate-500);
+}
+
+.nav-curve-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mode-toggle-group {
+  display: inline-flex;
+  background: var(--slate-100);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  border: 1px solid var(--slate-200);
+}
+
+.mode-toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--slate-600);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mode-toggle-btn:hover {
+  color: var(--primary);
+}
+
+.mode-toggle-btn.active {
+  background: #ffffff;
+  color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.band-legend-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--slate-600);
+  padding: 8px 20px;
+  background: #fcfdfe;
+  border-bottom: 1px dashed var(--slate-200);
+  flex-wrap: wrap;
+}
+
+.band-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.band-line-sample {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.band-box-sample {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+}
+
+.band-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  padding: 12px 20px;
+  background: var(--slate-50);
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.band-stat-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.band-stat-cell .lbl {
+  font-size: 11px;
+  color: var(--slate-500);
+  text-transform: uppercase;
+}
+
+.band-stat-cell .val {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--slate-800);
+}
+
+.band-stat-cell .sub {
+  font-size: 10.5px;
+  color: var(--slate-400);
+}
+
+.nav-chart-view {
+  width: 100%;
+  height: 440px;
+  padding: 10px 14px 4px;
+}
+
+.nav-ref-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 20px;
+  background: #f8fafc;
+}
+
+.nav-ref-preview-wrap {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--slate-200);
+  background: #ffffff;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  max-width: 960px;
+  width: 100%;
+}
+
+.nav-ref-preview-wrap:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.nav-ref-preview-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.nav-ref-hover-hint {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.nav-ref-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--slate-500);
+  text-align: center;
+  line-height: 1.6;
+  max-width: 820px;
+}
+
+/* 原图全屏灯箱 Modal */
+.image-lightbox-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.image-lightbox-container {
+  position: relative;
+  max-width: 1100px;
+  width: 95vw;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 16px 20px 20px;
+  box-shadow: var(--shadow-lg);
+  animation: modalScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.image-lightbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.image-lightbox-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--slate-800);
+}
+
+.image-lightbox-img-wrap {
+  max-height: 75vh;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--slate-200);
+}
+
+.image-lightbox-img-wrap img {
+  width: 100%;
+  display: block;
+}
+

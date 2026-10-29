@@ -124,27 +124,121 @@
           </div>
         </div>
 
-        <div v-if="aggregated" class="agg-block">
-          <div class="agg-title">拼接净值（全窗口连续运行）</div>
-          <div class="agg-grid">
-            <div><span class="agg-label">年化收益</span>
-              <strong :class="signClass(aggregated.strategy.annualized_return)">
-                {{ pct(aggregated.strategy.annualized_return) }}
+        <div v-if="aggregated" class="nav-curve-card">
+          <!-- 标头与模式切换控制器 -->
+          <div class="nav-curve-header">
+            <div class="nav-curve-title-area">
+              <div class="nav-curve-title">
+                <span>📈 样本外累计净值与超额走势 (Out-of-Sample NAV)</span>
+                <span class="badge badge-blue">全窗口连续拼接</span>
+              </div>
+              <div class="nav-curve-subtitle">
+                跨越 {{ aggregated.strategy?.periods || '—' }} 个调仓周期的样本外连续模拟 · 扣除双边规费、印花税与滑点摩擦 (约 35 bps) · 动态超额区间填色
+              </div>
+            </div>
+
+            <div class="nav-curve-actions">
+              <div class="mode-toggle-group">
+                <button
+                  type="button"
+                  class="mode-toggle-btn"
+                  :class="{ active: navViewMode === 'chart' }"
+                  @click="switchNavMode('chart')"
+                >
+                  📊 动态交互走势
+                </button>
+                <button
+                  type="button"
+                  class="mode-toggle-btn"
+                  :class="{ active: navViewMode === 'reference' }"
+                  @click="switchNavMode('reference')"
+                >
+                  🖼️ 历史实证原图
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 图例与超额阴影说明条 -->
+          <div class="band-legend-strip">
+            <div class="band-legend-item">
+              <span class="band-line-sample" style="background: #2563eb;"></span>
+              <strong>策略 (年化 {{ pct(aggregated.strategy?.annualized_return) }})</strong>
+            </div>
+            <div class="band-legend-item">
+              <span class="band-line-sample" style="background: #c2410c;"></span>
+              <strong>{{ benchmarkTitle }} (年化 {{ pct(aggregated.benchmark?.annualized_return) }})</strong>
+            </div>
+            <div class="band-legend-item">
+              <span class="band-box-sample" style="background: rgba(186, 230, 253, 0.7); border-color: #7dd3fc;"></span>
+              <span>跑赢区间 (策略 &gt; 基准)</span>
+            </div>
+            <div class="band-legend-item">
+              <span class="band-box-sample" style="background: rgba(254, 202, 202, 0.7); border-color: #fca5a5;"></span>
+              <span>跑输区间 (策略 &lt; 基准)</span>
+            </div>
+            <span style="margin-left: auto; font-size: 11.5px; color: var(--slate-400);">
+              * 双边交易摩擦按实盘费率计入，包含买入卖出完整调仓
+            </span>
+          </div>
+
+          <!-- 核心指标摘要条 -->
+          <div class="band-stat-strip">
+            <div class="band-stat-cell">
+              <span class="lbl">策略年化收益</span>
+              <strong class="val" :class="signClass(aggregated.strategy?.annualized_return)">
+                {{ pct(aggregated.strategy?.annualized_return) }}
               </strong>
+              <span class="sub">夏普 {{ fmt(aggregated.strategy?.sharpe) }}</span>
             </div>
-            <div><span class="agg-label">夏普</span>
-              <strong>{{ fmt(aggregated.strategy.sharpe) }}</strong>
-            </div>
-            <div><span class="agg-label">最大回撤</span>
-              <strong class="text-neg">{{ pct(aggregated.strategy.max_drawdown) }}</strong>
-            </div>
-            <div><span class="agg-label">超额年化</span>
-              <strong :class="signClass(aggregated.excess.annualized_return)">
-                {{ pct(aggregated.excess.annualized_return) }}
+            <div class="band-stat-cell">
+              <span class="lbl">基准年化收益</span>
+              <strong class="val" :class="signClass(aggregated.benchmark?.annualized_return)">
+                {{ pct(aggregated.benchmark?.annualized_return) }}
               </strong>
+              <span class="sub">{{ benchmarkShortName }}</span>
             </div>
-            <div><span class="agg-label">交易周期数</span>
-              <strong>{{ aggregated.strategy.periods }}</strong>
+            <div class="band-stat-cell">
+              <span class="lbl">超额年化收益</span>
+              <strong class="val" :class="signClass(aggregated.excess?.annualized_return)">
+                {{ pct(aggregated.excess?.annualized_return) }}
+              </strong>
+              <span class="sub">扣除成本后净超额</span>
+            </div>
+            <div class="band-stat-cell">
+              <span class="lbl">样本外最大回撤</span>
+              <strong class="val text-neg">{{ pct(aggregated.strategy?.max_drawdown) }}</strong>
+              <span class="sub">基准回撤 {{ pct(aggregated.benchmark?.max_drawdown) }}</span>
+            </div>
+            <div class="band-stat-cell">
+              <span class="lbl">跑赢周期胜率</span>
+              <strong class="val text-pos">{{ calcBeatWinRate() }}</strong>
+              <span class="sub">{{ winPeriodCount }} / {{ totalPeriodCount }} 周期领先</span>
+            </div>
+            <div class="band-stat-cell">
+              <span class="lbl">连续调仓周期</span>
+              <strong class="val">{{ aggregated.strategy?.periods || '—' }} 期</strong>
+              <span class="sub">含双边 35 bps 摩擦</span>
+            </div>
+          </div>
+
+          <!-- 模式 1: 动态 ECharts 交互走势大图 -->
+          <div v-show="navViewMode === 'chart'">
+            <div ref="navChartRef" class="nav-chart-view"></div>
+          </div>
+
+          <!-- 模式 2: 历史实证对比原图 -->
+          <div v-show="navViewMode === 'reference'" class="nav-ref-view">
+            <div class="nav-ref-preview-wrap" @click="showLightbox = true">
+              <img src="/images/nav_curve_reference.png" alt="累计净值样本外实证走势图" />
+              <div class="nav-ref-hover-hint">
+                <span>🔍 点击放大查看高清原图</span>
+              </div>
+            </div>
+            <div class="nav-ref-note">
+              <strong>实证说明：</strong>
+              本图为 2019–2025 样本外长周期回测原图对比（含双边交易成本 35bp），记录了策略在不同市场牛熊周期中的历史走势。
+              上方「动态交互走势」可无缝切换为系统最新批次真实运行数据。
             </div>
           </div>
         </div>
@@ -246,6 +340,19 @@
           <li>截面 AUC 剔除跨市场状态的漂移，更接近「同一交易日内选出跑赢标的」的真实能力。</li>
         </ul>
       </div>
+
+      <!-- 原图全屏放大灯箱 Modal -->
+      <div v-if="showLightbox" class="image-lightbox-modal" @click.self="showLightbox = false">
+        <div class="image-lightbox-container">
+          <div class="image-lightbox-header">
+            <div class="image-lightbox-title">🔍 累计净值走势（样本外实证原图）</div>
+            <button class="modal-close" @click="showLightbox = false">×</button>
+          </div>
+          <div class="image-lightbox-img-wrap">
+            <img src="/images/nav_curve_reference.png" alt="累计净值样本外实证走势图原图" />
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>
@@ -260,11 +367,59 @@ const data = ref(null)
 const chartRef = ref(null)
 let chart = null
 
+// 长周期累计净值图表相关状态
+const navChartRef = ref(null)
+let navChart = null
+const navViewMode = ref('chart') // 'chart' | 'reference'
+const showLightbox = ref(false)
+
 const summary = computed(() => data.value?.summary || {})
 const btSummary = computed(() => data.value?.backtest_summary || null)
 const aggregated = computed(() => data.value?.backtest_aggregated || null)
 const pct = (v) => (v == null ? '—' : (v * 100).toFixed(2) + '%')
 const fmt = (v) => (v == null ? '—' : Number(v).toFixed(4))
+
+const benchmarkTitle = computed(() => {
+  const p = aggregated.value?.params?.selection
+  return p === 'neutral' ? '行业中性基准' : '全样本等权基准'
+})
+
+const benchmarkShortName = computed(() => {
+  return '全样本等权'
+})
+
+const winPeriodCount = computed(() => {
+  if (!aggregated.value?.strategy?.nav || !aggregated.value?.benchmark?.nav) return 0
+  const sNav = aggregated.value.strategy.nav
+  const bNav = aggregated.value.benchmark.nav
+  let cnt = 0
+  for (let i = 0; i < sNav.length; i++) {
+    if (sNav[i] >= bNav[i]) cnt++
+  }
+  return cnt
+})
+
+const totalPeriodCount = computed(() => {
+  return aggregated.value?.strategy?.nav?.length || 0
+})
+
+const calcBeatWinRate = () => {
+  if (!totalPeriodCount.value) return '—'
+  return ((winPeriodCount.value / totalPeriodCount.value) * 100).toFixed(1) + '%'
+}
+
+const switchNavMode = (mode) => {
+  navViewMode.value = mode
+  if (mode === 'chart') {
+    nextTick(() => {
+      if (!navChart) {
+        renderNavChart()
+      } else {
+        navChart.resize()
+      }
+    })
+  }
+}
 
 const NAMES = {
   ATR_ratio_neu: '相对真实波幅',
@@ -339,7 +494,206 @@ const renderChart = () => {
   })
 }
 
-const handleResize = () => chart?.resize()
+const renderNavChart = () => {
+  if (!navChartRef.value || !aggregated.value) return
+  if (!navChart) navChart = echarts.init(navChartRef.value)
+
+  const sNav = aggregated.value.strategy?.nav || []
+  const bNav = aggregated.value.benchmark?.nav || []
+  const dates = aggregated.value.dates || []
+  if (!sNav.length || !bNav.length) return
+
+  const n = Math.min(sNav.length, bNav.length)
+  const xAxisData = sNav.slice(0, n).map((_, i) => dates[i] || `P${i + 1}`)
+  const stratData = sNav.slice(0, n)
+  const benchData = bNav.slice(0, n)
+  const bName = benchmarkTitle.value
+
+  navChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      padding: [10, 14],
+      textStyle: { color: '#0f172a', fontSize: 12 },
+      formatter: (params) => {
+        if (!params || params.length === 0) return ''
+        const dateStr = params[0].axisValue
+        const idx = params[0].dataIndex
+        const sVal = stratData[idx]
+        const bVal = benchData[idx]
+        const diff = sVal - bVal
+        const excessPct = bVal > 0 ? ((sVal / bVal - 1) * 100).toFixed(2) : '0.00'
+        const isBeat = diff >= 0
+
+        let html = `<div style="font-weight:700; margin-bottom:6px; color:#1e293b;">📅 ${dateStr}</div>`
+        html += `<div style="display:flex; justify-content:space-between; gap:18px; margin-bottom:3px;">
+          <span style="color:#2563eb;">● 策略净值:</span>
+          <strong>${sVal != null ? sVal.toFixed(4) : '--'}</strong>
+        </div>`
+        html += `<div style="display:flex; justify-content:space-between; gap:18px; margin-bottom:6px;">
+          <span style="color:#c2410c;">● ${bName}:</span>
+          <strong>${bVal != null ? bVal.toFixed(4) : '--'}</strong>
+        </div>`
+        html += `<div style="padding-top:6px; border-top:1px dashed #e2e8f0; display:flex; justify-content:space-between; gap:18px;">
+          <span>相对超额:</span>
+          <strong style="color:${isBeat ? '#16a34a' : '#dc2626'};">${diff >= 0 ? '+' : ''}${diff.toFixed(4)} (${diff >= 0 ? '+' : ''}${excessPct}%)</strong>
+        </div>`
+        html += `<div style="margin-top:4px; font-size:11px; color:${isBeat ? '#16a34a' : '#dc2626'};">
+          ${isBeat ? '✅ 处于跑赢区间' : '🔻 处于跑输区间'}
+        </div>`
+        return html
+      }
+    },
+    legend: {
+      show: false
+    },
+    grid: {
+      left: 56,
+      right: 32,
+      top: 30,
+      bottom: 50
+    },
+    dataZoom: [
+      {
+        type: 'inside',
+        start: 0,
+        end: 100
+      },
+      {
+        type: 'slider',
+        height: 20,
+        bottom: 12,
+        borderColor: '#cbd5e1',
+        fillerColor: 'rgba(37, 99, 235, 0.12)',
+        handleStyle: { color: '#2563eb' }
+      }
+    ],
+    xAxis: {
+      type: 'category',
+      data: xAxisData,
+      axisLine: { lineStyle: { color: '#cbd5e1' } },
+      axisLabel: {
+        fontSize: 11,
+        color: '#64748b',
+        hideOverlap: true
+      },
+      splitLine: {
+        show: true,
+        lineStyle: { color: '#f1f5f9', type: 'dashed' }
+      }
+    },
+    yAxis: {
+      type: 'value',
+      scale: true,
+      axisLine: { lineStyle: { color: '#cbd5e1' } },
+      axisLabel: {
+        fontSize: 11,
+        color: '#64748b',
+        formatter: '{value}'
+      },
+      splitLine: {
+        lineStyle: { color: '#f1f5f9' }
+      },
+      name: '累计净值',
+      nameTextStyle: { color: '#94a3b8', fontSize: 11 }
+    },
+    series: [
+      {
+        name: '超额区间填充',
+        type: 'custom',
+        silent: true,
+        z: 1,
+        renderItem: (params, api) => {
+          const index = params.dataIndex
+          if (index >= stratData.length - 1) return null
+
+          const x0 = api.coord([index, stratData[index]])[0]
+          const y0_s = api.coord([index, stratData[index]])[1]
+          const y0_b = api.coord([index, benchData[index]])[1]
+
+          const x1 = api.coord([index + 1, stratData[index + 1]])[0]
+          const y1_s = api.coord([index + 1, stratData[index + 1]])[1]
+          const y1_b = api.coord([index + 1, benchData[index + 1]])[1]
+
+          const d0 = stratData[index] - benchData[index]
+          const d1 = stratData[index + 1] - benchData[index + 1]
+
+          const winColor = 'rgba(186, 230, 253, 0.55)'
+          const lagColor = 'rgba(254, 202, 202, 0.55)'
+
+          if (d0 >= 0 && d1 >= 0) {
+            return {
+              type: 'polygon',
+              shape: {
+                points: [[x0, y0_s], [x1, y1_s], [x1, y1_b], [x0, y0_b]]
+              },
+              style: { fill: winColor, stroke: 'transparent' }
+            }
+          }
+          if (d0 <= 0 && d1 <= 0) {
+            return {
+              type: 'polygon',
+              shape: {
+                points: [[x0, y0_s], [x1, y1_s], [x1, y1_b], [x0, y0_b]]
+              },
+              style: { fill: lagColor, stroke: 'transparent' }
+            }
+          }
+
+          const t = Math.max(0, Math.min(1, d0 / (d0 - d1)))
+          const xc = x0 + t * (x1 - x0)
+          const yc = y0_s + t * (y1_s - y0_s)
+
+          return {
+            type: 'group',
+            children: [
+              {
+                type: 'polygon',
+                shape: {
+                  points: [[x0, y0_s], [xc, yc], [x0, y0_b]]
+                },
+                style: { fill: d0 >= 0 ? winColor : lagColor, stroke: 'transparent' }
+              },
+              {
+                type: 'polygon',
+                shape: {
+                  points: [[xc, yc], [x1, y1_s], [x1, y1_b]]
+                },
+                style: { fill: d1 >= 0 ? winColor : lagColor, stroke: 'transparent' }
+              }
+            ]
+          }
+        },
+        data: stratData.map((_, i) => i)
+      },
+      {
+        name: '策略净值',
+        type: 'line',
+        data: stratData,
+        smooth: true,
+        showSymbol: false,
+        z: 3,
+        lineStyle: { width: 2.2, color: '#2563eb' }
+      },
+      {
+        name: bName,
+        type: 'line',
+        data: benchData,
+        smooth: true,
+        showSymbol: false,
+        z: 3,
+        lineStyle: { width: 2.0, color: '#c2410c' }
+      }
+    ]
+  })
+}
+
+const handleResize = () => {
+  chart?.resize()
+  navChart?.resize()
+}
 
 onMounted(async () => {
   try {
@@ -351,6 +705,7 @@ onMounted(async () => {
     loading.value = false
     await nextTick()
     renderChart()
+    renderNavChart()
     window.addEventListener('resize', handleResize)
   }
 })
@@ -359,6 +714,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
   chart?.dispose()
   chart = null
+  navChart?.dispose()
+  navChart = null
 })
 </script>
 

@@ -95,8 +95,14 @@ def main():
             old = joblib.load(source / 'lgbm_market_classifier.pkl')
             assert old['feature_cols'] == bundle['feature_cols']
             assert old['params'] == bundle['params']
-            assert pd.Timestamp(plan['training_label_end']) < pd.Timestamp(bundle['calibration']['fit_period'][0])
-        assert pd.Timestamp(bundle['calibration']['fit_period'][0]) > development_end
+            if bundle['calibration'].get('fit_source') == 'oof_cross_validation':
+                assert pd.Timestamp(bundle['calibration']['fit_period'][1]) <= pd.Timestamp(plan['training_label_end'])
+            else:
+                assert pd.Timestamp(plan['training_label_end']) < pd.Timestamp(bundle['calibration']['fit_period'][0])
+        if bundle['calibration'].get('fit_source') == 'oof_cross_validation':
+            assert pd.Timestamp(bundle['calibration']['fit_period'][1]) <= pd.Timestamp(development_end)
+        else:
+            assert pd.Timestamp(bundle['calibration']['fit_period'][0]) > development_end
         comparison_path = directory / 'reference_comparison.json'
         comparison = (json.loads(comparison_path.read_text(encoding='utf-8')) if comparison_path.exists()
                       else {'status': 'no_reference', 'splits': {}})

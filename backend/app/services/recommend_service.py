@@ -365,12 +365,18 @@ class RecommendationService:
             'factor_score': self._num(row.get('factor_score'), None),
             'factor_rank': self._num(row.get('factor_rank'), None),
             'calibrated_probability': self._num(row.get('calibrated_probability'), None),
-            'calibration_status': str(row.get('calibration_status', 'not_fitted')),
+            'calibration_status': self._calibration_status(row),
             'avg_amount_20d': self._num(row.get('avg_amount_20d'), None),
             'history_days': self._num(row.get('history_days'), None),
             'factor_breakdown': self._json_value(row.get('factor_breakdown'), []),
             'rule_reasons': self._json_value(row.get('rule_reasons'), []),
         }
+
+    def _calibration_status(self, row: pd.Series) -> str:
+        calibration = (getattr(self, 'report', {}) or {}).get('selection_layer', {}).get('calibration', {})
+        if calibration.get('weak_validation_signal'):
+            return 'weak_validation_signal_constant'
+        return str(row.get('calibration_status', 'not_fitted'))
 
     @staticmethod
     def _json_value(value, default):
@@ -465,6 +471,7 @@ class RecommendationService:
         result["date"] = str(row.get("更新日期", date or ""))
         result['calibrated_probability'] = self._num(row.get('calibrated_probability'), None)
         result['calibration'] = model_bundle.get('calibration')
+        result['calibration_status'] = self._calibration_status(row)
         result['factor_score'] = self._num(row.get('factor_score'), None)
         result['factor_breakdown'] = self._json_value(row.get('factor_breakdown'), [])
         return result

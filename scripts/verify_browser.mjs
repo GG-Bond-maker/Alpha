@@ -86,12 +86,18 @@ try {
         if (!shown) throw new Error('Recommendation view does not show the refreshed market date')
         selectionChecks.latestDateShown = process.env.ALPHA_EXPECT_LATEST_DATE
       }
+      const weakCalibration = await evaluate("document.querySelector('.content section').innerText.includes('校准退化')")
+      if (weakCalibration) {
+        selectionChecks.weakCalibrationMarked = await evaluate("document.querySelector('.desktop-results').innerText.includes('校准未生效')")
+        if (!selectionChecks.weakCalibrationMarked) throw new Error('Weak calibration must be marked in the recommendation table')
+      }
       await evaluate("Array.from(document.querySelectorAll('.desktop-results button')).find(b=>b.textContent==='因子依据').click()")
       await until("document.querySelector('.factor-detail')")
       await screenshot('recommendations-desktop')
       await evaluate("Array.from(document.querySelectorAll('.desktop-results button')).find(b=>b.textContent==='SHAP 归因').click()")
       await until("document.querySelector('dialog[open] .dialog-body')")
-      selectionChecks.explanation = await evaluate("({hasFactorEvidence:document.querySelector('dialog[open]').innerText.includes('多因子对照依据'),hasCalibrated:document.querySelector('dialog[open]').innerText.includes('校准后')})")
+      selectionChecks.explanation = await evaluate("({hasFactorEvidence:document.querySelector('dialog[open]').innerText.includes('多因子对照依据'),hasCalibrationStatus:document.querySelector('dialog[open]').innerText.includes('校准未生效')||document.querySelector('dialog[open]').innerText.includes('校准后跑赢概率')})")
+      if (!selectionChecks.explanation.hasCalibrationStatus) throw new Error('Explanation must describe whether calibration is usable')
       await screenshot('recommendation-explanation')
       await evaluate("document.querySelector('dialog[open] .close-btn').click()")
       await evaluate("const select=document.querySelectorAll('.selection-controls select')[1]; select.value='factor';select.dispatchEvent(new Event('change',{bubbles:true}))")

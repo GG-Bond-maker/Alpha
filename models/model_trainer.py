@@ -255,7 +255,7 @@ def train_market_model(panel: pd.DataFrame = None, n_trials: int = 20,
 
     from ml_pipeline.calibration import fit_calibrator, calibrate_margin, reliability
     from ml_pipeline.selection import fit_factor_ranker
-    calibration = fit_calibrator(model, val, feature_cols)
+    calibration = fit_calibrator(model, val, feature_cols, train=train, params=params)
     factor_ranker = fit_factor_ranker(train, feature_cols)
     calibration_report = {'calibrator': calibration, 'evaluations': {}}
     for name, split in [('validation_fit', val), ('held_out_test', test)]:

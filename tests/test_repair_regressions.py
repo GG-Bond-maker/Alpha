@@ -212,6 +212,25 @@ class SelectionLayerTests(unittest.TestCase):
         self.assertEqual(spec['fit_source'], 'validation_only')
         self.assertEqual(spec['fit_period'], ['2020-01-01', '2020-01-03'])
 
+    def test_oof_calibration_produces_monotone_positive_slope_and_zero_leakage(self):
+        from ml_pipeline.calibration import fit_calibrator_oof, calibrate_margin
+        dates = pd.bdate_range('2020-01-01', periods=30)
+        records = []
+        for d in dates:
+            for i in range(20):
+                sig = i / 19.0 - 0.5
+                target = int(sig > 0)
+                records.append({'date': d, 'stock_code': f'{i:06d}', 'sig': sig,
+                                'target_up': target, 'label_end_date': d + pd.offsets.BDay(5)})
+        train = pd.DataFrame(records)
+        params = {'n_estimators': 10, 'max_depth': 2, 'learning_rate': 0.1, 'verbose': -1, 'random_state': 42}
+        spec = fit_calibrator_oof(train, ['sig'], params, n_splits=2)
+        self.assertEqual(spec['fit_source'], 'oof_cross_validation')
+        self.assertFalse(spec['weak_validation_signal'])
+        self.assertGreater(spec['slope'], 0.0)
+        prob = calibrate_margin(np.array([-2.0, 0.0, 2.0]), spec)
+        self.assertTrue((np.diff(prob) > 0).all())
+
     def test_rules_explain_rejections_without_future_inputs(self):
         from ml_pipeline.selection import screen_candidates
         candidates = pd.DataFrame({'更新日期': ['2020-01-01'] * 4, '最新收盘价': [10] * 4,
@@ -241,15 +260,20 @@ class RecommendationDateTests(unittest.TestCase):
     def test_older_market_cache_does_not_replace_zero_change_on_new_signal_date(self):
         from backend.app.services.recommend_service import RecommendationService
         service = RecommendationService.__new__(RecommendationService)
+        service.report = {'selection_layer': {'calibration': {
+            'weak_validation_signal': True, 'slope': 0.0,
+        }}}
         service._get_market_indicator_cache = lambda: {
             '000001': {'date': '2026-10-21', 'close': 99, 'pct_chg': 9.9}}
         row = pd.Series({'代码': '000001', '名称': 'test', '推荐评级': 'A',
                          '跑赢候选池均值概率': .51, '最新收盘价': 10.0,
-                         '当日涨幅(%)': 0.0})
+                         '当日涨幅(%)': 0.0, 'calibrated_probability': .468,
+                         'calibration_status': 'validation_fitted'})
         item = service._to_item(row, 1, '2026-10-26')
         self.assertEqual(item['close_price'], 10.0)
         self.assertEqual(item['pct_chg'], 0.0)
         self.assertEqual(item['update_date'], '2026-10-26')
+        self.assertEqual(item['calibration_status'], 'weak_validation_signal_constant')
         missing = service._to_item(row.drop(['最新收盘价', '当日涨幅(%)']), 1, '2026-10-26')
         self.assertEqual(missing['close_price'], 0.0)
         self.assertEqual(missing['pct_chg'], 0.0)

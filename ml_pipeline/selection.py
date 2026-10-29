@@ -80,7 +80,11 @@ def enrich_recommendations(frame, panel, bundle):
         features = bundle['feature_cols']
         margins = bundle['model'].predict(result[features], raw_score=True)
         result['calibrated_probability'] = calibrate_margin(margins, calibration)
-        result['calibration_status'] = 'validation_fitted'
+        result['calibration_status'] = (
+            'weak_validation_signal_constant'
+            if calibration.get('weak_validation_signal')
+            else ('oof_fitted' if calibration.get('fit_source') == 'oof_cross_validation' else 'validation_fitted')
+        )
     else:
         result['calibrated_probability'] = np.nan
         result['calibration_status'] = 'not_fitted'

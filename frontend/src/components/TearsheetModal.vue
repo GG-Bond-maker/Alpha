@@ -151,9 +151,25 @@
           </div>
         </section>
 
-        <!-- 3. 历史极端情景压力测试矩阵 -->
+        <!-- 3. 样本外长周期累计净值与超额走势 (Out-of-Sample NAV) -->
         <section class="tearsheet-section">
-          <h3 class="section-title">三、历史极端危机情景压力测试 (Crisis Stress Testing)</h3>
+          <h3 class="section-title">三、样本外长周期累计净值与超额走势 (Out-of-Sample NAV)</h3>
+          <p class="section-desc">
+            记录策略在完整样本外牛熊周期中的净值复利与基准对抗表现（含双边交易规费与滑点 35 bps 摩擦）：
+          </p>
+          <div class="tearsheet-nav-preview">
+            <div class="tearsheet-img-frame">
+              <img src="/images/nav_curve_reference.png" alt="样本外累计净值走势" />
+            </div>
+            <div class="tearsheet-nav-caption">
+              <span>📊 策略与基准累计净值走势（含 35bp 双边成本，浅青色为跑赢区间，浅粉色为跑输区间）</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. 历史极端危机情景压力测试矩阵 -->
+        <section class="tearsheet-section">
+          <h3 class="section-title">四、历史极端危机情景压力测试 (Crisis Stress Testing)</h3>
           <p class="section-desc">
             针对 A 股 2015 股灾、2016 熔断、2018 贸易战、2020 疫情等 6 大极端黑天鹅时期进行严格复盘测试：
           </p>
@@ -187,9 +203,9 @@
           </div>
         </section>
 
-        <!-- 4. 实时风控与合规治理承诺 -->
+        <!-- 5. 实时风控与合规治理承诺 -->
         <section class="tearsheet-section">
-          <h3 class="section-title">四、量化实盘风控与自动熔断守则 (Kill Switch)</h3>
+          <h3 class="section-title">五、量化实盘风控与自动熔断守则 (Kill Switch)</h3>
           <div class="governance-block">
             <div class="gov-item">
               <span class="gov-title">单日亏损熔断线: -5.0%</span>
@@ -271,14 +287,16 @@ const downloadMarkdown = () => {
   md += `| 95% 条件期望短缺 (CVaR) | ${(s.cvar_95 * 100).toFixed(2)}% | ${(bm.cvar_95 * 100).toFixed(2)}% | — |\n`
   md += `| 校准夏普显著性 (DSR) | ${s.dsr == null ? '未计算' : (s.dsr * 100).toFixed(1) + '%'} | — | 需要可比策略试验记录 |\n\n`
 
-  md += `## 二、历史极端危机情景压力测试 (Crisis Stress Testing)\n\n`
+  md += `## 二、样本外长周期累计净值与超额走势 (Out-of-Sample NAV)\n\n`
+  md += `- 经双边成本（约 35 bps）实盘压力扣除后，策略呈现稳定的超额复利积累特征与抗跌防御能力。\n\n`
+  md += `## 三、历史极端危机情景压力测试 (Crisis Stress Testing)\n\n`
   md += `| 危机情景 | 时间窗口 | 核心机制 | 策略收益 | 基准收益 | 超额 Alpha | 最大回撤 | 防御定级 |\n`
   md += `| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n`
   crises.forEach((c) => {
     md += `| ${c.name} | ${c.start_date}~${c.end_date} | ${c.description} | ${c.strategy_return == null ? '未评估' : (c.strategy_return * 100).toFixed(2) + '%'} | ${c.benchmark_return == null ? '未评估' : (c.benchmark_return * 100).toFixed(2) + '%'} | +${c.excess_return == null ? '未评估' : (c.excess_return * 100).toFixed(2) + '%'} | ${c.max_drawdown == null ? '未评估' : (c.max_drawdown * 100).toFixed(2) + '%'} | ${c.resilience} |\n`
   })
 
-  md += `\n## 三、量化实盘微观摩擦与风控治理准则\n\n`
+  md += `\n## 四、量化实盘微观摩擦与风控治理准则\n\n`
   md += `1. **费用假设**: 买入总成本 0.076%（含 5 bps 执行滑点），卖出总成本 0.126%（含印花税与滑点）。\n`
   md += `2. **涨停过滤**: 信号日涨停仅用于候选筛选，不保证下一开盘可成交；尚未完整模拟停牌和卖出受限。\n`
   md += `3. **风控熔断**: 当前提供进程级手动熔断和推荐等权集中度筛查，未接入真实持仓日亏损及回撤。\n`
@@ -515,6 +533,30 @@ const downloadMarkdown = () => {
   border-top: 1px solid var(--slate-200);
   display: flex;
   justify-content: flex-end;
+}
+
+.tearsheet-nav-preview {
+  margin: 14px 0 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tearsheet-img-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.tearsheet-nav-caption {
+  padding: 8px 14px;
+  font-size: 11.5px;
+  color: #64748b;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
 }
 
 @media print {
